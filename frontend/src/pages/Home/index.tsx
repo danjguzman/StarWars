@@ -1,21 +1,18 @@
 import {
     AppShell,
+    Box,
+    Burger,
     Container,
     Group,
+    Menu,
     Paper,
     Text,
     Title,
 } from "@mantine/core";
+import { useDisclosure } from "@mantine/hooks";
 import { NavLink, Outlet } from "react-router-dom";
-
-export const navItems = [
-    { label: "Films", path: "films" },
-    { label: "People", path: "people" },
-    { label: "Planets", path: "planets" },
-    { label: "Species", path: "species" },
-    { label: "Vehicles", path: "vehicles" },
-    { label: "Starships", path: "starships" },
-] as const;
+import { navItems } from "@pages/Home/constants";
+import { HEADER_HEIGHT } from "@utils/layout";
 
 export function HomePage() {
     return (
@@ -39,13 +36,15 @@ export function HomeSectionPage({ title }: { title: string }) {
 }
 
 export default function HomeLayout() {
+    const [opened, { open, close, toggle }] = useDisclosure(false);
+
     return (
-        <AppShell header={{ height: { base: 112, sm: 64 } }} padding="md">
+        <AppShell header={{ height: HEADER_HEIGHT }} padding="md">
             <AppShell.Header>
                 <Container size="lg" h="100%">
-                    <Group h="100%" justify="space-between" wrap="wrap">
+                    <Group h="100%" justify="space-between" wrap="nowrap">
                         <Title order={4}>Star Wars Explorer</Title>
-                        <Group gap="lg" wrap="wrap" justify="flex-end">
+                        <Group gap="lg" justify="flex-end" visibleFrom="sm">
                             {navItems.map((item) => (
                                 <NavLink
                                     key={item.path}
@@ -60,6 +59,43 @@ export default function HomeLayout() {
                                 </NavLink>
                             ))}
                         </Group>
+
+                        <Box hiddenFrom="sm">
+                            <Menu
+                                width={180}
+                                shadow="md"
+                                opened={opened}
+                                onChange={(isOpened) => {
+                                    if (isOpened) {
+                                        open();
+                                        return;
+                                    }
+
+                                    close();
+                                }}
+                            >
+                                <Menu.Target>
+                                    <Burger
+                                        opened={opened}
+                                        onClick={toggle}
+                                        aria-label="Open navigation menu"
+                                        size="sm"
+                                    />
+                                </Menu.Target>
+                                <Menu.Dropdown>
+                                    {navItems.map((item) => (
+                                        <Menu.Item
+                                            key={item.path}
+                                            component={NavLink}
+                                            to={`/${item.path}`}
+                                            onClick={close}
+                                        >
+                                            {item.label}
+                                        </Menu.Item>
+                                    ))}
+                                </Menu.Dropdown>
+                            </Menu>
+                        </Box>
                     </Group>
                 </Container>
             </AppShell.Header>
