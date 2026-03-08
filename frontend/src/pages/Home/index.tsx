@@ -20,7 +20,7 @@ import {
 import { FilmReel as FilmReelIcon } from "@phosphor-icons/react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { navItems } from "@pages/Home/constants";
-import { HEADER_HEIGHT_CSS } from "@utils/layout";
+import { HEADER_HEIGHT_CSS } from "@utils/consts";
 
 function getMobileMenuIcon(path: string, color: string) {
     if (path === "films") return <FilmReelIcon size={24} weight="duotone" color={color} />;
@@ -50,6 +50,17 @@ export function HomeSectionPage({ title }: { title: string }) {
                 {title}
             </Title>
             <Text c="dimmed">Ready...</Text>
+        </Paper>
+    );
+}
+
+export function NotFoundPage() {
+    return (
+        <Paper p="xl" radius="md" withBorder bg="dark.7">
+            <Title order={3} mb="sm" className="app-page-title">
+                Not Found
+            </Title>
+            <Text c="dimmed">The page you entered does not exist.</Text>
         </Paper>
     );
 }

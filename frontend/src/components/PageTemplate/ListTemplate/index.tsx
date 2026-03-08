@@ -1,0 +1,203 @@
+import { useState } from "react";
+import { Box, Flex, Paper, Stack, Text } from "@mantine/core";
+import {
+    CircleNotch as CircleNotchIcon,
+    Robot as RobotIcon,
+    User,
+} from "phosphor-react";
+import {
+    ASSET_IMAGE_BASE_PATH,
+    TILE_AVATAR_SIZE,
+    TILE_HEIGHT,
+    TILE_MIN_WIDTH,
+} from "@utils/consts";
+import { resourceIdFromUrl } from "@utils/swapi";
+import InfiniteScrollSentinel from "@components/InfiniteScrollSentinel";
+import { useInfiniteScroll } from "@utils/useInfiniteScroll";
+import styles from "./index.module.css";
+
+interface ListTemplateProps<TItem extends { url: string }> {
+    items: TItem[];
+    entityKey: string;
+    onLoadMore: () => void;
+    hasMore: boolean;
+    loadingMore: boolean;
+    labelKey?: keyof TItem & string;
+}
+
+export default function ListTemplate<TItem extends { url: string }>({
+    items,
+    entityKey,
+    onLoadMore,
+    hasMore,
+    loadingMore,
+    labelKey = "name" as keyof TItem & string,
+}: ListTemplateProps<TItem>) {
+    const [missingImageByUrl, setMissingImageByUrl] = useState<Record<string, boolean>>({});
+    const sentinelRef = useInfiniteScroll({
+        hasMore,
+        onLoadMore,
+        disabled: loadingMore,
+        contentLength: items.length,
+    });
+
+    /* Get & animate gradient rings on hover. */
+    function getRingGradientId(item: TItem) {
+        return `list-ring-gradient-${item.url.replace(/[^a-zA-Z0-9-_]/g, "-")}`;
+    }
+
+    /* Get item avatars. */
+    function getItemImageSrc(item: TItem) {
+        const itemId = resourceIdFromUrl(item.url);
+        if (!itemId)return null;
+        return `${ASSET_IMAGE_BASE_PATH}/${entityKey}/${itemId}.jpg`;
+    }
+
+    /* Get item label/name, or defauled to "unknown" since SWAPI does have some missing data. */
+    function getItemLabel(item: TItem) {
+        const value = item[labelKey];
+        if (typeof value === "string" && value.length > 0) return value;
+        return "Unknown";
+    }
+
+    return (
+        <>
+            <Flex className={styles.grid} gap="md" wrap="wrap">
+                {items.map((item) => {
+                    const itemKey = item.url;
+                    const itemLabel = getItemLabel(item);
+                    const imageSrc = getItemImageSrc(item);
+                    const imageMissing = !imageSrc || Boolean(missingImageByUrl[item.url]);
+                    const ringGradientId = getRingGradientId(item);
+
+                    return (
+                        <Paper
+                            key={itemKey}
+                            className={styles.card}
+                            p="md"
+                            radius="md"
+                            style={{
+                                flex: `1 1 ${TILE_MIN_WIDTH}px`,
+                                minWidth: 0,
+                                minHeight: TILE_HEIGHT,
+                                cursor: "pointer",
+                            }}
+                        >
+                            <Stack align="center" justify="center" h="100%" gap="md">
+                                <Box
+                                    className={styles.avatarFrame}
+                                    w={TILE_AVATAR_SIZE}
+                                    h={TILE_AVATAR_SIZE}
+                                    style={{
+                                        borderRadius: "50%",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                    }}
+                                >
+                                    <Box
+                                        className={styles.avatarClip}
+                                        w="100%"
+                                        h="100%"
+                                        style={{
+                                            borderRadius: "50%",
+                                            overflow: "hidden",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            justifyContent: "center",
+                                            backgroundColor: "var(--mantine-color-dark-6)",
+                                        }}
+                                    >
+                                        {!imageMissing && imageSrc && (
+                                            <Box
+                                                className={styles.avatarImage}
+                                                component="img"
+                                                src={imageSrc}
+                                                alt={`${itemLabel} portrait`}
+                                                w="100%"
+                                                h="100%"
+                                                style={{
+                                                    objectFit: "cover",
+                                                    objectPosition: "top center",
+                                                    display: "block",
+                                                }}
+                                                onError={() => {
+                                                    setMissingImageByUrl((prev) => ({
+                                                        ...prev,
+                                                        [item.url]: true,
+                                                    }));
+                                                }}
+                                            />
+                                        )}
+                                        {(imageMissing || !imageSrc) && (
+                                            <User size={96} color="var(--mantine-color-gray-5)" weight="regular" />
+                                        )}
+                                    </Box>
+
+                                    <Box
+                                        component="svg"
+                                        className={styles.avatarRing}
+                                        viewBox="0 0 100 100"
+                                        preserveAspectRatio="xMidYMid meet"
+                                        aria-hidden="true"
+                                    >
+                                        <defs>
+                                            <linearGradient
+                                                id={ringGradientId}
+                                                x1="50"
+                                                y1="0"
+                                                x2="50"
+                                                y2="100"
+                                                gradientUnits="userSpaceOnUse"
+                                            >
+                                                <stop offset="0%" stopColor="#c3cad3" />
+                                                <stop offset="18%" stopColor="#929baa" />
+                                                <stop offset="55%" stopColor="#5d6676" />
+                                                <stop offset="100%" stopColor="#2e3642" />
+                                            </linearGradient>
+                                        </defs>
+                                    <circle className={styles.avatarRingBase} cx="50" cy="50" r="46" />
+                                    <circle
+                                        className={styles.avatarRingHighlight}
+                                        cx="50"
+                                        cy="50"
+                                        r="46"
+                                        stroke={`url(#${ringGradientId})`}
+                                    />
+                                </Box>
+                                </Box>
+
+                                <Text fw={600} ta="center" className={styles.itemLabel}>
+                                    {itemLabel}
+                                </Text>
+                            </Stack>
+                        </Paper>
+                    );
+                })}
+            </Flex>
+
+            <InfiniteScrollSentinel
+                sentinelRef={sentinelRef}
+                hasItems={items.length > 0}
+                hasMore={hasMore}
+                loadingMore={loadingMore}
+                showDone={!hasMore && items.length > 0}
+                loadingIndicator={
+                    <Box className={styles.loadingIcon}>
+                        <CircleNotchIcon size={32} weight="duotone" color="currentColor" />
+                    </Box>
+                }
+                doneIndicator={
+                    <Box className={styles.doneIcon}>
+                        <RobotIcon size={32} weight="duotone" color="currentColor" />
+                    </Box>
+                }
+                doneClassName={styles.doneEnter}
+                onDoneClick={() => {
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                }}
+                doneAriaLabel="Scroll to top"
+            />
+        </>
+    );
+}

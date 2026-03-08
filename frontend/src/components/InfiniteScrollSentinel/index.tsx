@@ -9,7 +9,7 @@ interface InfiniteScrollSentinelProps {
     showDone: boolean;
     loadingIndicator: ReactNode;
     doneIndicator: ReactNode;
-    doneAnimation?: string;
+    doneClassName?: string;
     indicatorMinHeight?: number;
     onDoneClick?: () => void;
     doneAriaLabel?: string;
@@ -23,7 +23,7 @@ export default function InfiniteScrollSentinel({
     showDone,
     loadingIndicator,
     doneIndicator,
-    doneAnimation,
+    doneClassName,
     indicatorMinHeight = 32,
     onDoneClick,
     doneAriaLabel = "Done",
@@ -67,9 +67,9 @@ export default function InfiniteScrollSentinel({
                             type={onDoneClick ? "button" : undefined}
                             onClick={onDoneClick}
                             aria-label={onDoneClick ? doneAriaLabel : undefined}
+                            className={doneClassName}
                             style={{
                                 display: "inline-flex",
-                                animation: doneAnimation,
                                 background: "transparent",
                                 border: 0,
                                 padding: 0,
