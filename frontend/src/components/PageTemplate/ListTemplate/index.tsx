@@ -23,6 +23,7 @@ interface ListTemplateProps<TItem extends { url: string }> {
     hasMore: boolean;
     loadingMore: boolean;
     labelKey?: keyof TItem & string;
+    onItemClick?: (selection: { item: TItem; label: string }) => void;
 }
 
 export default function ListTemplate<TItem extends { url: string }>({
@@ -32,6 +33,7 @@ export default function ListTemplate<TItem extends { url: string }>({
     hasMore,
     loadingMore,
     labelKey = "name" as keyof TItem & string,
+    onItemClick,
 }: ListTemplateProps<TItem>) {
     const [missingImageByUrl, setMissingImageByUrl] = useState<Record<string, boolean>>({});
     const sentinelRef = useInfiniteScroll({
@@ -69,6 +71,12 @@ export default function ListTemplate<TItem extends { url: string }>({
                     const imageSrc = getItemImageSrc(item);
                     const imageMissing = !imageSrc || Boolean(missingImageByUrl[item.url]);
                     const ringGradientId = getRingGradientId(item);
+                    const isInteractive = Boolean(onItemClick);
+
+                    const handleItemSelect = (target?: HTMLElement) => {
+                        target?.blur();
+                        onItemClick?.({ item, label: itemLabel });
+                    };
 
                     return (
                         <Paper
@@ -80,8 +88,22 @@ export default function ListTemplate<TItem extends { url: string }>({
                                 flex: `1 1 ${TILE_MIN_WIDTH}px`,
                                 minWidth: 0,
                                 minHeight: TILE_HEIGHT,
-                                cursor: "pointer",
+                                cursor: isInteractive ? "pointer" : "default",
                             }}
+                            role={isInteractive ? "button" : undefined}
+                            tabIndex={isInteractive ? 0 : undefined}
+                            aria-label={isInteractive ? `Open ${itemLabel}` : undefined}
+                            onClick={isInteractive ? (event) => {
+                                handleItemSelect(event.currentTarget);
+                            } : undefined}
+                            onKeyDown={isInteractive
+                                ? (event) => {
+                                    if (event.key === "Enter" || event.key === " ") {
+                                        event.preventDefault();
+                                        handleItemSelect(event.currentTarget);
+                                    }
+                                }
+                                : undefined}
                         >
                             <Stack align="center" justify="center" h="100%" gap="md">
                                 <Box

@@ -1,0 +1,196 @@
+.overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: clamp(10px, 2vw, 24px);
+    background: transparent;
+    overflow: hidden;
+    overscroll-behavior: none;
+}
+
+.frostLayer {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background: rgba(255, 255, 255, 0.001);
+    will-change: opacity, backdrop-filter, -webkit-backdrop-filter;
+}
+
+.frostEnter {
+    animation: frostIn 500ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.frostExit {
+    animation: frostOut 500ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.backdropCircle {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background: transparent;
+    isolation: isolate;
+    pointer-events: auto;
+    z-index: 2;
+}
+
+.backdropCircle::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(18, 24, 31, 0.5);
+    filter: blur(25px);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.backdropCircle::after {
+    content: "";
+    position: absolute;
+    inset: 40px;
+    border-radius: 50%;
+    pointer-events: none;
+    opacity: 1;
+    border: 3px solid #fdd337;
+    box-shadow:
+        inset 0 -56px 96px rgba(0, 0, 0, 0.08);
+    z-index: 1;
+}
+
+.backdropExit::after {
+    animation: ringFadeOut 300ms ease-out both;
+}
+
+.contentLayer {
+    position: relative;
+    z-index: 3;
+    width: 100%;
+    max-width: min(960px, 94vw);
+    max-height: 92vh;
+    padding: clamp(10px, 2.2vw, 22px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+}
+
+.contentMotion {
+    will-change: opacity, transform, filter;
+}
+
+.contentLayer > * {
+    pointer-events: auto;
+}
+
+.contentEnter {
+    animation: contentFocusIn 620ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.contentExit {
+    animation: contentFocusOut 420ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+.backdropEnter {
+    animation: backdropFocusIn 1000ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.backdropExit {
+    animation: backdropFocusOut 1000ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+@keyframes backdropFocusIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, calc(-50% + 14px)) scale(0.97);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
+@keyframes frostIn {
+    from {
+        opacity: 0;
+        backdrop-filter: blur(0px) saturate(1);
+        -webkit-backdrop-filter: blur(0px) saturate(1);
+    }
+
+    to {
+        opacity: 1;
+        backdrop-filter: blur(24px) saturate(1.08);
+        -webkit-backdrop-filter: blur(24px) saturate(1.08);
+    }
+}
+
+@keyframes frostOut {
+    from {
+        opacity: 1;
+        backdrop-filter: blur(24px) saturate(1.08);
+        -webkit-backdrop-filter: blur(24px) saturate(1.08);
+    }
+
+    to {
+        opacity: 0;
+        backdrop-filter: blur(0px) saturate(1);
+        -webkit-backdrop-filter: blur(0px) saturate(1);
+    }
+}
+
+@keyframes backdropFocusOut {
+    from {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+
+    to {
+        opacity: 0;
+        transform: translate(-50%, calc(-50% + 10px)) scale(0.985);
+    }
+}
+
+@keyframes ringFadeOut {
+    from {
+        opacity: 1;
+    }
+
+    to {
+        opacity: 0;
+    }
+}
+
+@keyframes contentFocusIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px) scale(0.992);
+        filter: blur(14px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+}
+
+@keyframes contentFocusOut {
+    from {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+        filter: blur(0);
+    }
+
+    to {
+        opacity: 0;
+        transform: translateY(8px) scale(0.99);
+        filter: blur(10px);
+    }
+}
