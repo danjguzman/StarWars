@@ -33,6 +33,8 @@
     left: 50%;
     top: 50%;
     transform: translate(-50%, -50%);
+    width: clamp(1250px, 125dvh, 1500px);
+    height: clamp(1250px, 125dvh, 1500px);
     border-radius: 50%;
     background: transparent;
     isolation: isolate;
@@ -73,7 +75,7 @@
     z-index: 3;
     width: 100%;
     max-width: min(960px, 94vw);
-    max-height: 92vh;
+    max-height: min(92vh, 92dvh);
     padding: clamp(10px, 2.2vw, 22px);
     display: flex;
     align-items: center;
@@ -87,6 +89,22 @@
 
 .contentLayer > * {
     pointer-events: auto;
+}
+
+@media (max-width: 720px) {
+    .overlay {
+        padding: 0;
+    }
+
+    .contentLayer {
+        max-height: 100dvh;
+        max-width: 100vw;
+        padding: 0;
+        align-items: flex-start;
+        overflow-y: auto;
+        overflow-x: hidden;
+        justify-content: center;
+    }
 }
 
 .contentEnter {

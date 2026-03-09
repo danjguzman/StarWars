@@ -1,12 +1,7 @@
-import { type AnimationEvent, type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Box } from "@mantine/core";
 import styles from "./index.module.css";
-
-function getBackdropDiameter() {
-    if (typeof window === "undefined") return 1125;
-    return Math.round(window.innerHeight * 1.25);
-}
 
 interface ModalProps {
     opened: boolean;
@@ -25,27 +20,7 @@ export default function Modal({
     onNavigatePrev,
     onNavigateNext,
 }: ModalProps) {
-    const [isPresent, setIsPresent] = useState(opened);
-    const [backdropDiameter, setBackdropDiameter] = useState<number>(() => getBackdropDiameter());
     const touchStartRef = useRef<{ x: number; y: number } | null>(null);
-
-    useEffect(() => {
-        if (!opened) return;
-
-        const frameId = window.requestAnimationFrame(() => {
-            setBackdropDiameter(getBackdropDiameter());
-            setIsPresent(true);
-        });
-
-        return () => {
-            window.cancelAnimationFrame(frameId);
-        };
-    }, [opened]);
-
-    const handleBackdropAnimationEnd = (event: AnimationEvent<HTMLDivElement>) => {
-        if (opened || event.target !== event.currentTarget || event.pseudoElement) return;
-        setIsPresent(false);
-    };
 
     useEffect(() => {
         if (!opened) return;
@@ -78,7 +53,7 @@ export default function Modal({
         };
     }, [onClose, onNavigateNext, onNavigatePrev, opened]);
 
-    if (!isPresent || typeof document === "undefined") return null;
+    if (!opened || typeof document === "undefined") return null;
 
     const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
         const touch = event.touches[0];
@@ -123,36 +98,24 @@ export default function Modal({
                 aria-modal="true"
                 aria-label={ariaLabel}
                 onClick={onClose}
-                style={{
-                    pointerEvents: opened ? "auto" : "none",
-                }}
             >
-                <Box className={`${styles.frostLayer} ${opened ? styles.frostEnter : styles.frostExit}`} aria-hidden="true" />
+                <Box className={`${styles.frostLayer} ${styles.frostEnter}`} aria-hidden="true" />
 
                 <Box
-                    className={`${styles.backdropCircle} ${opened ? styles.backdropEnter : styles.backdropExit}`}
+                    className={`${styles.backdropCircle} ${styles.backdropEnter}`}
                     style={{
-                        width: `${backdropDiameter}px`,
-                        height: `${backdropDiameter}px`,
-                        minWidth: `${backdropDiameter}px`,
-                        maxWidth: `${backdropDiameter}px`,
-                        minHeight: `${backdropDiameter}px`,
-                        maxHeight: `${backdropDiameter}px`,
-                        pointerEvents: opened ? "auto" : "none",
+                        pointerEvents: "auto",
                     }}
                     onClick={(event) => {
                         event.stopPropagation();
                     }}
-                    onAnimationEnd={handleBackdropAnimationEnd}
                     aria-hidden="true"
                 />
 
                 <Box className={styles.contentLayer}>
                     <Box
-                        className={`${styles.contentMotion} ${opened ? styles.contentEnter : styles.contentExit}`}
-                        style={{
-                            pointerEvents: opened ? "auto" : "none",
-                        }}
+                        className={`${styles.contentMotion} ${styles.contentEnter}`}
+                        style={{ pointerEvents: "auto" }}
                         onTouchStart={handleTouchStart}
                         onTouchEnd={handleTouchEnd}
                         onClick={(event) => event.stopPropagation()}
