@@ -1,5 +1,6 @@
 import { Box, Text } from "@mantine/core";
 import { CaretLeft, CaretRight, UserCircle, X } from "phosphor-react";
+import { createPortal } from "react-dom";
 import { type Person } from "@types";
 import { ASSET_IMAGE_BASE_PATH } from "@utils/consts";
 import { resourceIdFromUrl } from "@utils/swapi";
@@ -30,8 +31,29 @@ export default function PersonModalContent({
     const personId = resourceIdFromUrl(person.url);
     const portraitSrc = personId ? `${ASSET_IMAGE_BASE_PATH}/people/${personId}.jpg` : null;
 
+    const floatingMobileClose = typeof document === "undefined"
+        ? null
+        : createPortal(
+            <button
+                type="button"
+                className={styles.floatingCloseButton}
+                onClick={onClose}
+                aria-label="Close modal"
+            >
+                <X size={20} weight="bold" />
+            </button>,
+            document.body
+        );
+
     return (
-        <Box className={styles.layout}>
+        <>
+            {floatingMobileClose}
+
+            <Box className={styles.layout}>
+            <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Close modal">
+                <X size={20} weight="bold" />
+            </button>
+
             <Box className={styles.stageRow}>
                 <button type="button" className={styles.sideOrb} onClick={onPrev} aria-label="Previous person">
                     <CaretLeft size={20} weight="bold" />
@@ -39,9 +61,6 @@ export default function PersonModalContent({
                 </button>
 
                 <Box className={styles.heroColumn}>
-                    <button type="button" className={styles.closeButton} onClick={onClose} aria-label="Close modal">
-                        <X size={20} weight="bold" />
-                    </button>
                     <Box className={styles.heroFrame}>
                         {portraitSrc ? (
                             <img src={portraitSrc} alt={`${person.name} portrait`} className={styles.heroImage} />
@@ -122,6 +141,7 @@ export default function PersonModalContent({
                     <small>Films</small>
                 </Box>
             </Box>
-        </Box>
+            </Box>
+        </>
     );
 }

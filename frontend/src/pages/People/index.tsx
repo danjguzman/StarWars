@@ -5,7 +5,9 @@ import Modal from "@components/Modal";
 import ListTemplate from "@components/PageTemplate/ListTemplate";
 import PageTemplate from "@components/PageTemplate";
 import PersonModalContent from "@pages/People/PersonModalContent";
+import { type Person } from "@types";
 import { usePeopleStore } from "@stores/peopleStore";
+import { getCachedValue } from "@utils/clientCache";
 import { estimateInitialTargetCount } from "@utils/layout";
 import { resourceIdFromUrl } from "@utils/swapi";
 import { useNavigate, useParams } from "react-router-dom";
@@ -22,14 +24,21 @@ export default function People() {
         hasMore,
         fetchPeople,
     } = usePeopleStore();
+
+    const modalPeople = useMemo(() => {
+        const allPeople = getCachedValue<Person[]>("people:all");
+        if (allPeople && allPeople.length > 0) return allPeople;
+        return people;
+    }, [people]);
+
     const selectedPersonIndex = useMemo(() => {
         if (!personId) return null;
 
-        return people.findIndex((person) => resourceIdFromUrl(person.url) === personId);
-    }, [people, personId]);
+        return modalPeople.findIndex((person) => resourceIdFromUrl(person.url) === personId);
+    }, [modalPeople, personId]);
 
-    const selectedPerson = selectedPersonIndex !== null && selectedPersonIndex >= 0 && selectedPersonIndex < people.length
-        ? people[selectedPersonIndex]
+    const selectedPerson = selectedPersonIndex !== null && selectedPersonIndex >= 0 && selectedPersonIndex < modalPeople.length
+        ? modalPeople[selectedPersonIndex]
         : null;
 
     const closePersonModal = useCallback(() => {
@@ -37,24 +46,24 @@ export default function People() {
     }, [navigate]);
 
     const openPersonByIndex = useCallback((index: number) => {
-        const targetPerson = people[index];
+        const targetPerson = modalPeople[index];
         if (!targetPerson) return;
 
         const targetPersonId = resourceIdFromUrl(targetPerson.url);
         if (!targetPersonId) return;
 
         navigate(`/person/${targetPersonId}`);
-    }, [navigate, people]);
+    }, [modalPeople, navigate]);
 
     const showPrevPerson = useCallback(() => {
-        if (selectedPersonIndex === null || selectedPersonIndex < 0 || people.length === 0) return;
-        openPersonByIndex((selectedPersonIndex - 1 + people.length) % people.length);
-    }, [openPersonByIndex, people.length, selectedPersonIndex]);
+        if (selectedPersonIndex === null || selectedPersonIndex < 0 || modalPeople.length === 0) return;
+        openPersonByIndex((selectedPersonIndex - 1 + modalPeople.length) % modalPeople.length);
+    }, [modalPeople.length, openPersonByIndex, selectedPersonIndex]);
 
     const showNextPerson = useCallback(() => {
-        if (selectedPersonIndex === null || selectedPersonIndex < 0 || people.length === 0) return;
-        openPersonByIndex((selectedPersonIndex + 1) % people.length);
-    }, [openPersonByIndex, people.length, selectedPersonIndex]);
+        if (selectedPersonIndex === null || selectedPersonIndex < 0 || modalPeople.length === 0) return;
+        openPersonByIndex((selectedPersonIndex + 1) % modalPeople.length);
+    }, [modalPeople.length, openPersonByIndex, selectedPersonIndex]);
 
     /* Invoke Store to fetch initial data on first render with estimated tile count. */
     useEffect(() => {
@@ -108,7 +117,7 @@ export default function People() {
                     <PersonModalContent
                         person={selectedPerson}
                         selectedIndex={selectedPersonIndex ?? 0}
-                        total={people.length}
+                        total={modalPeople.length}
                         onClose={closePersonModal}
                         onPrev={showPrevPerson}
                         onNext={showNextPerson}

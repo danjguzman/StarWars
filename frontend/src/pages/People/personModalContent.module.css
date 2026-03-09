@@ -1,4 +1,5 @@
 .layout {
+    position: relative;
     width: min(92vw, 780px);
     display: grid;
     grid-template-rows: auto auto auto auto;
@@ -18,6 +19,7 @@
     align-items: center;
     justify-items: center;
     gap: clamp(6px, 1.2vw, 16px);
+    margin-top: clamp(78px, 12vh, 132px);
 }
 
 .sideOrb {
@@ -59,8 +61,9 @@
 
 .closeButton {
     position: absolute;
-    top: 4px;
-    right: 4px;
+    top: 2px;
+    left: 50%;
+    transform: translateX(-50%);
     width: 36px;
     height: 36px;
     border-radius: 50%;
@@ -75,9 +78,24 @@
     transition: transform 180ms ease, background-color 180ms ease, color 180ms ease;
 }
 
+.floatingCloseButton {
+    display: none;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 97, 44, 0.9);
+    background: rgba(14, 20, 29, 0.86);
+    color: rgba(236, 241, 249, 0.9);
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
 .closeButton:hover,
-.closeButton:focus-visible {
-    transform: scale(1.06);
+.closeButton:focus-visible,
+.floatingCloseButton:hover,
+.floatingCloseButton:focus-visible {
+    transform: translateX(-50%) scale(1.06);
     background: rgba(37, 47, 61, 0.92);
     color: #ffffff;
 }
@@ -202,13 +220,16 @@
         gap: 10px;
     }
 
+    .stageRow {
+        margin-top: clamp(42px, 8vh, 74px);
+    }
+
     .heroFrame {
         width: min(34vh, 52vw);
     }
 
     .closeButton {
-        top: 2px;
-        right: 2px;
+        top: 0;
     }
 
     .nameCard,
@@ -222,6 +243,10 @@
 }
 
 @media (max-width: 720px) {
+    .stageRow {
+        margin-top: 0;
+    }
+
     .stageRow {
         grid-template-columns: 56px 1fr 56px;
     }
@@ -242,10 +267,20 @@
     }
 
     .closeButton {
-        top: -2px;
-        right: -2px;
-        width: 32px;
-        height: 32px;
+        display: none;
+    }
+
+    .floatingCloseButton {
+        position: fixed;
+        top: calc(env(safe-area-inset-top, 0px) + 10px);
+        right: calc(env(safe-area-inset-right, 0px) + 10px);
+        display: inline-flex;
+        z-index: 1200;
+    }
+
+    .floatingCloseButton:hover,
+    .floatingCloseButton:focus-visible {
+        transform: scale(1.06);
     }
 
     .nameCard {
