@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { Alert, Box, Stack, Text } from "@mantine/core";
 import { Users } from "phosphor-react";
 import Modal from "@components/Modal";
@@ -7,10 +7,13 @@ import PageTemplate from "@components/PageTemplate";
 import PersonModalContent from "@pages/People/PersonModalContent";
 import { usePeopleStore } from "@stores/peopleStore";
 import { estimateInitialTargetCount } from "@utils/layout";
+import { resourceIdFromUrl } from "@utils/swapi";
+import { useNavigate, useParams } from "react-router-dom";
 
 /* People list page component. */
 export default function People() {
-    const [selectedPersonIndex, setSelectedPersonIndex] = useState<number | null>(null);
+    const navigate = useNavigate();
+    const { personId } = useParams<{ personId?: string }>();
     const {
         people,
         loading,
@@ -19,17 +22,52 @@ export default function People() {
         hasMore,
         fetchPeople,
     } = usePeopleStore();
-    const selectedPerson = selectedPersonIndex !== null && selectedPersonIndex < people.length
+    const selectedPersonIndex = useMemo(() => {
+        if (!personId) return null;
+
+        return people.findIndex((person) => resourceIdFromUrl(person.url) === personId);
+    }, [people, personId]);
+
+    const selectedPerson = selectedPersonIndex !== null && selectedPersonIndex >= 0 && selectedPersonIndex < people.length
         ? people[selectedPersonIndex]
         : null;
 
+    const closePersonModal = useCallback(() => {
+        navigate("/people");
+    }, [navigate]);
+
+    const openPersonByIndex = useCallback((index: number) => {
+        const targetPerson = people[index];
+        if (!targetPerson) return;
+
+        const targetPersonId = resourceIdFromUrl(targetPerson.url);
+        if (!targetPersonId) return;
+
+        navigate(`/person/${targetPersonId}`);
+    }, [navigate, people]);
+
+    const showPrevPerson = useCallback(() => {
+        if (selectedPersonIndex === null || selectedPersonIndex < 0 || people.length === 0) return;
+        openPersonByIndex((selectedPersonIndex - 1 + people.length) % people.length);
+    }, [openPersonByIndex, people.length, selectedPersonIndex]);
+
+    const showNextPerson = useCallback(() => {
+        if (selectedPersonIndex === null || selectedPersonIndex < 0 || people.length === 0) return;
+        openPersonByIndex((selectedPersonIndex + 1) % people.length);
+    }, [openPersonByIndex, people.length, selectedPersonIndex]);
+
     /* Invoke Store to fetch initial data on first render with estimated tile count. */
     useEffect(() => {
-        
         /* Invoke store directly. */
         fetchPeople({ targetCount: estimateInitialTargetCount() });
-
     }, [fetchPeople]);
+
+    useEffect(() => {
+        if (!personId || loading || loadingMore || !hasMore) return;
+        if (selectedPersonIndex !== -1) return;
+
+        fetchPeople({ nextPage: true });
+    }, [fetchPeople, hasMore, loading, loadingMore, personId, selectedPersonIndex]);
 
     /* Render blocking states before the list. */
     if (loading) return <Text>Loading...</Text>;
@@ -52,9 +90,9 @@ export default function People() {
                     hasMore={hasMore}
                     loadingMore={loadingMore}
                     onItemClick={({ item }) => {
-                        const itemIndex = people.findIndex((person) => person.url === item.url);
-                        if (itemIndex < 0) return;
-                        setSelectedPersonIndex(itemIndex);
+                        const itemId = resourceIdFromUrl(item.url);
+                        if (!itemId) return;
+                        navigate(`/person/${itemId}`);
                     }}
                 />
             </Stack>
@@ -62,30 +100,18 @@ export default function People() {
             <Modal
                 opened={selectedPerson !== null}
                 ariaLabel={selectedPerson ? `${selectedPerson.name} details` : "Person details"}
-                onClose={() => {
-                    setSelectedPersonIndex(null);
-                }}
+                onClose={closePersonModal}
+                onNavigatePrev={showPrevPerson}
+                onNavigateNext={showNextPerson}
             >
                 {selectedPerson && (
                     <PersonModalContent
                         person={selectedPerson}
                         selectedIndex={selectedPersonIndex ?? 0}
                         total={people.length}
-                        onClose={() => {
-                            setSelectedPersonIndex(null);
-                        }}
-                        onPrev={() => {
-                            setSelectedPersonIndex((current) => {
-                                if (current === null || people.length === 0) return current;
-                                return (current - 1 + people.length) % people.length;
-                            });
-                        }}
-                        onNext={() => {
-                            setSelectedPersonIndex((current) => {
-                                if (current === null || people.length === 0) return current;
-                                return (current + 1) % people.length;
-                            });
-                        }}
+                        onClose={closePersonModal}
+                        onPrev={showPrevPerson}
+                        onNext={showNextPerson}
                     />
                 )}
             </Modal>

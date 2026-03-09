@@ -1,4 +1,4 @@
-import { type AnimationEvent, type ReactNode, useEffect, useState } from "react";
+import { type AnimationEvent, type ReactNode, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { Box } from "@mantine/core";
 import styles from "./index.module.css";
@@ -13,11 +13,21 @@ interface ModalProps {
     ariaLabel: string;
     onClose: () => void;
     children: ReactNode;
+    onNavigatePrev?: () => void;
+    onNavigateNext?: () => void;
 }
 
-export default function Modal({ opened, ariaLabel, onClose, children }: ModalProps) {
+export default function Modal({
+    opened,
+    ariaLabel,
+    onClose,
+    children,
+    onNavigatePrev,
+    onNavigateNext,
+}: ModalProps) {
     const [isPresent, setIsPresent] = useState(opened);
     const [backdropDiameter, setBackdropDiameter] = useState<number>(() => getBackdropDiameter());
+    const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
     useEffect(() => {
         if (!opened) return;
@@ -41,9 +51,24 @@ export default function Modal({ opened, ariaLabel, onClose, children }: ModalPro
         if (!opened) return;
 
         const handleKeyDown = (event: KeyboardEvent) => {
-            if (event.key !== "Escape") return;
-            event.preventDefault();
-            onClose();
+            if (event.key === "Escape" || event.key === "ArrowUp") {
+                event.preventDefault();
+                onClose();
+                return;
+            }
+
+            if (event.key === "ArrowLeft") {
+                if (!onNavigatePrev) return;
+                event.preventDefault();
+                onNavigatePrev();
+                return;
+            }
+
+            if (event.key === "ArrowRight") {
+                if (!onNavigateNext) return;
+                event.preventDefault();
+                onNavigateNext();
+            }
         };
 
         window.addEventListener("keydown", handleKeyDown);
@@ -51,9 +76,44 @@ export default function Modal({ opened, ariaLabel, onClose, children }: ModalPro
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         };
-    }, [opened, onClose]);
+    }, [onClose, onNavigateNext, onNavigatePrev, opened]);
 
     if (!isPresent || typeof document === "undefined") return null;
+
+    const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+        const touch = event.touches[0];
+        if (!touch) return;
+
+        touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    };
+
+    const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+        const start = touchStartRef.current;
+        const touch = event.changedTouches[0];
+
+        touchStartRef.current = null;
+
+        if (!start || !touch) return;
+
+        const deltaX = touch.clientX - start.x;
+        const deltaY = touch.clientY - start.y;
+        const absDeltaX = Math.abs(deltaX);
+        const absDeltaY = Math.abs(deltaY);
+
+        if (deltaY <= -72 && absDeltaY > absDeltaX) {
+            onClose();
+            return;
+        }
+
+        if (absDeltaX < 56 || absDeltaX <= absDeltaY) return;
+
+        if (deltaX > 0) {
+            onNavigatePrev?.();
+            return;
+        }
+
+        onNavigateNext?.();
+    };
 
     return createPortal(
         <>
@@ -93,6 +153,8 @@ export default function Modal({ opened, ariaLabel, onClose, children }: ModalPro
                         style={{
                             pointerEvents: opened ? "auto" : "none",
                         }}
+                        onTouchStart={handleTouchStart}
+                        onTouchEnd={handleTouchEnd}
                         onClick={(event) => event.stopPropagation()}
                     >
                         {children}

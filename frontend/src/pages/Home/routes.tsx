@@ -6,6 +6,7 @@ export const homeRoutes = (
     <Route element={<HomeLayout />}>
         <Route index element={<HomePage />} />
         <Route path="people" element={<PeoplePage />} />
+        <Route path="person/:personId" element={<PeoplePage />} />
         <Route path="*" element={<NotFoundPage />} />
     </Route>
 );

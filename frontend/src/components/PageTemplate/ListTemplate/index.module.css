@@ -5,6 +5,7 @@
 .card {
     background-color: #101010;
     transition: background-color 180ms ease;
+    -webkit-tap-highlight-color: transparent;
 }
 
 .avatarFrame {
@@ -82,31 +83,62 @@
     transition: opacity 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-.card:hover {
-    background-color: #151515;
+@media (hover: hover) and (pointer: fine) {
+    .card:hover {
+        background-color: #151515;
+    }
+
+    .card:hover .avatarFrame {
+        --avatar-ring-width: 6;
+        filter: drop-shadow(0 0 10px rgba(255, 183, 0, 0.75));
+    }
+
+    .card:hover .avatarRingBase {
+        stroke: var(--mantine-color-yellow-4);
+        filter: none;
+    }
+
+    .card:hover .avatarRingHighlight {
+        opacity: 0;
+    }
+
+    .card:hover .avatarImage {
+        filter: saturate(1.15);
+        transform: scale(1.06);
+    }
+
+    .card:hover .avatarFrame::after {
+        opacity: 1;
+    }
 }
 
-.card:hover .avatarFrame {
-    --avatar-ring-width: 6;
-    filter: drop-shadow(0 0 10px rgba(255, 183, 0, 0.75));
-}
+@media (hover: none) and (pointer: coarse) {
+    .card:active {
+        background-color: #151515;
+    }
 
-.card:hover .avatarRingBase {
-    stroke: var(--mantine-color-yellow-4);
-    filter: none;
-}
+    .card:active .avatarFrame {
+        --avatar-ring-width: 6;
+        filter: drop-shadow(0 0 10px rgba(255, 183, 0, 0.75));
+    }
 
-.card:hover .avatarRingHighlight {
-    opacity: 0;
-}
+    .card:active .avatarRingBase {
+        stroke: var(--mantine-color-yellow-4);
+        filter: none;
+    }
 
-.card:hover .avatarImage {
-    filter: saturate(1.15);
-    transform: scale(1.06);
-}
+    .card:active .avatarRingHighlight {
+        opacity: 0;
+    }
 
-.card:hover .avatarFrame::after {
-    opacity: 1;
+    .card:active .avatarImage {
+        filter: saturate(1.15);
+        transform: scale(1.06);
+    }
+
+    .card:active .avatarFrame::after {
+        opacity: 1;
+    }
 }
 
 .itemLabel {
