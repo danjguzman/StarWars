@@ -26,6 +26,34 @@
     align-content: center;
 }
 
+.floatingCategoryHeader {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + 6px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1200;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    pointer-events: none;
+}
+
+.floatingCategoryIcon {
+    width: 26px;
+    height: 26px;
+    color: rgba(243, 247, 252, 0.96);
+    filter: drop-shadow(0 0 9px rgba(255, 255, 255, 0.6));
+}
+
+.floatingCategoryLabel {
+    font-family: "VenusRising", sans-serif;
+    font-size: clamp(1.16rem, 2.3vw, 1.9rem);
+    letter-spacing: 0.08em;
+    line-height: 1;
+    color: rgba(246, 249, 253, 0.98);
+    text-shadow: 0 0 12px rgba(255, 255, 255, 0.75), 0 0 24px rgba(255, 255, 255, 0.38);
+}
+
 .stageRow {
     width: 100%;
     display: grid;
@@ -254,11 +282,12 @@
 
 .bottomOrbit {
     width: min(96%, 700px);
+    margin-top: 18px;
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
     gap: 10px;
     align-items: start;
-    transition: width 240ms ease, gap 240ms ease, grid-template-columns 240ms ease;
+    transition: width 240ms ease, gap 240ms ease, grid-template-columns 240ms ease, margin-top 240ms ease;
 }
 
 .orbitNode {
@@ -458,6 +487,20 @@
     .nameCard {
         width: 100%;
         max-width: 100%;
+    }
+
+    .floatingCategoryHeader {
+        top: calc(env(safe-area-inset-top, 0px) + 4px);
+        gap: 8px;
+    }
+
+    .floatingCategoryIcon {
+        width: 22px;
+        height: 22px;
+    }
+
+    .floatingCategoryLabel {
+        font-size: clamp(0.94rem, 3.2vw, 1.2rem);
     }
 
     .traitsCard {

@@ -8,6 +8,7 @@ import {
     Planet as PlanetIcon,
     TrainRegional as TrainRegionalIcon,
     UserCircle,
+    Users as UsersIcon,
     X,
 } from "phosphor-react";
 import { FilmReel as FilmReelIcon } from "@phosphor-icons/react";
@@ -31,6 +32,34 @@ function formatValue(value: string) {
     return value;
 }
 
+function categoryLabelFromUrl(url: string) {
+    const match = url.match(/\/api\/([^/]+)\//);
+    const resource = match?.[1]?.toLowerCase();
+
+    if (resource === "people") return "People";
+    if (resource === "species") return "Species";
+    if (resource === "starships") return "Starships";
+    if (resource === "vehicles") return "Vehicles";
+    if (resource === "planets") return "Planets";
+    if (resource === "films") return "Films";
+
+    return "People";
+}
+
+function categoryKeyFromUrl(url: string) {
+    const match = url.match(/\/api\/([^/]+)\//);
+    const resource = match?.[1]?.toLowerCase();
+
+    if (resource === "people") return "people";
+    if (resource === "species") return "species";
+    if (resource === "starships") return "starships";
+    if (resource === "vehicles") return "vehicles";
+    if (resource === "planets") return "planets";
+    if (resource === "films") return "films";
+
+    return "people";
+}
+
 export default function PersonModalContent({
     person,
     selectedIndex,
@@ -47,6 +76,24 @@ export default function PersonModalContent({
     const starshipsCount = person.starships.length;
     const vehiclesCount = person.vehicles.length;
     const filmsCount = person.films.length;
+    const categoryLabel = categoryLabelFromUrl(person.url);
+    const categoryKey = categoryKeyFromUrl(person.url);
+
+    const categoryIcon = (() => {
+        const commonProps = {
+            className: styles.floatingCategoryIcon,
+            weight: "duotone" as const,
+            "aria-hidden": true,
+        };
+
+        if (categoryKey === "films") return <FilmReelIcon {...commonProps} />;
+        if (categoryKey === "species") return <AlienIcon {...commonProps} />;
+        if (categoryKey === "starships") return <FlyingSaucerIcon {...commonProps} />;
+        if (categoryKey === "vehicles") return <TrainRegionalIcon {...commonProps} />;
+        if (categoryKey === "planets") return <PlanetIcon {...commonProps} />;
+
+        return <UsersIcon {...commonProps} />;
+    })();
 
     const floatingMobileClose = typeof document === "undefined"
         ? null
@@ -62,8 +109,19 @@ export default function PersonModalContent({
             document.body
         );
 
+    const floatingCategoryHeader = typeof document === "undefined"
+        ? null
+        : createPortal(
+            <Box className={styles.floatingCategoryHeader} aria-hidden="true">
+                {categoryIcon}
+                <Text component="span" className={styles.floatingCategoryLabel}>{categoryLabel}</Text>
+            </Box>,
+            document.body
+        );
+
     return (
         <>
+            {floatingCategoryHeader}
             {floatingMobileClose}
 
             <Box className={`${styles.layout}${useCompactHeightLayout ? ` ${styles.layoutCompact}` : ""}`}>
