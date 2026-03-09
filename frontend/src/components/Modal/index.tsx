@@ -53,6 +53,48 @@ export default function Modal({
         };
     }, [onClose, onNavigateNext, onNavigatePrev, opened]);
 
+    useEffect(() => {
+        if (!opened) return;
+
+        const lockedScrollY = window.scrollY;
+        const scrollbarGap = window.innerWidth - document.documentElement.clientWidth;
+
+        const previousBodyPosition = document.body.style.position;
+        const previousBodyTop = document.body.style.top;
+        const previousBodyLeft = document.body.style.left;
+        const previousBodyRight = document.body.style.right;
+        const previousBodyWidth = document.body.style.width;
+        const previousBodyPaddingRight = document.body.style.paddingRight;
+        const previousBodyOverflow = document.body.style.overflow;
+        const previousHtmlOverflow = document.documentElement.style.overflow;
+        const previousHtmlOverscrollBehavior = document.documentElement.style.overscrollBehavior;
+
+        document.body.style.position = "fixed";
+        document.body.style.top = `-${lockedScrollY}px`;
+        document.body.style.left = "0";
+        document.body.style.right = "0";
+        document.body.style.width = "100%";
+        if (scrollbarGap > 0) {
+            document.body.style.paddingRight = `${scrollbarGap}px`;
+        }
+        document.body.style.overflow = "hidden";
+        document.documentElement.style.overflow = "hidden";
+        document.documentElement.style.overscrollBehavior = "none";
+
+        return () => {
+            document.body.style.position = previousBodyPosition;
+            document.body.style.top = previousBodyTop;
+            document.body.style.left = previousBodyLeft;
+            document.body.style.right = previousBodyRight;
+            document.body.style.width = previousBodyWidth;
+            document.body.style.paddingRight = previousBodyPaddingRight;
+            document.body.style.overflow = previousBodyOverflow;
+            document.documentElement.style.overflow = previousHtmlOverflow;
+            document.documentElement.style.overscrollBehavior = previousHtmlOverscrollBehavior;
+            window.scrollTo(0, lockedScrollY);
+        };
+    }, [opened]);
+
     if (!opened || typeof document === "undefined") return null;
 
     const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {

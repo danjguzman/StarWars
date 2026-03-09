@@ -1,25 +1,13 @@
 import { apiUrl, getJson, isSwapiPagedResponse } from "@services/api";
 import { setCachedValue } from "@utils/clientCache";
+import { allResourceCacheKey, RESOURCE_COLLECTIONS } from "@utils/resourceResolve";
 
 const PRELOAD_CACHE_TTL_MS = 5 * 60 * 1000;
 
-const PRELOAD_ENDPOINTS = [
-    "films",
-    "people",
-    "planets",
-    "species",
-    "vehicles",
-    "starships",
-] as const;
-
-type PreloadEndpoint = (typeof PRELOAD_ENDPOINTS)[number];
+type PreloadEndpoint = (typeof RESOURCE_COLLECTIONS)[number];
 type SwapiEntity = Record<string, unknown>;
 
 let preloadPromise: Promise<void> | null = null;
-
-function allCacheKey(endpoint: PreloadEndpoint) {
-    return `${endpoint}:all`;
-}
 
 async function collectAllEntities(endpoint: PreloadEndpoint): Promise<SwapiEntity[]> {
     const initialData = await getJson<unknown>(apiUrl(`/${endpoint}`));
@@ -51,9 +39,9 @@ async function collectAllEntities(endpoint: PreloadEndpoint): Promise<SwapiEntit
 
 async function preloadSwapiDataInternal(): Promise<void> {
     await Promise.all(
-        PRELOAD_ENDPOINTS.map(async (endpoint) => {
+        RESOURCE_COLLECTIONS.map(async (endpoint) => {
             const entities = await collectAllEntities(endpoint);
-            setCachedValue(allCacheKey(endpoint), entities, PRELOAD_CACHE_TTL_MS);
+            setCachedValue(allResourceCacheKey(endpoint), entities, PRELOAD_CACHE_TTL_MS);
         })
     );
 }

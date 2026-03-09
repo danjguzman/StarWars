@@ -1,5 +1,7 @@
+import { useEffect, useMemo, useState } from "react";
 import { Box, Flex, Group, Text } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
+import RelatedItems from "@components/Modals/RelatedItems";
 import {
     Alien as AlienIcon,
     CaretLeft,
@@ -11,11 +13,19 @@ import {
     Users as UsersIcon,
     X,
 } from "phosphor-react";
-import { FilmReel as FilmReelIcon } from "@phosphor-icons/react";
+import { FilmReelIcon } from "@phosphor-icons/react";
 import { createPortal } from "react-dom";
+import { getJson } from "@services/api";
 import { type Person } from "@types";
 import { ASSET_IMAGE_BASE_PATH } from "@utils/consts";
-import { resourceIdFromUrl } from "@utils/swapi";
+import { formatDisplayValue } from "@utils/display";
+import {
+    type NamedResource,
+    getCachedResolvedResourceNames,
+    resourceDisplayName,
+    resolveResourceItems,
+} from "@utils/resourceResolve";
+import { resourceCategoryFromUrl, resourceIdFromUrl } from "@utils/swapi";
 import styles from "./personModalContent.module.css";
 
 interface PersonModalContentProps {
@@ -27,39 +37,6 @@ interface PersonModalContentProps {
     onClose: () => void;
 }
 
-function formatValue(value: string) {
-    if (!value || value === "n/a" || value === "unknown") return "Unknown";
-    return value;
-}
-
-function categoryLabelFromUrl(url: string) {
-    const match = url.match(/\/api\/([^/]+)\//);
-    const resource = match?.[1]?.toLowerCase();
-
-    if (resource === "people") return "People";
-    if (resource === "species") return "Species";
-    if (resource === "starships") return "Starships";
-    if (resource === "vehicles") return "Vehicles";
-    if (resource === "planets") return "Planets";
-    if (resource === "films") return "Films";
-
-    return "People";
-}
-
-function categoryKeyFromUrl(url: string) {
-    const match = url.match(/\/api\/([^/]+)\//);
-    const resource = match?.[1]?.toLowerCase();
-
-    if (resource === "people") return "people";
-    if (resource === "species") return "species";
-    if (resource === "starships") return "starships";
-    if (resource === "vehicles") return "vehicles";
-    if (resource === "planets") return "planets";
-    if (resource === "films") return "films";
-
-    return "people";
-}
-
 export default function PersonModalContent({
     person,
     selectedIndex,
@@ -69,6 +46,7 @@ export default function PersonModalContent({
     onClose,
 }: PersonModalContentProps) {
     const useCompactHeightLayout = useMediaQuery("(max-height: 939px) and (min-width: 721px)");
+    const [fetchedResourceNames, setFetchedResourceNames] = useState<Record<string, string>>({});
     const personId = resourceIdFromUrl(person.url);
     const portraitSrc = personId ? `${ASSET_IMAGE_BASE_PATH}/people/${personId}.jpg` : null;
     const homeworldCount = person.homeworld ? 1 : 0;
@@ -76,8 +54,94 @@ export default function PersonModalContent({
     const starshipsCount = person.starships.length;
     const vehiclesCount = person.vehicles.length;
     const filmsCount = person.films.length;
-    const categoryLabel = categoryLabelFromUrl(person.url);
-    const categoryKey = categoryKeyFromUrl(person.url);
+    const categoryLabel = resourceCategoryFromUrl(person.url, true);
+    const categoryKey = resourceCategoryFromUrl(person.url);
+
+    const relatedResourceUrls = useMemo(() => {
+        return Array.from(new Set([
+            ...(person.homeworld ? [person.homeworld] : []),
+            ...person.species,
+            ...person.starships,
+            ...person.vehicles,
+            ...person.films,
+        ]));
+    }, [person.films, person.homeworld, person.species, person.starships, person.vehicles]);
+
+    const cachedResourceNames = useMemo(() => {
+        return getCachedResolvedResourceNames(relatedResourceUrls);
+    }, [relatedResourceUrls]);
+
+    const resolvedResourceNames = useMemo(
+        () => ({
+            ...cachedResourceNames,
+            ...fetchedResourceNames,
+        }),
+        [cachedResourceNames, fetchedResourceNames]
+    );
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const unresolvedUrls = relatedResourceUrls.filter((url) => !cachedResourceNames[url]);
+        if (unresolvedUrls.length === 0) return () => {
+            isMounted = false;
+        };
+
+        Promise.all(
+            unresolvedUrls.map(async (url) => {
+                try {
+                    const resource = await getJson<NamedResource>(url);
+                    const displayName = resourceDisplayName(resource);
+
+                    return displayName ? [url, displayName] as const : null;
+                } catch {
+                    return null;
+                }
+            })
+        ).then((entries) => {
+            if (!isMounted) return;
+
+            const fetchedNames = entries.reduce<Record<string, string>>((accumulator, entry) => {
+                if (!entry) return accumulator;
+
+                const [url, displayName] = entry;
+                accumulator[url] = displayName;
+                return accumulator;
+            }, {});
+
+            if (Object.keys(fetchedNames).length === 0) return;
+
+            setFetchedResourceNames((current) => ({
+                ...current,
+                ...fetchedNames,
+            }));
+        });
+
+        return () => {
+            isMounted = false;
+        };
+    }, [cachedResourceNames, relatedResourceUrls]);
+
+    const homeworldResourceItems = useMemo(
+        () => resolveResourceItems(person.homeworld ? [person.homeworld] : [], resolvedResourceNames),
+        [person.homeworld, resolvedResourceNames]
+    );
+    const speciesResourceItems = useMemo(
+        () => resolveResourceItems(person.species, resolvedResourceNames),
+        [person.species, resolvedResourceNames]
+    );
+    const starshipResourceItems = useMemo(
+        () => resolveResourceItems(person.starships, resolvedResourceNames),
+        [person.starships, resolvedResourceNames]
+    );
+    const vehicleResourceItems = useMemo(
+        () => resolveResourceItems(person.vehicles, resolvedResourceNames),
+        [person.vehicles, resolvedResourceNames]
+    );
+    const filmResourceItems = useMemo(
+        () => resolveResourceItems(person.films, resolvedResourceNames),
+        [person.films, resolvedResourceNames]
+    );
 
     const categoryIcon = (() => {
         const commonProps = {
@@ -179,31 +243,31 @@ export default function PersonModalContent({
                                 <dl className={styles.traitsGrid}>
                                     <div>
                                         <dt>Height</dt>
-                                        <dd>{formatValue(person.height)}</dd>
+                                        <dd>{formatDisplayValue(person.height)}</dd>
                                     </div>
                                     <div>
                                         <dt>Mass</dt>
-                                        <dd>{formatValue(person.mass)}</dd>
+                                        <dd>{formatDisplayValue(person.mass)}</dd>
                                     </div>
                                     <div>
                                         <dt>Hair</dt>
-                                        <dd>{formatValue(person.hair_color)}</dd>
+                                        <dd>{formatDisplayValue(person.hair_color)}</dd>
                                     </div>
                                     <div>
                                         <dt>Eyes</dt>
-                                        <dd>{formatValue(person.eye_color)}</dd>
+                                        <dd>{formatDisplayValue(person.eye_color)}</dd>
                                     </div>
                                     <div>
                                         <dt>Skin</dt>
-                                        <dd>{formatValue(person.skin_color)}</dd>
+                                        <dd>{formatDisplayValue(person.skin_color)}</dd>
                                     </div>
                                     <div>
                                         <dt>Gender</dt>
-                                        <dd>{formatValue(person.gender)}</dd>
+                                        <dd>{formatDisplayValue(person.gender)}</dd>
                                     </div>
                                     <div>
                                         <dt>Birth Year</dt>
-                                        <dd>{formatValue(person.birth_year)}</dd>
+                                        <dd>{formatDisplayValue(person.birth_year)}</dd>
                                     </div>
                                     <div>
                                         <dt>Record</dt>
@@ -251,31 +315,31 @@ export default function PersonModalContent({
                             <dl className={styles.traitsGrid}>
                                 <div>
                                     <dt>Height</dt>
-                                    <dd>{formatValue(person.height)}</dd>
+                                    <dd>{formatDisplayValue(person.height)}</dd>
                                 </div>
                                 <div>
                                     <dt>Mass</dt>
-                                    <dd>{formatValue(person.mass)}</dd>
+                                    <dd>{formatDisplayValue(person.mass)}</dd>
                                 </div>
                                 <div>
                                     <dt>Hair</dt>
-                                    <dd>{formatValue(person.hair_color)}</dd>
+                                    <dd>{formatDisplayValue(person.hair_color)}</dd>
                                 </div>
                                 <div>
                                     <dt>Eyes</dt>
-                                    <dd>{formatValue(person.eye_color)}</dd>
+                                    <dd>{formatDisplayValue(person.eye_color)}</dd>
                                 </div>
                                 <div>
                                     <dt>Skin</dt>
-                                    <dd>{formatValue(person.skin_color)}</dd>
+                                    <dd>{formatDisplayValue(person.skin_color)}</dd>
                                 </div>
                                 <div>
                                     <dt>Gender</dt>
-                                    <dd>{formatValue(person.gender)}</dd>
+                                    <dd>{formatDisplayValue(person.gender)}</dd>
                                 </div>
                                 <div>
                                     <dt>Birth Year</dt>
-                                    <dd>{formatValue(person.birth_year)}</dd>
+                                    <dd>{formatDisplayValue(person.birth_year)}</dd>
                                 </div>
                                 <div>
                                     <dt>Record</dt>
@@ -287,41 +351,36 @@ export default function PersonModalContent({
                 )}
 
                 <Box className={styles.bottomOrbit}>
-                    <Box className={`${styles.orbitNode} ${homeworldCount === 0 ? styles.orbitNodeEmpty : ""}`}>
-                        <span className={styles.orbitBubble}>
-                            <PlanetIcon className={styles.orbitIcon} weight="duotone" aria-hidden="true" />
-                            <span className={styles.orbitBadge}>{homeworldCount}</span>
-                        </span>
-                        <small>Homeworld</small>
-                    </Box>
-                    <Box className={`${styles.orbitNode} ${speciesCount === 0 ? styles.orbitNodeEmpty : ""}`}>
-                        <span className={styles.orbitBubble}>
-                            <AlienIcon className={styles.orbitIcon} weight="duotone" aria-hidden="true" />
-                            <span className={styles.orbitBadge}>{speciesCount}</span>
-                        </span>
-                        <small>Species</small>
-                    </Box>
-                    <Box className={`${styles.orbitNode} ${starshipsCount === 0 ? styles.orbitNodeEmpty : ""}`}>
-                        <span className={styles.orbitBubble}>
-                            <FlyingSaucerIcon className={styles.orbitIcon} weight="duotone" aria-hidden="true" />
-                            <span className={styles.orbitBadge}>{starshipsCount}</span>
-                        </span>
-                        <small>Starships</small>
-                    </Box>
-                    <Box className={`${styles.orbitNode} ${vehiclesCount === 0 ? styles.orbitNodeEmpty : ""}`}>
-                        <span className={styles.orbitBubble}>
-                            <TrainRegionalIcon className={styles.orbitIcon} weight="duotone" aria-hidden="true" />
-                            <span className={styles.orbitBadge}>{vehiclesCount}</span>
-                        </span>
-                        <small>Vehicles</small>
-                    </Box>
-                    <Box className={`${styles.orbitNode} ${filmsCount === 0 ? styles.orbitNodeEmpty : ""}`}>
-                        <span className={styles.orbitBubble}>
-                            <FilmReelIcon className={styles.orbitIcon} weight="duotone" aria-hidden="true" />
-                            <span className={styles.orbitBadge}>{filmsCount}</span>
-                        </span>
-                        <small>Films</small>
-                    </Box>
+                    <RelatedItems
+                        label="Homeworld"
+                        count={homeworldCount}
+                        items={homeworldResourceItems}
+                        icon={<PlanetIcon weight="duotone" aria-hidden="true" />}
+                    />
+                    <RelatedItems
+                        label="Species"
+                        count={speciesCount}
+                        items={speciesResourceItems}
+                        icon={<AlienIcon weight="duotone" aria-hidden="true" />}
+                    />
+                    <RelatedItems
+                        label="Starships"
+                        count={starshipsCount}
+                        items={starshipResourceItems}
+                        icon={<FlyingSaucerIcon weight="duotone" aria-hidden="true" />}
+                    />
+                    <RelatedItems
+                        label="Vehicles"
+                        count={vehiclesCount}
+                        items={vehicleResourceItems}
+                        icon={<TrainRegionalIcon weight="duotone" aria-hidden="true" />}
+                    />
+                    <RelatedItems
+                        label="Films"
+                        count={filmsCount}
+                        items={filmResourceItems}
+                        icon={<FilmReelIcon weight="duotone" aria-hidden="true" />}
+                    />
                 </Box>
             </Box>
         </>

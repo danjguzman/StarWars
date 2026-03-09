@@ -9,7 +9,7 @@ import { type Person } from "@types";
 import { usePeopleStore } from "@stores/peopleStore";
 import { getCachedValue } from "@utils/clientCache";
 import { estimateInitialTargetCount } from "@utils/layout";
-import { resourceIdFromUrl } from "@utils/swapi";
+import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
 import { useNavigate, useParams } from "react-router-dom";
 
 /* People list page component. */
@@ -49,10 +49,10 @@ export default function People() {
         const targetPerson = modalPeople[index];
         if (!targetPerson) return;
 
-        const targetPersonId = resourceIdFromUrl(targetPerson.url);
-        if (!targetPersonId) return;
+        const targetRoutePath = resourceRoutePathFromUrl(targetPerson.url);
+        if (!targetRoutePath) return;
 
-        navigate(`/person/${targetPersonId}`);
+        navigate(targetRoutePath);
     }, [modalPeople, navigate]);
 
     const showPrevPerson = useCallback(() => {
@@ -99,9 +99,9 @@ export default function People() {
                     hasMore={hasMore}
                     loadingMore={loadingMore}
                     onItemClick={({ item }) => {
-                        const itemId = resourceIdFromUrl(item.url);
-                        if (!itemId) return;
-                        navigate(`/person/${itemId}`);
+                        const routePath = resourceRoutePathFromUrl(item.url);
+                        if (!routePath) return;
+                        navigate(routePath);
                     }}
                 />
             </Stack>
