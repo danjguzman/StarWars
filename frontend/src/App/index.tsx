@@ -1,10 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Center, Stack, Text } from "@mantine/core";
-import { CircleNotch } from "phosphor-react";
 import { BrowserRouter, Routes } from "react-router-dom";
 import { homeRoutes } from "@pages/Home/routes";
 import { preloadSwapiData } from "@services/preloadService";
 import { waitForMinimumLoading } from "@utils/loading";
+import PreloadState from "./PreloadState";
 import styles from "./index.module.css";
 
 const APP_PRELOAD_LOADING_MS = 3000;
@@ -45,17 +44,7 @@ export default function App() {
     }, []);
 
     if (!isPreloadComplete) {
-        return (
-            <Center className={styles.loaderShell}>
-                <Stack gap="xs" align="center" className={isLoaderExiting ? styles.loaderExit : undefined}>
-                    <span className={styles.spinner} aria-hidden="true">
-                        <CircleNotch size={40} weight="duotone" color="currentColor" />
-                    </span>
-                    <Text className={styles.label}>Loading Galactic Archives</Text>
-                    {preloadError && <Text c="red.4">{preloadError}</Text>}
-                </Stack>
-            </Center>
-        );
+        return <PreloadState error={preloadError} exiting={isLoaderExiting} />;
     }
 
     return (
