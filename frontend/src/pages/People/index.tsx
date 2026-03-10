@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo } from "react";
-import { Alert, Box, Stack, Text } from "@mantine/core";
+import { Alert, Box, Stack } from "@mantine/core";
 import { Users } from "phosphor-react";
 import Modal from "@components/Modal";
 import ListTemplate from "@components/PageTemplate/ListTemplate";
@@ -25,12 +25,19 @@ export default function People() {
         hasMore,
         fetchPeople,
     } = usePeopleStore();
+    const initialTargetCount = useMemo(() => estimateInitialTargetCount(), []);
 
     const modalPeople = useMemo(() => {
         const allPeople = getCachedValue<Person[]>("people:all");
         if (allPeople && allPeople.length > 0) return allPeople;
         return people;
     }, [people]);
+
+    const visiblePeople = useMemo(() => {
+        if (people.length > 0) return people;
+        if (modalPeople.length === 0) return [];
+        return modalPeople.slice(0, initialTargetCount);
+    }, [initialTargetCount, modalPeople, people]);
 
     const selectedPersonIndex = useMemo(() => {
         if (!personId) return null;
@@ -69,8 +76,8 @@ export default function People() {
     /* Invoke Store to fetch initial data on first render with estimated tile count. */
     useEffect(() => {
         /* Invoke store directly. */
-        fetchPeople({ targetCount: estimateInitialTargetCount() });
-    }, [fetchPeople]);
+        fetchPeople({ targetCount: initialTargetCount });
+    }, [fetchPeople, initialTargetCount]);
 
     useEffect(() => {
         if (!personId || loading || loadingMore || !hasMore) return;
@@ -79,8 +86,6 @@ export default function People() {
         fetchPeople({ nextPage: true });
     }, [fetchPeople, hasMore, loading, loadingMore, personId, selectedPersonIndex]);
 
-    /* Render blocking states before the list. */
-    if (loading) return <Text>Loading...</Text>;
     if (error) return <Alert color="red">{error}</Alert>;
 
     return (
@@ -94,7 +99,7 @@ export default function People() {
         >
             <Stack gap="md">
                 <ListTemplate
-                    items={people}
+                    items={visiblePeople}
                     entityKey="people"
                     onLoadMore={() => fetchPeople({ nextPage: true })}
                     hasMore={hasMore}
