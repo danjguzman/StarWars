@@ -22,11 +22,9 @@ Monorepo contains:
 - /backend
 - /frontend
 
-People images live at:
+Images live at:
 
-- /backend/assets/img/people
-
-Backend should expose these images to the frontend via a static route.
+- /frontend/public/assets/img
 
 ---
 
@@ -61,3 +59,14 @@ Backend should expose these images to the frontend via a static route.
 - Storybook stories for core components (multiple states).
 - Jest + React Testing Library tests for non-trivial logic and store behavior.
 - README documents key decisions and tradeoffs.
+
+---
+
+## Creation Rules
+
+- When creating a new page, component, store, or service, also create the related test file(s) in the same task when the logic is non-trivial.
+- New prop-driven components should include tests for meaningful prop behavior (conditional rendering, fallback values, callbacks, disabled states, loading/error/empty states, and variants).
+- New services should include tests for non-trivial request/response logic, transformation logic, and error handling.
+- New pages should include tests when they contain meaningful state, routing behavior, conditional UI, or integration with stores.
+- Do not add trivial tests just to increase coverage. Prioritize behavior that can break.
+- Prefer colocated tests when the repo pattern allows it.

@@ -2,9 +2,8 @@ import {
     apiUrl,
     getJson,
     isSwapiPagedResponse,
-    type SwapiPagedResponse,
 } from "@services/api";
-import { type Person } from "@types";
+import { type Person, type SwapiPagedResponse } from "@types";
 import { getCachedPage, getCachedValue, setCachedValue } from "@utils/clientCache";
 import {
     PEOPLE_ALL_CACHE_KEY,

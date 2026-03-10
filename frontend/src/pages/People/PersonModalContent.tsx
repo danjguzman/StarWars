@@ -8,11 +8,8 @@ import {
     Users as UsersIcon,
 } from "phosphor-react";
 import { FilmReelIcon } from "@phosphor-icons/react";
-import ContentTemplate, {
-    type ContentTemplateRelatedGroup,
-    type ContentTemplateTrait,
-} from "@components/Modal/ContentTemplate";
-import { type Person } from "@types";
+import ContentTemplate from "@components/Modal/ContentTemplate";
+import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Person } from "@types";
 import { ASSET_IMAGE_BASE_PATH } from "@utils/consts";
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";

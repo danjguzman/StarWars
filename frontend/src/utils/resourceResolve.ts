@@ -1,3 +1,4 @@
+import { type NamedResource } from "@types";
 import { getCachedValue } from "@utils/clientCache";
 import { resourceIdFromUrl, resourceKeyFromUrl } from "@utils/swapi";
 
@@ -8,19 +9,6 @@ import { resourceIdFromUrl, resourceKeyFromUrl } from "@utils/swapi";
  */
 
 type ResourceCollection = (typeof RESOURCE_COLLECTIONS)[number];
-
-/* Describe a cached SWAPI resource that may have either a `name` or a `title`. */
-export interface NamedResource {
-    url: string;
-    name?: string;
-    title?: string;
-}
-
-/* Describe one resolved item that the UI can render in a related-items list. */
-export interface ResolvedResourceItem {
-    url: string;
-    name: string;
-}
 
 /* List the resource collections that this resolver knows how to read from cache. */
 export const RESOURCE_COLLECTIONS = [

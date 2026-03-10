@@ -1,7 +1,7 @@
 import { type ReactNode } from "react";
 import { Box, Menu, Text } from "@mantine/core";
 import { useNavigate } from "react-router-dom";
-import { type ResolvedResourceItem } from "@utils/resourceResolve";
+import { type ResolvedResourceItem } from "@types";
 import { resourceRoutePathFromUrl } from "@utils/swapi";
 import styles from "./index.module.css";
 

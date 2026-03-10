@@ -1,0 +1,92 @@
+import type { ReactNode } from 'react';
+import { MantineProvider } from '@mantine/core';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import ListTemplate from '@components/PageTemplate/ListTemplate';
+import { useInfiniteScroll } from '@utils/useInfiniteScroll';
+
+jest.mock('@utils/useInfiniteScroll', () => ({
+    useInfiniteScroll: jest.fn(() => ({ current: null })),
+}));
+
+jest.mock('@components/InfiniteScrollSentinel', () => ({
+    __esModule: true,
+    default: ({ onDoneClick, doneAriaLabel, showDone }: { onDoneClick?: () => void; doneAriaLabel?: string; showDone: boolean }) => {
+        if (!showDone) return <div data-testid="infinite-scroll-sentinel" />;
+        return <button aria-label={doneAriaLabel} onClick={onDoneClick}>Done</button>;
+    },
+}));
+
+const mockedUseInfiniteScroll = jest.mocked(useInfiniteScroll);
+
+function renderWithMantine(ui: ReactNode) {
+    return render(<MantineProvider>{ui}</MantineProvider>);
+}
+
+describe('ListTemplate', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockedUseInfiniteScroll.mockReturnValue({ current: null });
+        window.scrollTo = jest.fn();
+    });
+
+    test('falls back to Unknown labels and supports click and keyboard selection', async () => {
+        const user = userEvent.setup();
+        const onItemClick = jest.fn();
+        const items = [
+            { url: 'https://swapi.info/api/people/1', name: 'Luke Skywalker' },
+            { url: 'https://swapi.info/api/people/2', name: '' },
+        ];
+
+        renderWithMantine(
+            <ListTemplate
+                items={items}
+                entityKey="people"
+                onLoadMore={jest.fn()}
+                hasMore
+                loadingMore={false}
+                onItemClick={onItemClick}
+            />
+        );
+
+        await user.click(screen.getByRole('button', { name: 'Open Luke Skywalker' }));
+        screen.getByRole('button', { name: 'Open Unknown' }).focus();
+        await user.keyboard('{Enter}');
+
+        expect(screen.getByText('Unknown')).toBeInTheDocument();
+        expect(onItemClick).toHaveBeenNthCalledWith(1, {
+            item: items[0],
+            label: 'Luke Skywalker',
+        });
+        expect(onItemClick).toHaveBeenNthCalledWith(2, {
+            item: items[1],
+            label: 'Unknown',
+        });
+    });
+
+    test('replaces broken portraits with the fallback state and wires the done button to scroll to top', async () => {
+        const user = userEvent.setup();
+        const items = [{ url: 'https://swapi.info/api/people/1', name: 'Luke Skywalker' }];
+
+        renderWithMantine(
+            <ListTemplate
+                items={items}
+                entityKey="people"
+                onLoadMore={jest.fn()}
+                hasMore={false}
+                loadingMore={false}
+            />
+        );
+
+        const portrait = screen.getByAltText('Luke Skywalker portrait');
+        expect(portrait).toBeInTheDocument();
+        fireEvent.error(portrait);
+
+        await waitFor(() => {
+            expect(screen.queryByAltText('Luke Skywalker portrait')).not.toBeInTheDocument();
+        });
+
+        await user.click(screen.getByRole('button', { name: 'Scroll to top' }));
+        expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+    });
+});

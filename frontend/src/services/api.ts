@@ -1,3 +1,5 @@
+import { type SwapiPagedResponse } from "@types";
+
 /*
  * This file holds the basic SWAPI API helpers used across the app.
  * It defines the paged response shape, checks response data shape,
@@ -5,13 +7,6 @@
  */
 
 const API_BASE = "https://swapi.info/api";
-
-export interface SwapiPagedResponse<T> {
-    count: number;
-    next: string | null;
-    previous: string | null;
-    results: T[];
-}
 
 /* Check whether unknown data looks like a paged SWAPI response. */
 export function isSwapiPagedResponse<T>(data: unknown): data is SwapiPagedResponse<T> {

@@ -1,10 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import { getJson } from "@services/api";
 import {
-    type NamedResource,
     getCachedResolvedResourceNames,
     resourceDisplayName,
 } from "@utils/resourceResolve";
+import { type NamedResource } from "@types";
 
 /*
  * This file holds a reusable hook for turning resource URLs into display names.

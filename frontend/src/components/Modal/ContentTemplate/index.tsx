@@ -4,20 +4,8 @@ import { useMediaQuery } from "@mantine/hooks";
 import { CaretLeft, CaretRight, UserCircle } from "phosphor-react";
 import { createPortal } from "react-dom";
 import RelatedItems from "@components/Modal/RelatedItems";
-import { type ResolvedResourceItem } from "@utils/resourceResolve";
+import { type ContentTemplateRelatedGroup, type ContentTemplateTrait } from "@types";
 import styles from "./index.module.css";
-
-export interface ContentTemplateTrait {
-    label: string;
-    value: ReactNode;
-}
-
-export interface ContentTemplateRelatedGroup {
-    label: string;
-    count: number;
-    items: ResolvedResourceItem[];
-    icon: ReactNode;
-}
 
 interface ContentTemplateProps {
     title: string;
