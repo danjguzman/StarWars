@@ -11,6 +11,7 @@ import { getCachedValue } from "@utils/clientCache";
 import { estimateInitialTargetCount } from "@utils/layout";
 import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
 import { useNavigate, useParams } from "react-router-dom";
+import styles from "./index.module.css";
 
 /* People list page component. */
 export default function People() {
@@ -86,7 +87,7 @@ export default function People() {
         <PageTemplate
             title="People"
             headerIcon={
-                <Box className="app-page-header-icon">
+                <Box className={styles.pageHeaderIcon}>
                     <Users size={30} weight="duotone" color="var(--mantine-color-yellow-4)" />
                 </Box>
             }
@@ -118,7 +119,6 @@ export default function People() {
                         person={selectedPerson}
                         selectedIndex={selectedPersonIndex ?? 0}
                         total={modalPeople.length}
-                        onClose={closePersonModal}
                         onPrev={showPrevPerson}
                         onNext={showNextPerson}
                     />

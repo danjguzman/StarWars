@@ -1,13 +1,9 @@
 import { create } from "zustand";
 import { type Person } from "@types";
-import { fetchPeoplePage } from "@services/peopleService";
-import { getCachedPage } from "@utils/clientCache";
+import { loadPeople } from "@services/peopleService";
+import { MIN_LOADING_MS } from "@utils/consts";
 import { waitForMinimumLoading } from "@utils/loading";
-
-/* Cache Constants */
-const PEOPLE_CACHE_NAME = "people";
-const PEOPLE_CACHE_TTL_MS = 5 * (60 * 1000);
-const MIN_LOADING_MS = 1000;
+import { collectPagedResourcesUntilTarget, filterUniqueResourcesByUrl, shouldSkipFetch } from "@utils/pagedResource";
 
 interface PeopleState {
     people: Person[];
@@ -34,11 +30,14 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
         const state = get();
 
         /* Skip requests when current state cannot fetch. */
-        if (nextPage) {
-            if (state.loading || state.loadingMore || !state.hasMore) return;
-        } else {
-            if (state.loading || (state.currentPage > 0 && state.people.length > 0)) return;
-        }
+        if (shouldSkipFetch({
+            nextPage,
+            loading: state.loading,
+            loadingMore: state.loadingMore,
+            hasMore: state.hasMore,
+            currentPage: state.currentPage,
+            itemCount: state.people.length,
+        })) return;
 
         /* Run fetch flow and update store state. */
         try {
@@ -54,20 +53,14 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
 
                 /* Resolve the next page from cache first, then API if needed. */
                 const pageToLoad = state.currentPage + 1;
-                const pageData = await getCachedPage(
-                    PEOPLE_CACHE_NAME,
-                    pageToLoad,
-                    fetchPeoplePage,
-                    PEOPLE_CACHE_TTL_MS
-                );
+                const pageData = await loadPeople(pageToLoad);
 
                 /* Keep "Loading" visible for at least the minimum duration. */
                 await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
 
                 /* Deduplicate results by URL before appending. */
                 const latestState = get();
-                const existingPeople = new Set(latestState.people.map((person) => person.url));
-                const newPeople = pageData.people.filter((person) => !existingPeople.has(person.url));
+                const newPeople = filterUniqueResourcesByUrl(latestState.people, pageData.items);
 
                 /* Append new results and update pagination state. */
                 set({
@@ -86,39 +79,10 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
             }
 
             /* Load initial pages until target count is reached or no more data exists. */
-            let pageToLoad = 1;
-            let hasMore = true;
-            const aggregatedPeople: Person[] = [];
-            const seenUrls = new Set<string>();
-
-            /* Fetch pages and aggregate unique people into one list. */
-            while (hasMore) {
-
-                const pageData = await getCachedPage(
-                    PEOPLE_CACHE_NAME,
-                    pageToLoad,
-                    fetchPeoplePage,
-                    PEOPLE_CACHE_TTL_MS
-                );
-
-                /* Keep only unique people while building the initial list. */
-                for (const person of pageData.people) {
-                    if (!seenUrls.has(person.url)) {
-                        seenUrls.add(person.url);
-                        aggregatedPeople.push(person);
-                    }
-                }
-
-                /* Stop once paging ends or initial target count is satisfied. */
-                hasMore = pageData.hasMore;
-                const enoughItemsLoaded = targetCount > 0 && aggregatedPeople.length >= targetCount;
-                if (!hasMore || enoughItemsLoaded || targetCount === 0) {
-                    break;
-                }
-
-                /* Move to the next page when more data is needed. */
-                pageToLoad += 1;
-            }
+            const initialPeopleLoad = await collectPagedResourcesUntilTarget<Person>({
+                targetCount,
+                loadPage: loadPeople,
+            });
 
             /* Keep loading visible for at least the minimum duration. */
             await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
@@ -126,9 +90,9 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
             /* Replace list with aggregated results and update pagination state. */
             set({
                 loading: false,
-                people: aggregatedPeople,
-                currentPage: pageToLoad,
-                hasMore,
+                people: initialPeopleLoad.items,
+                currentPage: initialPeopleLoad.currentPage,
+                hasMore: initialPeopleLoad.hasMore,
             });
 
         } catch {

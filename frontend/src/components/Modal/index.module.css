@@ -83,6 +83,33 @@
     pointer-events: none;
 }
 
+.floatingCloseButton {
+    position: fixed;
+    top: calc(env(safe-area-inset-top, 0px) + clamp(12px, 2vw, 22px));
+    right: calc(env(safe-area-inset-right, 0px) + clamp(12px, 2vw, 22px));
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 2px solid rgba(255, 97, 44, 0.9);
+    background: rgba(14, 20, 29, 0.86);
+    color: rgba(236, 241, 249, 0.9);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 4;
+    cursor: pointer;
+    pointer-events: auto;
+    box-shadow: 0 0 14px rgba(255, 97, 44, 0.28);
+    transition: transform 180ms ease, background-color 180ms ease, color 180ms ease;
+}
+
+.floatingCloseButton:hover,
+.floatingCloseButton:focus-visible {
+    transform: scale(1.06);
+    background: rgba(37, 47, 61, 0.92);
+    color: #ffffff;
+}
+
 .contentMotion {
     will-change: opacity, transform, filter;
 }
@@ -104,6 +131,11 @@
         overflow-y: auto;
         overflow-x: hidden;
         justify-content: center;
+    }
+
+    .floatingCloseButton {
+        top: calc(env(safe-area-inset-top, 0px) + 10px);
+        right: calc(env(safe-area-inset-right, 0px) + 10px);
     }
 }
 

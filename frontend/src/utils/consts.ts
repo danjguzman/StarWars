@@ -1,6 +1,26 @@
 /* Shared app constants. */
 export const ASSET_IMAGE_BASE_PATH = "/assets/img";
 
+/* Shared top-level navigation items. */
+export const NAV_ITEMS = [
+    { label: "Films", path: "films" },
+    { label: "People", path: "people" },
+    { label: "Planets", path: "planets" },
+    { label: "Species", path: "species" },
+    { label: "Vehicles", path: "vehicles" },
+    { label: "Starships", path: "starships" },
+] as const;
+
+/* Shared People data constants. */
+export const PEOPLE_FALLBACK_PAGE_SIZE = 12;
+export const PEOPLE_ALL_CACHE_KEY = "people:all";
+export const PEOPLE_ALL_CACHE_TTL_MS = 5 * 60 * 1000;
+export const PEOPLE_CACHE_NAME = "people";
+export const PEOPLE_CACHE_TTL_MS = 5 * 60 * 1000;
+
+/* Shared loading timing constants. */
+export const MIN_LOADING_MS = 1000;
+
 /* Shared layout constants for tile-based pages. */
 export const TILE_MIN_WIDTH = 260;
 export const TILE_HEIGHT = 300;

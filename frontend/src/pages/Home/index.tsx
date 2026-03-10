@@ -5,7 +5,6 @@ import {
     Container,
     Group,
     Menu,
-    Paper,
     Text,
     Title,
 } from "@mantine/core";
@@ -17,10 +16,10 @@ import {
     TrainRegional as TrainRegionalIcon,
     Users as UsersIcon,
 } from "phosphor-react";
-import { FilmReel as FilmReelIcon } from "@phosphor-icons/react";
+import { FilmReelIcon } from "@phosphor-icons/react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
-import { navItems } from "@pages/Home/constants";
-import { HEADER_HEIGHT_CSS } from "@utils/consts";
+import { HEADER_HEIGHT_CSS, NAV_ITEMS } from "@utils/consts";
+import styles from "./index.module.css";
 
 function getMobileMenuIcon(path: string, color: string) {
     if (path === "films") return <FilmReelIcon size={24} weight="duotone" color={color} />;
@@ -29,39 +28,27 @@ function getMobileMenuIcon(path: string, color: string) {
     if (path === "species") return <AlienIcon size={24} weight="duotone" color={color} />;
     if (path === "vehicles") return <TrainRegionalIcon size={24} weight="duotone" color={color} />;
     if (path === "starships") return <FlyingSaucerIcon size={24} weight="duotone" color={color} />;
-
     return null;
 }
 
 export function HomePage() {
     return (
-        <Paper p="xl" radius="md" withBorder bg="dark.7">
-            <Text c="dimmed" size="lg">
+        <div className={styles.statusCard}>
+            <Text size="lg" className={styles.statusText}>
                 Ready...
             </Text>
-        </Paper>
+        </div>
     );
 }
 
 export function HomeSectionPage({ title }: { title: string }) {
     return (
-        <Paper p="xl" radius="md" withBorder bg="dark.7">
-            <Title order={3} mb="sm" className="app-page-title">
+        <div className={styles.statusCard}>
+            <Title order={3} className={`${styles.pageTitle} ${styles.statusTitle}`}>
                 {title}
             </Title>
-            <Text c="dimmed">Ready...</Text>
-        </Paper>
-    );
-}
-
-export function NotFoundPage() {
-    return (
-        <Paper p="xl" radius="md" withBorder bg="dark.7">
-            <Title order={3} mb="sm" className="app-page-title">
-                Not Found
-            </Title>
-            <Text c="dimmed">The page you entered does not exist.</Text>
-        </Paper>
+            <Text className={styles.statusText}>Ready...</Text>
+        </div>
     );
 }
 
@@ -88,29 +75,28 @@ export default function HomeLayout() {
                     <Group h="100%" justify="space-between" align="center" wrap="nowrap">
 
                         {/* Page Title. */}
-                        <Box className="app-header-brand">
-                            <Text c="yellow.4" className="app-header-title-line">
+                        <Box className={styles.headerBrand}>
+                            <Text c="yellow.4" className={styles.headerTitleLine}>
                                 Star Wars
                             </Text>
-                            <Text c="yellow.4" className="app-header-title-line">
+                            <Text c="yellow.4" className={styles.headerTitleLine}>
                                 Explorer
                             </Text>
                         </Box>
 
-                        {/* Nav Links */}
+                        {/* Nav Links. */}
                         {!useCompactNav && (
                             <Group gap="lg" justify="flex-end">
-                                {navItems.map((item) => (
+                                {NAV_ITEMS.map((item) => (
                                     <NavLink
                                         key={item.path}
                                         to={`/${item.path}`}
                                         className={({ isActive }) =>
-                                            `app-header-nav-item${isActive ? " app-header-nav-item-active" : ""}`
+                                            `${styles.headerNavItem}${isActive ? ` ${styles.headerNavItemActive}` : ""}`
                                         }
-                                        style={{ textDecoration: "none" }}
                                     >
                                         {() => (
-                                            <Text component="span" fw={500} className="app-menu-link app-header-nav-link">
+                                            <Text component="span" fw={500} className={`${styles.menuLink} ${styles.headerNavLink}`}>
                                                 {item.label}
                                             </Text>
                                         )}
@@ -147,8 +133,8 @@ export default function HomeLayout() {
                                     </Menu.Target>
 
                                     {/* Mobile Dropdown Menu Display. */}
-                                    <Menu.Dropdown className="app-mobile-menu-dropdown">
-                                        {navItems.map((item) => {
+                                    <Menu.Dropdown className={styles.mobileMenuDropdown}>
+                                        {NAV_ITEMS.map((item) => {
                                             const isActive = location.pathname === `/${item.path}`;
                                             const iconColor = isActive
                                                 ? "var(--mantine-color-yellow-4)"
@@ -160,16 +146,16 @@ export default function HomeLayout() {
                                                     component={NavLink}
                                                     to={`/${item.path}`}
                                                     onClick={close}
-                                                    className={`app-mobile-menu-item${isActive ? " app-mobile-menu-item-active" : ""}`}
+                                                    className={styles.mobileMenuItem}
                                                 >
                                                     <Group w="100%" gap="sm" wrap="nowrap" align="center">
-                                                        <Box className="app-mobile-menu-icon-slot">
+                                                        <Box className={styles.mobileMenuIconSlot}>
                                                             {getMobileMenuIcon(item.path, iconColor)}
                                                         </Box>
-                                                        <Box className="app-mobile-menu-label-slot">
+                                                        <Box className={styles.mobileMenuLabelSlot}>
                                                             <Text
                                                                 component="span"
-                                                                className={`app-menu-link app-mobile-menu-label${isActive ? " app-mobile-menu-label-active" : ""}`}
+                                                                className={`${styles.menuLink} ${styles.mobileMenuLabel}${isActive ? ` ${styles.mobileMenuLabelActive}` : ""}`}
                                                             >
                                                                 {item.label}
                                                             </Text>

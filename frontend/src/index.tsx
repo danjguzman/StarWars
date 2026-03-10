@@ -3,7 +3,9 @@ import ReactDOM from "react-dom/client";
 import { createTheme, MantineProvider } from "@mantine/core";
 import "@mantine/core/styles.css";
 import App from "./App";
-import "./index.css";
+import styles from "./index.module.css";
+
+void styles;
 
 const theme = createTheme({
     primaryColor: "yellow",

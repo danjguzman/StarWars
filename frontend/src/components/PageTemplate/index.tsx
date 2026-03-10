@@ -1,5 +1,6 @@
 import { type ReactNode } from "react";
 import { Group, Stack, Title } from "@mantine/core";
+import styles from "./index.module.css";
 
 interface PageTemplateProps {
     title: string;
@@ -14,7 +15,7 @@ export default function PageTemplate({ title, headerIcon, children }: PageTempla
             {/* Page Header with Icon and Title. */}
             <Group gap="sm" align="center">
                 {headerIcon}
-                <Title order={3} className="app-page-title">
+                <Title order={3} className={styles.pageTitle}>
                     {title}
                 </Title>
             </Group>

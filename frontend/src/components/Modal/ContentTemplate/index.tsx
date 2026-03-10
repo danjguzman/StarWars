@@ -1,0 +1,189 @@
+import { type ReactNode } from "react";
+import { Box, Flex, Group, Text } from "@mantine/core";
+import { useMediaQuery } from "@mantine/hooks";
+import { CaretLeft, CaretRight, UserCircle } from "phosphor-react";
+import { createPortal } from "react-dom";
+import RelatedItems from "@components/Modal/RelatedItems";
+import { type ResolvedResourceItem } from "@utils/resourceResolve";
+import styles from "./index.module.css";
+
+export interface ContentTemplateTrait {
+    label: string;
+    value: ReactNode;
+}
+
+export interface ContentTemplateRelatedGroup {
+    label: string;
+    count: number;
+    items: ResolvedResourceItem[];
+    icon: ReactNode;
+}
+
+interface ContentTemplateProps {
+    title: string;
+    categoryLabel: string;
+    categoryIcon: ReactNode;
+    imageSrc: string | null;
+    imageAlt: string;
+    traits: ContentTemplateTrait[];
+    relatedGroups: ContentTemplateRelatedGroup[];
+    onPrev: () => void;
+    onNext: () => void;
+    imageFallback?: ReactNode;
+}
+
+export default function ContentTemplate({
+    title,
+    categoryLabel,
+    categoryIcon,
+    imageSrc,
+    imageAlt,
+    traits,
+    relatedGroups,
+    onPrev,
+    onNext,
+    imageFallback,
+}: ContentTemplateProps) {
+    const useCompactHeightLayout = useMediaQuery("(max-height: 939px) and (min-width: 721px)");
+    const fallbackMarkup = imageFallback ?? <UserCircle size={148} color="var(--mantine-color-gray-4)" />;
+
+    /* Render the trait rows that appear in the details card. */
+    const renderTraitsGrid = () => (
+        <dl className={styles.traitsGrid}>
+            {traits.map((trait, index) => (
+                <div key={`${trait.label}-${index}`}>
+                    <dt>{trait.label}</dt>
+                    <dd>{trait.value}</dd>
+                </div>
+            ))}
+        </dl>
+    );
+
+    /* Render the category label at the top of the modal using a portal. */
+    const floatingCategoryHeader = typeof document === "undefined"
+        ? null
+        : createPortal(
+            <Box className={styles.floatingCategoryHeader} aria-hidden="true">
+                <span className={styles.floatingCategoryIcon}>{categoryIcon}</span>
+                <Text component="span" className={styles.floatingCategoryLabel}>{categoryLabel}</Text>
+            </Box>,
+            document.body
+        );
+
+    return (
+        <>
+            {/* Show the floating category label above the modal. */}
+            {floatingCategoryHeader}
+
+            {/* Render the main modal content layout. */}
+            <Box className={`${styles.layout}${useCompactHeightLayout ? ` ${styles.layoutCompact}` : ""}`}>
+                {useCompactHeightLayout ? (
+                    <>
+                        {/* Show compact previous/next controls for shorter viewports. */}
+                        <Group className={styles.compactNavRow} justify="space-between" gap="md" wrap="nowrap">
+
+                            {/* Go to the previous item. */}
+                            <button
+                                type="button"
+                                className={`${styles.sideOrb} ${styles.compactNavButton}`}
+                                onClick={onPrev}
+                                aria-label="Previous item"
+                            >
+                                <CaretLeft size={36} weight="fill" />
+                            </button>
+
+                            {/* Go to the next item. */}
+                            <button
+                                type="button"
+                                className={`${styles.sideOrb} ${styles.compactNavButton}`}
+                                onClick={onNext}
+                                aria-label="Next item"
+                            >
+                                <CaretRight size={36} weight="fill" />
+                            </button>
+                        </Group>
+
+                        {/* Show the item title below the compact nav controls. */}
+                        <Box className={styles.nameCard}>
+                            <Text className={styles.nameText}>{title}</Text>
+                        </Box>
+
+                        {/* Place the image and traits side by side in compact mode. */}
+                        <Flex className={styles.compactDetailsRow} align="stretch" gap="md">
+
+                            {/* Show the main image or the fallback artwork. */}
+                            <Box className={styles.heroColumn}>
+                                <Box className={`${styles.heroFrame} ${styles.heroFrameCompact}`}>
+                                    {imageSrc ? (
+                                        <img src={imageSrc} alt={imageAlt} className={styles.heroImage} />
+                                    ) : (
+                                        <Box className={styles.heroFallback}>
+                                            {fallbackMarkup}
+                                        </Box>
+                                    )}
+                                </Box>
+                            </Box>
+
+                            {/* Show the traits card next to the image in compact mode. */}
+                            <Box className={`${styles.traitsCard} ${styles.traitsCardCompact}`}>
+                                {renderTraitsGrid()}
+                            </Box>
+                        </Flex>
+                    </>
+                ) : (
+                    <>
+                        {/* Show the standard desktop layout with nav, image, and details stacked below. */}
+                        <Box className={styles.stageRow}>
+
+                            {/* Go to the previous item. */}
+                            <button type="button" className={styles.sideOrb} onClick={onPrev} aria-label="Previous item">
+                                <CaretLeft size={36} weight="fill" />
+                            </button>
+
+                            {/* Show the main image or the fallback artwork. */}
+                            <Box className={styles.heroColumn}>
+                                <Box className={styles.heroFrame}>
+                                    {imageSrc ? (
+                                        <img src={imageSrc} alt={imageAlt} className={styles.heroImage} />
+                                    ) : (
+                                        <Box className={styles.heroFallback}>
+                                            {fallbackMarkup}
+                                        </Box>
+                                    )}
+                                </Box>
+                            </Box>
+
+                            {/* Go to the next item. */}
+                            <button type="button" className={styles.sideOrb} onClick={onNext} aria-label="Next item">
+                                <CaretRight size={36} weight="fill" />
+                            </button>
+                        </Box>
+
+                        {/* Show the item title below the main stage area. */}
+                        <Box className={styles.nameCard}>
+                            <Text className={styles.nameText}>{title}</Text>
+                        </Box>
+
+                        {/* Show the traits card under the title in the standard layout. */}
+                        <Box className={styles.traitsCard}>
+                            {renderTraitsGrid()}
+                        </Box>
+                    </>
+                )}
+
+                {/* Show the related-resource buttons along the bottom of the modal. */}
+                <Box className={styles.bottomOrbit}>
+                    {relatedGroups.map((group, index) => (
+                        <RelatedItems
+                            key={`${group.label}-${index}`}
+                            label={group.label}
+                            count={group.count}
+                            items={group.items}
+                            icon={group.icon}
+                        />
+                    ))}
+                </Box>
+            </Box>
+        </>
+    );
+}

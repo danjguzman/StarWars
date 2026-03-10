@@ -1,0 +1,26 @@
+.card {
+    padding: 1.5rem;
+    border-radius: 1rem;
+    border: 1px solid rgba(255, 82, 36, 0.28);
+    background:
+        radial-gradient(circle at top, rgba(255, 132, 90, 0.08), transparent 42%),
+        linear-gradient(180deg, rgba(24, 16, 18, 0.96) 0%, rgba(14, 12, 16, 0.96) 100%);
+    box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.02) inset,
+        0 18px 40px rgba(0, 0, 0, 0.34);
+}
+
+.pageTitle {
+    font-family: "StarWars", sans-serif;
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 9px currentColor;
+}
+
+.title {
+    margin-bottom: 0.5rem;
+}
+
+.text {
+    color: rgba(226, 213, 217, 0.76);
+    font-family: "Oxanium", sans-serif;
+}

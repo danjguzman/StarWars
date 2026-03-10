@@ -9,7 +9,7 @@ import {
     TILE_MIN_WIDTH,
 } from "@utils/consts";
 
-/* Estimate initial tile count to prefill viewport before scrolling. */
+/* Estimate initial tile count to prefill viewport before scrolling, for proper infinite scroll sentinel triggering. */
 export function estimateInitialTargetCount() {
     const usableWidth = Math.min(
         Math.max(window.innerWidth - LAYOUT_HORIZONTAL_PADDING, TILE_MIN_WIDTH),

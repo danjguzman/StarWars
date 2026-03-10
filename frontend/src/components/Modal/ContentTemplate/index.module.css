@@ -29,7 +29,7 @@
 
 .floatingCategoryHeader {
     position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 6px);
+    top: calc(env(safe-area-inset-top, 0px) + 16px);
     left: 50%;
     transform: translateX(-50%);
     z-index: 1200;
@@ -42,6 +42,14 @@
 .floatingCategoryIcon {
     width: 26px;
     height: 26px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.floatingCategoryIcon :global(svg) {
+    width: 100%;
+    height: 100%;
     color: rgba(243, 247, 252, 0.96);
     filter: drop-shadow(0 0 9px rgba(255, 255, 255, 0.6));
 }
@@ -49,7 +57,6 @@
 .floatingCategoryLabel {
     font-family: "Oxanium", sans-serif;
     font-size: clamp(1.16rem, 2.3vw, 1.9rem);
-    letter-spacing: 0.08em;
     line-height: 1;
     color: rgba(246, 249, 253, 0.98);
     text-shadow: 0 0 12px rgba(255, 255, 255, 0.75), 0 0 24px rgba(255, 255, 255, 0.38);
@@ -74,13 +81,10 @@
 }
 
 .compactNavButton {
-    width: 96px;
-    height: 96px;
+    width: 104px;
+    height: 104px;
     border-radius: 50%;
-    flex-direction: column;
-    gap: 4px;
-    font-size: 0.68rem;
-    transition: width 240ms ease, height 240ms ease, border-radius 240ms ease, gap 240ms ease, font-size 240ms ease;
+    transition: width 240ms ease, height 240ms ease, border-radius 240ms ease;
 }
 
 .compactDetailsRow {
@@ -88,24 +92,19 @@
 }
 
 .sideOrb {
-    width: 84px;
-    height: 84px;
+    width: 92px;
+    height: 92px;
     border-radius: 50%;
     border: 2px solid rgba(255, 97, 44, 0.9);
     background: rgba(15, 22, 31, 0.7);
     color: rgba(221, 225, 233, 0.88);
     display: inline-flex;
-    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 4px;
-    font-size: 0.68rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
     cursor: pointer;
     box-shadow: var(--accent-border-glow-soft);
-    transition: width 240ms ease, height 240ms ease, font-size 240ms ease, gap 240ms ease, border-radius 240ms ease,
-        transform 180ms ease, background-color 180ms ease, color 180ms ease;
+    transition: width 240ms ease, height 240ms ease, border-radius 240ms ease, transform 180ms ease, background-color 180ms ease,
+        color 180ms ease;
 }
 
 .sideOrb:hover,
@@ -125,53 +124,6 @@
     justify-content: center;
     gap: 4px;
     min-width: 0;
-}
-
-.closeButton {
-    position: absolute;
-    top: -14px;
-    right: -14px;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 97, 44, 0.9);
-    background: rgba(14, 20, 29, 0.86);
-    color: rgba(236, 241, 249, 0.9);
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 2;
-    cursor: pointer;
-    box-shadow: var(--accent-border-glow-soft);
-    transition: top 240ms ease, right 240ms ease, transform 180ms ease, background-color 180ms ease, color 180ms ease;
-}
-
-.floatingCloseButton {
-    display: none;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 97, 44, 0.9);
-    background: rgba(14, 20, 29, 0.86);
-    color: rgba(236, 241, 249, 0.9);
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    box-shadow: var(--accent-border-glow-soft);
-}
-
-.closeButton:hover,
-.closeButton:focus-visible {
-    transform: scale(1.06);
-    background: rgba(37, 47, 61, 0.92);
-    color: #ffffff;
-}
-
-.floatingCloseButton:hover,
-.floatingCloseButton:focus-visible {
-    transform: scale(1.06);
-    background: rgba(37, 47, 61, 0.92);
-    color: #ffffff;
 }
 
 .heroFrame {
@@ -235,11 +187,6 @@
     transition: padding-top 240ms ease;
 }
 
-.compactCloseButton {
-    top: 8px;
-    right: 8px;
-}
-
 .nameText {
     margin: 0;
     text-align: center;
@@ -247,6 +194,7 @@
     font-size: 1.66rem;
     font-weight: 700;
     color: #e7ebf2;
+    text-shadow: 0 0 12px rgba(255, 255, 255, 0.78), 0 0 22px rgba(255, 255, 255, 0.34);
     transition: font-size 240ms ease;
 }
 
@@ -297,7 +245,6 @@
     .compactNavRow,
     .compactNavButton,
     .sideOrb,
-    .closeButton,
     .heroFrame,
     .nameCard,
     .traitsCard,
@@ -318,11 +265,6 @@
 
     .stageRow {
         margin-top: 10px;
-    }
-
-    .closeButton {
-        top: -10px;
-        right: -10px;
     }
 
     .nameCard,
@@ -347,14 +289,8 @@
     }
 
     .sideOrb {
-        width: 84px;
-        height: 84px;
-        font-size: 0.68rem;
-        gap: 4px;
-    }
-
-    .sideOrb span {
-        display: inline;
+        width: 88px;
+        height: 88px;
     }
 
     .heroFrame {
@@ -363,30 +299,13 @@
         max-width: 320px;
     }
 
-    .closeButton {
-        display: none;
-    }
-
-    .floatingCloseButton {
-        position: fixed;
-        top: calc(env(safe-area-inset-top, 0px) + 10px);
-        right: calc(env(safe-area-inset-right, 0px) + 10px);
-        display: inline-flex;
-        z-index: 1200;
-    }
-
-    .floatingCloseButton:hover,
-    .floatingCloseButton:focus-visible {
-        transform: scale(1.06);
-    }
-
     .nameCard {
         width: 100%;
         max-width: 100%;
     }
 
     .floatingCategoryHeader {
-        top: calc(env(safe-area-inset-top, 0px) + 4px);
+        top: calc(env(safe-area-inset-top, 0px) + 14px);
         gap: 8px;
     }
 
