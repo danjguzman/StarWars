@@ -1,10 +1,16 @@
 import { useState } from "react";
 import { Box, Paper, Stack, Text } from "@mantine/core";
 import {
+    Alien as AlienIcon,
     CircleNotch as CircleNotchIcon,
+    FlyingSaucer as FlyingSaucerIcon,
+    Planet as PlanetIcon,
     Robot as RobotIcon,
+    TrainRegional as TrainRegionalIcon,
     User,
+    Users as UsersIcon,
 } from "phosphor-react";
+import { FilmReelIcon } from "@phosphor-icons/react";
 import {
     ASSET_IMAGE_BASE_PATH,
     TILE_AVATAR_SIZE,
@@ -27,6 +33,22 @@ interface ListTemplateProps<TItem extends { url: string }> {
     onItemClick?: (selection: { item: TItem; label: string }) => void;
 }
 
+function fallbackIconByEntityKey(entityKey: string) {
+    const commonProps = {
+        size: 96,
+        color: "var(--mantine-color-gray-5)",
+        weight: "regular" as const,
+    };
+
+    if (entityKey === "films") return <FilmReelIcon {...commonProps} />;
+    if (entityKey === "people") return <UsersIcon {...commonProps} />;
+    if (entityKey === "planets") return <PlanetIcon {...commonProps} />;
+    if (entityKey === "species") return <AlienIcon {...commonProps} />;
+    if (entityKey === "vehicles") return <TrainRegionalIcon {...commonProps} />;
+    if (entityKey === "starships") return <FlyingSaucerIcon {...commonProps} />;
+    return <User {...commonProps} />;
+}
+
 export default function ListTemplate<TItem extends { url: string }>({
     items,
     entityKey,
@@ -39,6 +61,7 @@ export default function ListTemplate<TItem extends { url: string }>({
 }: ListTemplateProps<TItem>) {
     const [missingImageByUrl, setMissingImageByUrl] = useState<Record<string, boolean>>({});
     const [loadedImageByUrl, setLoadedImageByUrl] = useState<Record<string, boolean>>({});
+    const fallbackIcon = fallbackIconByEntityKey(entityKey);
     const sentinelRef = useInfiniteScroll({
         hasMore,
         onLoadMore,
@@ -170,9 +193,7 @@ export default function ListTemplate<TItem extends { url: string }>({
                                                 }}
                                             />
                                         )}
-                                        {(!imageLoaded || imageMissing || !imageSrc) && (
-                                            <User size={96} color="var(--mantine-color-gray-5)" weight="regular" />
-                                        )}
+                                        {(!imageLoaded || imageMissing || !imageSrc) && fallbackIcon}
                                     </Box>
 
                                     <Box
