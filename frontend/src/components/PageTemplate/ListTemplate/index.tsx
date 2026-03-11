@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, Flex, Paper, Stack, Text } from "@mantine/core";
+import { Box, Paper, Stack, Text } from "@mantine/core";
 import {
     CircleNotch as CircleNotchIcon,
     Robot as RobotIcon,
@@ -64,7 +64,12 @@ export default function ListTemplate<TItem extends { url: string }>({
 
     return (
         <>
-            <Flex className={styles.grid} gap="md" wrap="wrap">
+            <Box
+                className={styles.grid}
+                style={{
+                    gridTemplateColumns: `repeat(auto-fill, minmax(${TILE_MIN_WIDTH}px, 1fr))`,
+                }}
+            >
                 {items.map((item) => {
                     const itemKey = item.url;
                     const itemLabel = getItemLabel(item);
@@ -85,7 +90,6 @@ export default function ListTemplate<TItem extends { url: string }>({
                             p="md"
                             radius="md"
                             style={{
-                                flex: `1 1 ${TILE_MIN_WIDTH}px`,
                                 minWidth: 0,
                                 minHeight: TILE_HEIGHT,
                                 cursor: isInteractive ? "pointer" : "default",
@@ -196,7 +200,7 @@ export default function ListTemplate<TItem extends { url: string }>({
                         </Paper>
                     );
                 })}
-            </Flex>
+            </Box>
 
             <InfiniteScrollSentinel
                 sentinelRef={sentinelRef}

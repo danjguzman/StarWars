@@ -2,10 +2,11 @@ import { Route } from "react-router-dom";
 import NotFound from "@components/NotFound";
 import FilmsPage from "@pages/Films";
 import HomeLayout, { HomePage, HomeSectionPage } from "@pages/Home";
+import PlanetsPage from "@pages/Planets";
 import PeoplePage from "@pages/People";
 import { NAV_ITEMS } from "@utils/consts";
 
-const IMPLEMENTED_BROWSE_ROUTES = new Set(["films", "people"]);
+const IMPLEMENTED_BROWSE_ROUTES = new Set(["films", "people", "planets"]);
 
 export const homeRoutes = (
     <Route element={<HomeLayout />}>
@@ -14,6 +15,8 @@ export const homeRoutes = (
         <Route path="films/:filmId" element={<FilmsPage />} />
         <Route path="people" element={<PeoplePage />} />
         <Route path="people/:personId" element={<PeoplePage />} />
+        <Route path="planets" element={<PlanetsPage />} />
+        <Route path="planets/:planetId" element={<PlanetsPage />} />
         {NAV_ITEMS.filter((item) => !IMPLEMENTED_BROWSE_ROUTES.has(item.path)).map((item) => (
             <Route key={item.path} path={item.path} element={<HomeSectionPage title={item.label} />} />
         ))}

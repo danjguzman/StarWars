@@ -9,6 +9,11 @@ jest.mock('@pages/Films', () => ({
     default: () => <div>Films page</div>,
 }));
 
+jest.mock('@pages/Planets', () => ({
+    __esModule: true,
+    default: () => <div>Planets page</div>,
+}));
+
 jest.mock('@pages/People', () => ({
     __esModule: true,
     default: () => <div>People page</div>,
@@ -40,6 +45,11 @@ describe('homeRoutes', () => {
     test('renders the section page for a detail route', () => {
         renderHomeRoutes('/films/1');
         expect(screen.getByText('Films page')).toBeInTheDocument();
+    });
+
+    test('renders the planets browse page for a detail route', () => {
+        renderHomeRoutes('/planets/1');
+        expect(screen.getByText('Planets page')).toBeInTheDocument();
     });
 
     test('shows the NotFound component for an unknown route', () => {

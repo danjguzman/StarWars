@@ -25,6 +25,13 @@ export const FILMS_ALL_CACHE_TTL_MS = 5 * 60 * 1000;
 export const FILMS_CACHE_NAME = "films";
 export const FILMS_CACHE_TTL_MS = 5 * 60 * 1000;
 
+/* Shared Planets data constants. */
+export const PLANETS_FALLBACK_PAGE_SIZE = 12;
+export const PLANETS_ALL_CACHE_KEY = "planets:all";
+export const PLANETS_ALL_CACHE_TTL_MS = 5 * 60 * 1000;
+export const PLANETS_CACHE_NAME = "planets";
+export const PLANETS_CACHE_TTL_MS = 5 * 60 * 1000;
+
 /* Shared loading timing constants. */
 export const MIN_LOADING_MS = 1000;
 

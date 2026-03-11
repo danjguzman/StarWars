@@ -1,5 +1,8 @@
 .grid {
     width: 100%;
+    display: grid;
+    gap: var(--mantine-spacing-md);
+    align-items: stretch;
 }
 
 .card {
