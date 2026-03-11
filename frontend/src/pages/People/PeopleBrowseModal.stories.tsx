@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react';
+import { useState, type CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Box } from '@mantine/core';
 import { Users } from 'phosphor-react';
@@ -6,9 +6,10 @@ import Modal from '@components/Modal';
 import ListTemplate from '@components/PageTemplate/ListTemplate';
 import PageTemplate from '@components/PageTemplate';
 import PersonModalContent from '@pages/People/PersonModalContent';
-import { type Person } from '@types';
+import { type NamedResource, type Person } from '@types';
 import { PEOPLE_ALL_CACHE_KEY } from '@utils/consts';
 import { setCachedValue } from '@utils/clientCache';
+import { allResourceCacheKey } from '@utils/resourceResolve';
 import styles from './index.module.css';
 
 const storyShellStyle = {
@@ -29,10 +30,19 @@ const samplePeople: Person[] = [
         birth_year: '19BBY',
         gender: 'male',
         homeworld: '',
-        films: [],
+        films: [
+            'https://swapi.info/api/films/1',
+            'https://swapi.info/api/films/2',
+            'https://swapi.info/api/films/3',
+            'https://swapi.info/api/films/4',
+        ],
         species: [],
-        vehicles: [],
-        starships: [],
+        vehicles: [
+            'https://swapi.info/api/vehicles/1',
+            'https://swapi.info/api/vehicles/2',
+            'https://swapi.info/api/vehicles/3',
+        ],
+        starships: ['https://swapi.info/api/starships/1', 'https://swapi.info/api/starships/2'],
         created: '2026-01-01T00:00:00.000Z',
         edited: '2026-01-01T00:00:00.000Z',
         url: 'https://swapi.info/api/people/1',
@@ -47,10 +57,19 @@ const samplePeople: Person[] = [
         birth_year: '19BBY',
         gender: 'female',
         homeworld: '',
-        films: [],
+        films: [
+            'https://swapi.info/api/films/2',
+            'https://swapi.info/api/films/3',
+            'https://swapi.info/api/films/4',
+            'https://swapi.info/api/films/1',
+        ],
         species: [],
-        vehicles: [],
-        starships: [],
+        vehicles: [
+            'https://swapi.info/api/vehicles/2',
+            'https://swapi.info/api/vehicles/3',
+            'https://swapi.info/api/vehicles/1',
+        ],
+        starships: ['https://swapi.info/api/starships/2', 'https://swapi.info/api/starships/1'],
         created: '2026-01-01T00:00:00.000Z',
         edited: '2026-01-01T00:00:00.000Z',
         url: 'https://swapi.info/api/people/5',
@@ -65,22 +84,56 @@ const samplePeople: Person[] = [
         birth_year: '29BBY',
         gender: 'male',
         homeworld: '',
-        films: [],
+        films: [
+            'https://swapi.info/api/films/4',
+            'https://swapi.info/api/films/1',
+            'https://swapi.info/api/films/2',
+            'https://swapi.info/api/films/3',
+        ],
         species: [],
-        vehicles: [],
-        starships: [],
+        vehicles: [
+            'https://swapi.info/api/vehicles/3',
+            'https://swapi.info/api/vehicles/1',
+            'https://swapi.info/api/vehicles/2',
+        ],
+        starships: ['https://swapi.info/api/starships/1', 'https://swapi.info/api/starships/2'],
         created: '2026-01-01T00:00:00.000Z',
         edited: '2026-01-01T00:00:00.000Z',
         url: 'https://swapi.info/api/people/14',
     },
 ];
 
+const sampleResourcesByCollection = {
+    planets: [
+        { url: 'https://swapi.info/api/planets/1', name: 'Item 1' },
+        { url: 'https://swapi.info/api/planets/2', name: 'Item 2' },
+    ],
+    species: [],
+    starships: [
+        { url: 'https://swapi.info/api/starships/1', name: 'Item 1' },
+        { url: 'https://swapi.info/api/starships/2', name: 'Item 2' },
+    ],
+    vehicles: [
+        { url: 'https://swapi.info/api/vehicles/1', name: 'Item 1' },
+        { url: 'https://swapi.info/api/vehicles/2', name: 'Item 2' },
+        { url: 'https://swapi.info/api/vehicles/3', name: 'Item 3' },
+    ],
+    films: [
+        { url: 'https://swapi.info/api/films/1', title: 'Item 1' },
+        { url: 'https://swapi.info/api/films/2', title: 'Item 2' },
+        { url: 'https://swapi.info/api/films/3', title: 'Item 3' },
+        { url: 'https://swapi.info/api/films/4', title: 'Item 4' },
+    ],
+} satisfies Record<'planets' | 'species' | 'starships' | 'vehicles' | 'films', NamedResource[]>;
+
+setCachedValue(PEOPLE_ALL_CACHE_KEY, samplePeople, 60_000);
+
+for (const [collection, resources] of Object.entries(sampleResourcesByCollection)) {
+    setCachedValue(allResourceCacheKey(collection as keyof typeof sampleResourcesByCollection), resources, 60_000);
+}
+
 function PeopleBrowseModalStory({ initialIndex = null }: { initialIndex?: number | null }) {
     const [selectedIndex, setSelectedIndex] = useState<number | null>(initialIndex);
-
-    useEffect(() => {
-        setCachedValue(PEOPLE_ALL_CACHE_KEY, samplePeople, 60_000);
-    }, []);
 
     const selectedPerson = selectedIndex === null ? null : samplePeople[selectedIndex] ?? null;
 
@@ -143,7 +196,7 @@ function PeopleBrowseModalStory({ initialIndex = null }: { initialIndex?: number
 }
 
 const meta = {
-    title: 'Flows/PeopleBrowseModal',
+    title: 'Flows/Modals',
     component: PeopleBrowseModalStory,
     tags: ['autodocs'],
     parameters: {
@@ -165,6 +218,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 export const ModalOpenDesktop: Story = {
+    name: 'Modal',
     args: {
         initialIndex: 0,
     },
@@ -177,6 +231,7 @@ export const ModalOpenDesktop: Story = {
 };
 
 export const ModalOpenCompactHeight: Story = {
+    name: 'Modal + Compact Height',
     args: {
         initialIndex: 0,
     },
@@ -196,6 +251,7 @@ export const ModalOpenCompactHeight: Story = {
 };
 
 export const ModalOpenMobile: Story = {
+    name: 'Modal Mobile',
     args: {
         initialIndex: 0,
     },
@@ -215,7 +271,7 @@ export const ModalOpenMobile: Story = {
 };
 
 export const ModalOpenMobileLandscapeS20Ultra: Story = {
-    name: 'Modal Open Mobile Landscape (S20 Ultra)',
+    name: 'Modal Mobile Landscape (S20 Ultra)',
     args: {
         initialIndex: 0,
     },
@@ -235,7 +291,7 @@ export const ModalOpenMobileLandscapeS20Ultra: Story = {
 };
 
 export const ModalOpenMobileLandscapeProMax: Story = {
-    name: 'Modal Open Mobile Landscape (Pro Max)',
+    name: 'Modal Mobile Landscape (Pro Max)',
     args: {
         initialIndex: 0,
     },
