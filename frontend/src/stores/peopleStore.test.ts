@@ -53,6 +53,7 @@ describe('peopleStore', () => {
             loading: false,
             loadingMore: false,
             error: null,
+            lastFailedRequestMode: null,
             currentPage: 0,
             hasMore: true,
         });
@@ -77,6 +78,7 @@ describe('peopleStore', () => {
             hasMore: true,
             loading: false,
             error: null,
+            lastFailedRequestMode: null,
         });
     });
 
@@ -90,6 +92,7 @@ describe('peopleStore', () => {
             loading: false,
             loadingMore: false,
             error: null,
+            lastFailedRequestMode: null,
         });
         mockedLoadPeople.mockResolvedValue({
             items: [existingPerson, newPerson],
@@ -103,6 +106,7 @@ describe('peopleStore', () => {
             hasMore: true,
             loadingMore: false,
             error: null,
+            lastFailedRequestMode: null,
         });
     });
 
@@ -114,6 +118,7 @@ describe('peopleStore', () => {
             loading: false,
             loadingMore: false,
             error: null,
+            lastFailedRequestMode: null,
         });
         await usePeopleStore.getState().fetchPeople({ nextPage: true });
         expect(mockedLoadPeople).not.toHaveBeenCalled();
@@ -124,9 +129,10 @@ describe('peopleStore', () => {
         mockedCollectPagedResourcesUntilTarget.mockRejectedValue(new Error('boom'));
         await usePeopleStore.getState().fetchPeople({ targetCount: 12 });
         expect(usePeopleStore.getState()).toMatchObject({
-            error: 'Failed to load people',
+            error: "We couldn't load the People archive. boom.",
             loading: false,
             loadingMore: false,
+            lastFailedRequestMode: 'initial',
         });
     });
 
@@ -138,13 +144,15 @@ describe('peopleStore', () => {
             loading: false,
             loadingMore: false,
             error: null,
+            lastFailedRequestMode: null,
         });
         mockedLoadPeople.mockRejectedValue(new Error('boom'));
         await usePeopleStore.getState().fetchPeople({ nextPage: true });
         expect(usePeopleStore.getState()).toMatchObject({
-            error: 'Failed to load more people',
+            error: "We couldn't load more people. boom.",
             loading: false,
             loadingMore: false,
+            lastFailedRequestMode: 'nextPage',
             currentPage: 1,
         });
     });

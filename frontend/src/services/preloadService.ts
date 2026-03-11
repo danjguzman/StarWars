@@ -1,5 +1,6 @@
 import { apiUrl, getJson, isSwapiPagedResponse } from "@services/api";
 import { setCachedValue } from "@utils/clientCache";
+import { buildUserFacingError } from "@utils/errors";
 import { allResourceCacheKey, RESOURCE_COLLECTIONS } from "@utils/resourceResolve";
 
 /*
@@ -18,6 +19,11 @@ type PreloadEndpoint = (typeof RESOURCE_COLLECTIONS)[number];
 type SwapiEntity = Record<string, unknown>;
 
 let preloadPromise: Promise<void> | null = null;
+
+function preloadLabel(endpoint: PreloadEndpoint) {
+    const singularLabel = endpoint === "species" ? "species archive" : `${endpoint} archive`;
+    return singularLabel.charAt(0).toUpperCase() + singularLabel.slice(1);
+}
 
 /* Fetch every entity for one resource type, including all paged results when needed. */
 async function collectAllEntities(endpoint: PreloadEndpoint): Promise<SwapiEntity[]> {
@@ -52,8 +58,12 @@ async function collectAllEntities(endpoint: PreloadEndpoint): Promise<SwapiEntit
 async function preloadSwapiDataInternal(): Promise<void> {
     await Promise.all(
         RESOURCE_COLLECTIONS.map(async (endpoint) => {
-            const entities = await collectAllEntities(endpoint);
-            setCachedValue(allResourceCacheKey(endpoint), entities, PRELOAD_CACHE_TTL_MS);
+            try {
+                const entities = await collectAllEntities(endpoint);
+                setCachedValue(allResourceCacheKey(endpoint), entities, PRELOAD_CACHE_TTL_MS);
+            } catch (error) {
+                throw new Error(buildUserFacingError(`We couldn't prepare the ${preloadLabel(endpoint)}`, error));
+            }
         })
     );
 }

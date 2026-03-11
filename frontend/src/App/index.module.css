@@ -30,6 +30,10 @@
     text-align: center;
 }
 
+.errorText {
+    max-width: 28rem;
+}
+
 .appReveal {
     min-height: 100%;
     animation: appRevealIn 720ms cubic-bezier(0.22, 1, 0.36, 1) both;

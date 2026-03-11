@@ -1,7 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { BrowserRouter, Routes } from "react-router-dom";
 import { homeRoutes } from "@pages/Home/routes";
 import { preloadSwapiData } from "@services/preloadService";
+import { buildUserFacingError } from "@utils/errors";
 import { waitForMinimumLoading } from "@utils/loading";
 import PreloadState from "./PreloadState";
 import styles from "./index.module.css";
@@ -13,11 +14,20 @@ export default function App() {
     const [isPreloadComplete, setIsPreloadComplete] = useState(false);
     const [isLoaderExiting, setIsLoaderExiting] = useState(false);
     const [preloadError, setPreloadError] = useState<string | null>(null);
+    const [preloadAttempt, setPreloadAttempt] = useState(0);
     const exitTimeoutRef = useRef<number | null>(null);
+
+    const retryPreload = useCallback(() => {
+        setPreloadError(null);
+        setIsLoaderExiting(false);
+        setIsPreloadComplete(false);
+        setPreloadAttempt((current) => current + 1);
+    }, []);
 
     useEffect(() => {
         let isMounted = true;
         const loadStartTime = Date.now();
+        setPreloadError(null);
 
         preloadSwapiData()
             .then(async () => {
@@ -29,10 +39,16 @@ export default function App() {
                     setIsPreloadComplete(true);
                 }, LOADING_EXIT_MS);
             })
-            .catch(async () => {
+            .catch(async (error) => {
                 await waitForMinimumLoading(loadStartTime, APP_PRELOAD_LOADING_MS);
                 if (!isMounted) return;
-                setPreloadError("Failed to preload Star Wars data.");
+                setPreloadError(
+                    buildUserFacingError(
+                        "We couldn't prepare the Star Wars archive",
+                        error,
+                        "Please try again"
+                    )
+                );
             });
 
         return () => {
@@ -41,10 +57,10 @@ export default function App() {
                 window.clearTimeout(exitTimeoutRef.current);
             }
         };
-    }, []);
+    }, [preloadAttempt]);
 
     if (!isPreloadComplete) {
-        return <PreloadState error={preloadError} exiting={isLoaderExiting} />;
+        return <PreloadState error={preloadError} exiting={isLoaderExiting} onRetry={retryPreload} />;
     }
 
     return (

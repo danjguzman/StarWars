@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo } from "react";
-import { Alert, Box, Stack } from "@mantine/core";
+import { Alert, Box, Button, Stack, Text } from "@mantine/core";
 import { Users } from "phosphor-react";
 import Modal from "@components/Modal";
 import ListTemplate from "@components/PageTemplate/ListTemplate";
@@ -22,6 +22,7 @@ export default function People() {
         loading,
         loadingMore,
         error,
+        lastFailedRequestMode,
         hasMore,
         fetchPeople,
     } = usePeopleStore();
@@ -73,6 +74,15 @@ export default function People() {
         openPersonByIndex((selectedPersonIndex + 1) % modalPeople.length);
     }, [modalPeople.length, openPersonByIndex, selectedPersonIndex]);
 
+    const retryPeopleLoad = useCallback(() => {
+        if (lastFailedRequestMode === "nextPage" && visiblePeople.length > 0) {
+            void fetchPeople({ nextPage: true });
+            return;
+        }
+
+        void fetchPeople({ targetCount: initialTargetCount });
+    }, [fetchPeople, initialTargetCount, lastFailedRequestMode, visiblePeople.length]);
+
     /* Invoke Store to fetch initial data on first render with estimated tile count. */
     useEffect(() => {
         /* Invoke store directly. */
@@ -86,8 +96,6 @@ export default function People() {
         fetchPeople({ nextPage: true });
     }, [fetchPeople, hasMore, loading, loadingMore, personId, selectedPersonIndex]);
 
-    if (error) return <Alert color="red">{error}</Alert>;
-
     return (
         <PageTemplate
             title="People"
@@ -98,6 +106,21 @@ export default function People() {
             }
         >
             <Stack gap="md">
+                {error ? (
+                    <Alert
+                        color="red"
+                        title={lastFailedRequestMode === "nextPage" ? "Couldn't load more people" : "Couldn't load the People archive"}
+                        variant="light"
+                    >
+                        <Stack gap="xs" align="flex-start">
+                            <Text size="sm">{error}</Text>
+                            <Button variant="light" color="red" onClick={retryPeopleLoad}>
+                                {lastFailedRequestMode === "nextPage" ? "Try loading more again" : "Retry loading people"}
+                            </Button>
+                        </Stack>
+                    </Alert>
+                ) : null}
+
                 <ListTemplate
                     items={visiblePeople}
                     entityKey="people"

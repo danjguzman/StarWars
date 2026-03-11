@@ -103,6 +103,7 @@ describe('People page modal behavior', () => {
             loading: false,
             loadingMore: false,
             error: null,
+            lastFailedRequestMode: null,
             hasMore: true,
             fetchPeople,
         } as ReturnType<typeof usePeopleStore>);
@@ -130,5 +131,27 @@ describe('People page modal behavior', () => {
         expect(screen.getByTestId('location-display')).toHaveTextContent('/people/3');
         await user.click(screen.getByRole('button', { name: 'Next person' }));
         expect(screen.getByTestId('location-display')).toHaveTextContent('/people/1');
+    });
+
+    test('shows a retry action when the initial people load fails', async () => {
+        const fetchPeople = jest.fn();
+        mockedUsePeopleStore.mockReturnValue({
+            people: [],
+            loading: false,
+            loadingMore: false,
+            error: "We couldn't load the People archive. Please try again.",
+            lastFailedRequestMode: 'initial',
+            hasMore: true,
+            fetchPeople,
+        } as ReturnType<typeof usePeopleStore>);
+        mockedGetCachedValue.mockReturnValue(null);
+
+        const user = userEvent.setup();
+        renderPeoplePage('/people');
+
+        expect(screen.getByRole('alert', { name: "Couldn't load the People archive" })).toBeInTheDocument();
+        await user.click(screen.getByRole('button', { name: 'Retry loading people' }));
+
+        expect(fetchPeople).toHaveBeenCalledWith({ targetCount: 12 });
     });
 });

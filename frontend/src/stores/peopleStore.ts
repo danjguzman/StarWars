@@ -2,14 +2,18 @@ import { create } from "zustand";
 import { type Person } from "@types";
 import { loadPeople } from "@services/peopleService";
 import { MIN_LOADING_MS } from "@utils/consts";
+import { buildUserFacingError } from "@utils/errors";
 import { waitForMinimumLoading } from "@utils/loading";
 import { collectPagedResourcesUntilTarget, filterUniqueResourcesByUrl, shouldSkipFetch } from "@utils/pagedResource";
+
+type PeopleRequestMode = "initial" | "nextPage";
 
 interface PeopleState {
     people: Person[];
     loading: boolean;
     loadingMore: boolean;
     error: string | null;
+    lastFailedRequestMode: PeopleRequestMode | null;
     currentPage: number;
     hasMore: boolean;
     fetchPeople: (options?: { nextPage?: boolean; targetCount?: number }) => Promise<void>;
@@ -20,6 +24,7 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
     loading: false,
     loadingMore: false,
     error: null,
+    lastFailedRequestMode: null,
     currentPage: 0,
     hasMore: true,
     fetchPeople: async (options) => {
@@ -49,7 +54,7 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
             if (nextPage) {
 
                 /* Set Loading Flags */
-                set({ loadingMore: true, error: null });
+                set({ loadingMore: true, error: null, lastFailedRequestMode: null });
 
                 /* Resolve the next page from cache first, then API if needed. */
                 const pageToLoad = state.currentPage + 1;
@@ -68,13 +73,14 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
                     currentPage: pageToLoad,
                     hasMore: pageData.hasMore && newPeople.length > 0,
                     loadingMore: false,
+                    lastFailedRequestMode: null,
                 });
                 return;
 
             } else {
 
                 /* Clear Loading Flags */
-                set({ loading: true, loadingMore: false, error: null });
+                set({ loading: true, loadingMore: false, error: null, lastFailedRequestMode: null });
 
             }
 
@@ -93,13 +99,17 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
                 people: initialPeopleLoad.items,
                 currentPage: initialPeopleLoad.currentPage,
                 hasMore: initialPeopleLoad.hasMore,
+                lastFailedRequestMode: null,
             });
 
-        } catch {
+        } catch (error) {
 
             /* Set error and clear loading flags on request failure. */
             set({
-                error: nextPage ? "Failed to load more people" : "Failed to load people",
+                error: nextPage
+                    ? buildUserFacingError("We couldn't load more people", error, "Please try again")
+                    : buildUserFacingError("We couldn't load the People archive", error, "Please try again"),
+                lastFailedRequestMode: nextPage ? "nextPage" : "initial",
                 loading: false,
                 loadingMore: false,
             });

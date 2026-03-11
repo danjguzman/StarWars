@@ -75,14 +75,16 @@ export default function HomeLayout() {
                     <Group h="100%" justify="space-between" align="center" wrap="nowrap">
 
                         {/* Page Title. */}
-                        <Box className={styles.headerBrand}>
-                            <Text c="yellow.4" className={styles.headerTitleLine}>
-                                Star Wars
-                            </Text>
-                            <Text c="yellow.4" className={styles.headerTitleLine}>
-                                Explorer
-                            </Text>
-                        </Box>
+                        <NavLink to="/films" className={styles.headerBrandLink} aria-label="Go to Films">
+                            <Box className={styles.headerBrand}>
+                                <Text c="yellow.4" className={styles.headerTitleLine}>
+                                    Star Wars
+                                </Text>
+                                <Text c="yellow.4" className={styles.headerTitleLine}>
+                                    Explorer
+                                </Text>
+                            </Box>
+                        </NavLink>
 
                         {/* Nav Links. */}
                         {!useCompactNav && (

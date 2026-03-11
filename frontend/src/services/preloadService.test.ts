@@ -127,7 +127,7 @@ describe('preloadService', () => {
             return Promise.resolve([{ url }]);
         });
 
-        await expect(preloadSwapiData()).rejects.toThrow('people preload failed');
+        await expect(preloadSwapiData()).rejects.toThrow("We couldn't prepare the People archive. people preload failed.");
         shouldFail = false;
         await expect(preloadSwapiData()).resolves.toBeUndefined();
         expect(
