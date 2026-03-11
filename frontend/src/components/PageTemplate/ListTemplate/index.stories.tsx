@@ -21,7 +21,7 @@ const meta = {
     parameters: {
         docs: {
             description: {
-                component: 'Grid list used for browse pages. The documented states cover the most meaningful collection behaviors: populated results, active infinite loading, and the completed browse state.',
+                component: 'Grid list used for browse pages. The documented states cover the most meaningful collection behaviors: active infinite loading, completed browse results, and missing display labels.',
             },
         },
     },
@@ -30,6 +30,7 @@ const meta = {
         entityKey: 'people',
         hasMore: false,
         loadingMore: false,
+        showCompletionIndicator: false,
         onLoadMore: action('load-more'),
         onItemClick: action('item-click'),
     },
@@ -38,8 +39,6 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
-
-export const Populated: Story = {};
 
 export const LoadingMore: Story = {
     args: {

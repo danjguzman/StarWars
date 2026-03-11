@@ -89,4 +89,27 @@ describe('ListTemplate', () => {
         await user.click(screen.getByRole('button', { name: 'Scroll to top' }));
         expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
     });
+
+    test('keeps portraits hidden until they finish loading so missing images never flash alt text', () => {
+        const items = [{ url: 'https://swapi.info/api/people/1', name: 'Luke Skywalker' }];
+
+        renderWithMantine(
+            <ListTemplate
+                items={items}
+                entityKey="people"
+                onLoadMore={jest.fn()}
+                hasMore={false}
+                loadingMore={false}
+            />
+        );
+
+        const portrait = screen.getByAltText('Luke Skywalker portrait');
+        expect(portrait).toHaveAttribute('data-loaded', 'false');
+        expect(portrait).toHaveClass('avatarImageHidden');
+
+        fireEvent.load(portrait);
+
+        expect(portrait).toHaveAttribute('data-loaded', 'true');
+        expect(portrait).not.toHaveClass('avatarImageHidden');
+    });
 });

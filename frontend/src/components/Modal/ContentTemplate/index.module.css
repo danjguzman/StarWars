@@ -244,20 +244,21 @@
 .bottomOrbit {
     width: min(96%, 700px);
     margin-top: 18px;
-    display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 10px;
     align-items: start;
-    transition: width 240ms ease, gap 240ms ease, grid-template-columns 240ms ease, margin-top 240ms ease;
+    transition: width 240ms ease, gap 240ms ease, margin-top 240ms ease;
 }
 
 .bottomOrbitInline {
     width: 100%;
     margin-top: 8px;
     display: flex;
-    flex-direction: row;
+    flex-wrap: wrap;
     align-items: flex-start;
-    justify-content: space-between;
+    justify-content: center;
     gap: 12px;
 }
 
@@ -294,9 +295,6 @@
         width: min(94%, 560px);
     }
 
-    .bottomOrbit {
-        grid-template-columns: repeat(5, minmax(44px, 1fr));
-    }
 }
 
 @media (max-width: 720px) {
@@ -355,7 +353,6 @@
 
     .bottomOrbit {
         width: 100%;
-        grid-template-columns: repeat(5, minmax(0, 1fr));
         margin-top: auto;
         margin-bottom: 0;
         gap: 20px;

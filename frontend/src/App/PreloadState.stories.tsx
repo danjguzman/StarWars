@@ -79,12 +79,12 @@ type Story = StoryObj<typeof meta>;
 export const LoadingAndExiting: Story = {
     name: 'Loading & Exiting',
     render: function LoadingAndExitingStory() {
-        return <SimulatedLoadingExitState exitDelayMs={5000} />;
+        return <SimulatedLoadingExitState exitDelayMs={2000} />;
     },
     parameters: {
         docs: {
             description: {
-                story: 'Starts in the normal loading state, then switches into the exit animation after 5 seconds.',
+                story: 'Starts in the normal loading state, then switches into the exit animation after 2 seconds.',
             },
         },
     },
@@ -95,7 +95,7 @@ export const SlowConnection: Story = {
     render: function SlowConnectionStory() {
         return (
             <SimulatedPreloadState
-                failureDelayMs={5000}
+                failureDelayMs={2000}
                 failureMessage="We couldn't prepare the Star Wars archive. The request took too long and timed out."
             />
         );
@@ -103,7 +103,7 @@ export const SlowConnection: Story = {
     parameters: {
         docs: {
             description: {
-                story: 'Starts as a loading preloader, then flips into a retryable timeout failure after 5 seconds so you can review the waiting-to-error transition directly in Storybook.',
+                story: 'Starts as a loading preloader, then flips into a retryable timeout failure after 2 seconds so you can review the waiting-to-error transition directly in Storybook.',
             },
         },
     },

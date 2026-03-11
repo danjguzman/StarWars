@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from "react";
 import {
     AppShell,
     Box,
@@ -17,9 +18,49 @@ import {
     Users as UsersIcon,
 } from "phosphor-react";
 import { FilmReelIcon } from "@phosphor-icons/react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, useLocation, useOutlet } from "react-router-dom";
 import { HEADER_HEIGHT_CSS, NAV_ITEMS } from "@utils/consts";
 import styles from "./index.module.css";
+
+function pageTransitionKeyFromPath(pathname: string) {
+    const [firstSegment] = pathname.split("/").filter(Boolean);
+    return firstSegment ?? "home";
+}
+
+function scrollPageToTop() {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+
+    if (document.scrollingElement) {
+        document.scrollingElement.scrollTop = 0;
+        document.scrollingElement.scrollLeft = 0;
+    }
+}
+
+function RouteTransitionOutlet() {
+    const location = useLocation();
+    const outlet = useOutlet();
+    const transitionKey = pageTransitionKeyFromPath(location.pathname);
+    const previousTransitionKeyRef = useRef(transitionKey);
+
+    useLayoutEffect(() => {
+        const previousTransitionKey = previousTransitionKeyRef.current;
+        previousTransitionKeyRef.current = transitionKey;
+
+        if (previousTransitionKey !== transitionKey) {
+            scrollPageToTop();
+        }
+    }, [transitionKey]);
+
+    if (!outlet) return null;
+
+    return (
+        <Box className={styles.routeTransitionShell}>
+            <Box key={transitionKey} className={styles.routePage}>
+                {outlet}
+            </Box>
+        </Box>
+    );
+}
 
 function getMobileMenuIcon(path: string, color: string) {
     if (path === "films") return <FilmReelIcon size={24} weight="duotone" color={color} />;
@@ -134,7 +175,7 @@ export default function HomeLayout() {
                                         />
                                     </Menu.Target>
 
-                                    {/* Mobile Dropdown Menu Display. */}
+                {/* Mobile Dropdown Menu Display. */}
                                     <Menu.Dropdown className={styles.mobileMenuDropdown}>
                                         {NAV_ITEMS.map((item) => {
                                             const isActive = location.pathname === `/${item.path}`;
@@ -204,7 +245,7 @@ export default function HomeLayout() {
             {/* Main Body Display */}
             <AppShell.Main>
                 <Container size="lg" py="xl">
-                    <Outlet />
+                    <RouteTransitionOutlet />
                 </Container>
             </AppShell.Main>
 

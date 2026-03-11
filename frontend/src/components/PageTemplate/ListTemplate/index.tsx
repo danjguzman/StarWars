@@ -22,6 +22,7 @@ interface ListTemplateProps<TItem extends { url: string }> {
     onLoadMore: () => void;
     hasMore: boolean;
     loadingMore: boolean;
+    showCompletionIndicator?: boolean;
     labelKey?: keyof TItem & string;
     onItemClick?: (selection: { item: TItem; label: string }) => void;
 }
@@ -32,10 +33,12 @@ export default function ListTemplate<TItem extends { url: string }>({
     onLoadMore,
     hasMore,
     loadingMore,
+    showCompletionIndicator = true,
     labelKey = "name" as keyof TItem & string,
     onItemClick,
 }: ListTemplateProps<TItem>) {
     const [missingImageByUrl, setMissingImageByUrl] = useState<Record<string, boolean>>({});
+    const [loadedImageByUrl, setLoadedImageByUrl] = useState<Record<string, boolean>>({});
     const sentinelRef = useInfiniteScroll({
         hasMore,
         onLoadMore,
@@ -75,6 +78,7 @@ export default function ListTemplate<TItem extends { url: string }>({
                     const itemLabel = getItemLabel(item);
                     const imageSrc = getItemImageSrc(item);
                     const imageMissing = !imageSrc || Boolean(missingImageByUrl[item.url]);
+                    const imageLoaded = Boolean(loadedImageByUrl[item.url]) && !imageMissing;
                     const ringGradientId = getRingGradientId(item);
                     const isInteractive = Boolean(onItemClick);
 
@@ -136,10 +140,11 @@ export default function ListTemplate<TItem extends { url: string }>({
                                     >
                                         {!imageMissing && imageSrc && (
                                             <Box
-                                                className={styles.avatarImage}
+                                                className={`${styles.avatarImage}${imageLoaded ? "" : ` ${styles.avatarImageHidden}`}`}
                                                 component="img"
                                                 src={imageSrc}
                                                 alt={`${itemLabel} portrait`}
+                                                data-loaded={imageLoaded ? "true" : "false"}
                                                 w="100%"
                                                 h="100%"
                                                 style={{
@@ -147,7 +152,17 @@ export default function ListTemplate<TItem extends { url: string }>({
                                                     objectPosition: "top center",
                                                     display: "block",
                                                 }}
+                                                onLoad={() => {
+                                                    setLoadedImageByUrl((prev) => ({
+                                                        ...prev,
+                                                        [item.url]: true,
+                                                    }));
+                                                }}
                                                 onError={() => {
+                                                    setLoadedImageByUrl((prev) => ({
+                                                        ...prev,
+                                                        [item.url]: false,
+                                                    }));
                                                     setMissingImageByUrl((prev) => ({
                                                         ...prev,
                                                         [item.url]: true,
@@ -155,7 +170,7 @@ export default function ListTemplate<TItem extends { url: string }>({
                                                 }}
                                             />
                                         )}
-                                        {(imageMissing || !imageSrc) && (
+                                        {(!imageLoaded || imageMissing || !imageSrc) && (
                                             <User size={96} color="var(--mantine-color-gray-5)" weight="regular" />
                                         )}
                                     </Box>
@@ -207,7 +222,7 @@ export default function ListTemplate<TItem extends { url: string }>({
                 hasItems={items.length > 0}
                 hasMore={hasMore}
                 loadingMore={loadingMore}
-                showDone={!hasMore && items.length > 0}
+                showDone={showCompletionIndicator && !hasMore && items.length > 0}
                 loadingIndicator={
                     <Box className={styles.loadingIcon}>
                         <CircleNotchIcon size={32} weight="duotone" color="currentColor" />

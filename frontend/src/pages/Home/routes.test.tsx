@@ -35,6 +35,17 @@ function renderHomeRoutes(initialEntry: string) {
 }
 
 describe('homeRoutes', () => {
+    const originalScrollTo = window.scrollTo;
+
+    beforeEach(() => {
+        window.scrollTo = jest.fn();
+    });
+
+    afterEach(() => {
+        jest.useRealTimers();
+        window.scrollTo = originalScrollTo;
+    });
+
     test('loads the matching section page after clicking a header route', async () => {
         const user = userEvent.setup();
         renderHomeRoutes('/');
@@ -50,6 +61,27 @@ describe('homeRoutes', () => {
     test('renders the planets browse page for a detail route', () => {
         renderHomeRoutes('/planets/1');
         expect(screen.getByText('Planets page')).toBeInTheDocument();
+    });
+
+    test('remounts the top-level page immediately when switching sections', async () => {
+        const user = userEvent.setup();
+
+        renderHomeRoutes('/films');
+        expect(screen.getByText('Films page')).toBeInTheDocument();
+
+        await user.click(screen.getByRole('link', { name: 'People' }));
+
+        expect(await screen.findByText('People page')).toBeInTheDocument();
+        expect(screen.queryByText('Films page')).not.toBeInTheDocument();
+    });
+
+    test('scrolls back to the top when moving between top-level pages', async () => {
+        const user = userEvent.setup();
+
+        renderHomeRoutes('/films');
+        await user.click(screen.getByRole('link', { name: 'Planets' }));
+
+        expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, left: 0, behavior: 'auto' });
     });
 
     test('shows the NotFound component for an unknown route', () => {
