@@ -39,6 +39,13 @@ export const SPECIES_ALL_CACHE_TTL_MS = 5 * 60 * 1000;
 export const SPECIES_CACHE_NAME = "species";
 export const SPECIES_CACHE_TTL_MS = 5 * 60 * 1000;
 
+/* Shared Vehicles data constants. */
+export const VEHICLES_FALLBACK_PAGE_SIZE = 12;
+export const VEHICLES_ALL_CACHE_KEY = "vehicles:all";
+export const VEHICLES_ALL_CACHE_TTL_MS = 5 * 60 * 1000;
+export const VEHICLES_CACHE_NAME = "vehicles";
+export const VEHICLES_CACHE_TTL_MS = 5 * 60 * 1000;
+
 /* Shared loading timing constants. */
 export const MIN_LOADING_MS = 1000;
 
