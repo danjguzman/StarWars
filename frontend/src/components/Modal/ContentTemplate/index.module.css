@@ -27,39 +27,31 @@
     align-content: center;
 }
 
-.floatingCategoryHeader {
+.layoutCompact .compactNavRow {
     position: fixed;
-    top: calc(env(safe-area-inset-top, 0px) + 16px);
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
-    z-index: 1200;
-    display: inline-flex;
-    align-items: center;
-    gap: 10px;
+    width: calc(min(960px, 94vw) - (2 * clamp(10px, 2.2vw, 22px)));
+    max-width: calc(min(960px, 94vw) - (2 * clamp(10px, 2.2vw, 22px)));
+    margin-top: 0;
+    padding: 0;
+    transform: translate(-50%, -50%);
     pointer-events: none;
+    z-index: 2;
 }
 
-.floatingCategoryIcon {
-    width: 26px;
-    height: 26px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+.layoutCompact .compactNavRow > * {
+    pointer-events: auto;
 }
 
-.floatingCategoryIcon :global(svg) {
-    width: 100%;
-    height: 100%;
-    color: rgba(243, 247, 252, 0.96);
-    filter: drop-shadow(0 0 9px rgba(255, 255, 255, 0.6));
+.layoutCompact .compactNavButton {
+    width: 50px;
+    height: 50px;
 }
 
-.floatingCategoryLabel {
-    font-family: "Oxanium", sans-serif;
-    font-size: clamp(1.16rem, 2.3vw, 1.9rem);
-    line-height: 1;
-    color: rgba(246, 249, 253, 0.98);
-    text-shadow: 0 0 12px rgba(255, 255, 255, 0.75), 0 0 24px rgba(255, 255, 255, 0.38);
+.layoutCompact .compactNavButton :global(svg) {
+    width: 24px;
+    height: 24px;
 }
 
 .stageRow {
@@ -140,9 +132,12 @@
 }
 
 .heroFrameCompact {
-    width: 220px;
-    min-width: 220px;
-    max-width: 220px;
+    width: 200px;
+    min-width: 200px;
+    max-width: 200px;
+    height: 200px;
+    aspect-ratio: 1 / 1;
+    border-radius: 50%;
 }
 
 .heroImage {
@@ -183,8 +178,18 @@
     flex: 1;
     min-width: 0;
     position: relative;
-    padding-top: 42px;
+    padding-top: 14px;
     transition: padding-top 240ms ease;
+}
+
+.traitsCardUltraCompact {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.traitsCardCompact .traitsGrid {
+    margin-top: 0;
 }
 
 .nameText {
@@ -196,6 +201,11 @@
     color: #e7ebf2;
     text-shadow: 0 0 12px rgba(255, 255, 255, 0.78), 0 0 22px rgba(255, 255, 255, 0.34);
     transition: font-size 240ms ease;
+}
+
+.nameTextInline {
+    text-align: left;
+    font-size: 1.4rem;
 }
 
 .traitsGrid {
@@ -216,6 +226,7 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     color: rgba(204, 211, 221, 0.62);
+    text-align: left;
     transition: font-size 240ms ease;
 }
 
@@ -226,6 +237,7 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+    text-align: left;
     transition: font-size 240ms ease;
 }
 
@@ -237,6 +249,16 @@
     gap: 10px;
     align-items: start;
     transition: width 240ms ease, gap 240ms ease, grid-template-columns 240ms ease, margin-top 240ms ease;
+}
+
+.bottomOrbitInline {
+    width: 100%;
+    margin-top: 8px;
+    display: flex;
+    flex-direction: row;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -279,43 +301,43 @@
 
 @media (max-width: 720px) {
     .layout {
-        min-width: 460px;
-        min-height: 900px;
+        min-width: 365px;
+        min-height: 100dvh;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 12px;
+        box-sizing: border-box;
+        padding: 10px 0 6px;
     }
 
     .stageRow {
         margin-top: 10px;
-        grid-template-columns: 88px 1fr 88px;
+        grid-template-columns: 40px 1fr 40px;
     }
 
     .sideOrb {
-        width: 88px;
-        height: 88px;
+        width: 40px;
+        height: 40px;
+    }
+
+    .sideOrb :global(svg) {
+        width: 20px;
+        height: 20px;
     }
 
     .heroFrame {
-        width: clamp(200px, 46vw, 320px);
+        width: 200px;
         min-width: 200px;
-        max-width: 320px;
+        max-width: 200px;
+        height: 200px;
+        aspect-ratio: 1 / 1;
+        border-radius: 50%;
     }
 
     .nameCard {
         width: 100%;
         max-width: 100%;
-    }
-
-    .floatingCategoryHeader {
-        top: calc(env(safe-area-inset-top, 0px) + 14px);
-        gap: 8px;
-    }
-
-    .floatingCategoryIcon {
-        width: 22px;
-        height: 22px;
-    }
-
-    .floatingCategoryLabel {
-        font-size: clamp(0.94rem, 3.2vw, 1.2rem);
     }
 
     .traitsCard {
@@ -327,30 +349,66 @@
     }
 
     .traitsGrid {
-        grid-template-columns: minmax(0, 1fr);
-        gap: 8px;
+        margin-top: 0;
+        gap: 10px 16px;
     }
 
     .bottomOrbit {
+        width: 100%;
         grid-template-columns: repeat(5, minmax(0, 1fr));
-        gap: 10px;
+        margin-top: auto;
+        margin-bottom: 0;
+        gap: 20px;
+        padding-bottom: 0;
+    }
+}
+
+@media (max-width: 600px) and (orientation: landscape) {
+    .stageRow {
+        position: relative;
+        width: 100%;
+        margin-top: 0;
+        grid-template-columns: 1fr;
+        justify-items: center;
     }
 
-    .orbitBubble {
-        width: 72px;
-        height: 72px;
-        font-size: 1.1rem;
+    .stageRow > .sideOrb {
+        position: absolute;
+        top: 50%;
+        z-index: 1;
+        transform: translateY(-50%);
     }
 
-    .orbitBadge {
-        top: -4px;
-        right: -4px;
+    .stageRow > .sideOrb:first-child {
+        left: 0;
+    }
+
+    .stageRow > .sideOrb:last-child {
+        right: 0;
+    }
+
+    .sideOrb {
+        width: 50px;
+        height: 50px;
+    }
+
+    .sideOrb :global(svg) {
         width: 24px;
         height: 24px;
-        font-size: 0.58rem;
+    }
+}
+
+@media (max-height: 420px) and (orientation: landscape) {
+    .layout {
+        min-height: auto;
+        justify-content: center;
+        padding-top: 0;
+        padding-bottom: 0;
     }
 
-    .orbitNode small {
-        font-size: 0.78rem;
+    .layoutCompact {
+        grid-template-rows: auto;
+        gap: 0;
+        padding-bottom: 0;
     }
 }

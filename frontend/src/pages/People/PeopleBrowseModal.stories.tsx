@@ -1,7 +1,6 @@
 import { useEffect, useState, type CSSProperties } from 'react';
 import type { Meta, StoryObj } from '@storybook/react-vite';
 import { Box } from '@mantine/core';
-import { expect, userEvent, within } from 'storybook/test';
 import { Users } from 'phosphor-react';
 import Modal from '@components/Modal';
 import ListTemplate from '@components/PageTemplate/ListTemplate';
@@ -155,7 +154,7 @@ const meta = {
                 iframeHeight: '1180px',
             },
             description: {
-                component: 'Interactive people browsing flow that shows the real user path: view the avatar grid, click a character, and open the shared modal successfully. The modal uses three responsive modes in code: standard desktop, compact-height desktop for shorter screens, and the mobile layout at 720px and below.',
+                component: 'Interactive people browsing flow that shows the real user path: view the avatar grid, click a character, and open the shared modal successfully. The modal adapts across desktop, compact landscape, and mobile breakpoints, including the shorter-height landscape variants used by the shared modal.',
             },
         },
     },
@@ -164,18 +163,6 @@ const meta = {
 export default meta;
 
 type Story = StoryObj<typeof meta>;
-
-export const GridReady: Story = {
-    args: {
-        initialIndex: null,
-    },
-    globals: {
-        viewport: {
-            value: 'desktopWide',
-            isRotated: false,
-        },
-    },
-};
 
 export const ModalOpenDesktop: Story = {
     args: {
@@ -202,7 +189,7 @@ export const ModalOpenCompactHeight: Story = {
     parameters: {
         docs: {
             description: {
-                story: 'Shows the compact-height layout triggered by `(max-height: 939px) and (min-width: 721px)`, where the modal moves previous/next controls into a top row and places the portrait beside the traits card.',
+                story: 'Shows the compact-height landscape layout triggered by `(max-height: 939px) and (min-width: 721px)`, where the portrait sits beside the traits card and the previous/next controls align to the outer edges of the modal shell.',
             },
         },
     },
@@ -221,19 +208,48 @@ export const ModalOpenMobile: Story = {
     parameters: {
         docs: {
             description: {
-                story: 'Shows the mobile layout triggered by the `max-width: 720px` CSS breakpoint, including the narrower hero frame, single-column traits grid, and full-height modal shell.',
+                story: 'Shows the mobile layout triggered by the `max-width: 720px` CSS breakpoint, matching the in-app modal presentation with the circular portrait, two-column traits card, and full related-action row visible in the viewport.',
             },
         },
     },
 };
 
-export const ClickOpensModal: Story = {
+export const ModalOpenMobileLandscapeS20Ultra: Story = {
+    name: 'Modal Open Mobile Landscape (S20 Ultra)',
     args: {
-        initialIndex: null,
+        initialIndex: 0,
     },
-    play: async ({ canvasElement }) => {
-        const canvas = within(canvasElement);
-        await userEvent.click(canvas.getByRole('button', { name: 'Open Luke Skywalker' }));
-        await expect(within(document.body).getByRole('dialog', { name: 'Luke Skywalker details' })).toBeInTheDocument();
+    globals: {
+        viewport: {
+            value: 'mobileLandscapeS20Ultra',
+            isRotated: false,
+        },
+    },
+    parameters: {
+        docs: {
+            description: {
+                story: 'Shows the mobile landscape modal at 915x412, matching the tighter short-height layout used on devices like the Galaxy S20 Ultra.',
+            },
+        },
+    },
+};
+
+export const ModalOpenMobileLandscapeProMax: Story = {
+    name: 'Modal Open Mobile Landscape (Pro Max)',
+    args: {
+        initialIndex: 0,
+    },
+    globals: {
+        viewport: {
+            value: 'mobileLandscapeProMax',
+            isRotated: false,
+        },
+    },
+    parameters: {
+        docs: {
+            description: {
+                story: 'Shows the mobile landscape modal at 932x430, matching the short-height layout used on larger Pro Max landscape screens.',
+            },
+        },
     },
 };

@@ -58,7 +58,7 @@ export const Complete: Story = {
 export const WithMissingNames: Story = {
     args: {
         items: [
-            { url: 'https://swapi.info/api/people/5', name: 'Laia Organa' },
+            { url: 'https://swapi.info/api/people/5', name: 'Leia Organa' },
             { url: 'https://swapi.info/api/people/6', name: '' },
             { url: 'https://swapi.info/api/people/7', name: 'Beru Whitesun lars' },
         ],

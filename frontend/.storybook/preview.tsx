@@ -30,7 +30,21 @@ const customViewports = {
         name: 'Mobile Tall',
         styles: {
             width: '390px',
-            height: '844px',
+            height: '932px',
+        },
+    },
+    mobileLandscapeS20Ultra: {
+        name: 'Mobile Landscape S20 Ultra',
+        styles: {
+            width: '915px',
+            height: '412px',
+        },
+    },
+    mobileLandscapeProMax: {
+        name: 'Mobile Landscape Pro Max',
+        styles: {
+            width: '932px',
+            height: '430px',
         },
     },
 } satisfies ViewportMap;

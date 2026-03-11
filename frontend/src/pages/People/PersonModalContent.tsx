@@ -1,11 +1,9 @@
 import { useMemo } from "react";
-import { type IconProps } from "phosphor-react";
 import {
     Alien as AlienIcon,
     FlyingSaucer as FlyingSaucerIcon,
     Planet as PlanetIcon,
     TrainRegional as TrainRegionalIcon,
-    Users as UsersIcon,
 } from "phosphor-react";
 import { FilmReelIcon } from "@phosphor-icons/react";
 import ContentTemplate from "@components/Modal/ContentTemplate";
@@ -13,7 +11,7 @@ import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Perso
 import { ASSET_IMAGE_BASE_PATH } from "@utils/consts";
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
-import { resourceCategoryFromUrl, resourceIdFromUrl } from "@utils/swapi";
+import { resourceIdFromUrl } from "@utils/swapi";
 import { useResolvedResourceNames } from "@utils/useResolvedResourceNames";
 
 interface PersonModalContentProps {
@@ -22,20 +20,6 @@ interface PersonModalContentProps {
     total: number;
     onPrev: () => void;
     onNext: () => void;
-}
-
-/* Pick the icon that matches the current resource type. */
-function categoryIconByKey(categoryKey: string) {
-    const iconProps: IconProps = {
-        weight: "duotone",
-        "aria-hidden": true,
-    };
-    if (categoryKey === "films") return <FilmReelIcon {...iconProps} />;
-    if (categoryKey === "species") return <AlienIcon {...iconProps} />;
-    if (categoryKey === "starships") return <FlyingSaucerIcon {...iconProps} />;
-    if (categoryKey === "vehicles") return <TrainRegionalIcon {...iconProps} />;
-    if (categoryKey === "planets") return <PlanetIcon {...iconProps} />;
-    return <UsersIcon {...iconProps} />;
 }
 
 export default function PersonModalContent({
@@ -47,8 +31,6 @@ export default function PersonModalContent({
 }: PersonModalContentProps) {
     const personId = resourceIdFromUrl(person.url);
     const portraitSrc = personId ? `${ASSET_IMAGE_BASE_PATH}/people/${personId}.jpg` : null;
-    const categoryLabel = resourceCategoryFromUrl(person.url, true);
-    const categoryKey = resourceCategoryFromUrl(person.url);
 
     /* Combine all related resource URLs into one list so they can be resolved once. */
     const relatedResourceUrls = useMemo(() => {
@@ -113,8 +95,6 @@ export default function PersonModalContent({
     return (
         <ContentTemplate
             title={person.name}
-            categoryLabel={categoryLabel}
-            categoryIcon={categoryIconByKey(categoryKey)}
             imageSrc={portraitSrc}
             imageAlt={`${person.name} portrait`}
             traits={traits}

@@ -2,15 +2,12 @@ import { type ReactNode } from "react";
 import { Box, Flex, Group, Text } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { CaretLeft, CaretRight, UserCircle } from "phosphor-react";
-import { createPortal } from "react-dom";
 import RelatedItems from "@components/Modal/RelatedItems";
 import { type ContentTemplateRelatedGroup, type ContentTemplateTrait } from "@types";
 import styles from "./index.module.css";
 
 interface ContentTemplateProps {
     title: string;
-    categoryLabel: string;
-    categoryIcon: ReactNode;
     imageSrc: string | null;
     imageAlt: string;
     traits: ContentTemplateTrait[];
@@ -22,8 +19,6 @@ interface ContentTemplateProps {
 
 export default function ContentTemplate({
     title,
-    categoryLabel,
-    categoryIcon,
     imageSrc,
     imageAlt,
     traits,
@@ -33,6 +28,7 @@ export default function ContentTemplate({
     imageFallback,
 }: ContentTemplateProps) {
     const useCompactHeightLayout = useMediaQuery("(max-height: 939px) and (min-width: 721px)");
+    const useUltraCompactLandscapeLayout = useMediaQuery("(max-height: 420px) and (orientation: landscape)");
     const fallbackMarkup = imageFallback ?? <UserCircle size={148} color="var(--mantine-color-gray-4)" />;
 
     /* Render the trait rows that appear in the details card. */
@@ -47,28 +43,26 @@ export default function ContentTemplate({
         </dl>
     );
 
-    /* Render the category label at the top of the modal using a portal. */
-    const floatingCategoryHeader = typeof document === "undefined"
-        ? null
-        : createPortal(
-            <Box className={styles.floatingCategoryHeader} aria-hidden="true">
-                <span className={styles.floatingCategoryIcon}>{categoryIcon}</span>
-                <Text component="span" className={styles.floatingCategoryLabel}>{categoryLabel}</Text>
-            </Box>,
-            document.body
-        );
+    const renderRelatedGroups = (className = styles.bottomOrbit) => (
+        <Box className={className}>
+            {relatedGroups.map((group, index) => (
+                <RelatedItems
+                    key={`${group.label}-${index}`}
+                    label={group.label}
+                    count={group.count}
+                    items={group.items}
+                    icon={group.icon}
+                />
+            ))}
+        </Box>
+    );
 
     return (
-        <>
-            {/* Show the floating category label above the modal. */}
-            {floatingCategoryHeader}
-
-            {/* Render the main modal content layout. */}
-            <Box className={`${styles.layout}${useCompactHeightLayout ? ` ${styles.layoutCompact}` : ""}`}>
-                {useCompactHeightLayout ? (
-                    <>
-                        {/* Show compact previous/next controls for shorter viewports. */}
-                        <Group className={styles.compactNavRow} justify="space-between" gap="md" wrap="nowrap">
+        <Box className={`${styles.layout}${useCompactHeightLayout ? ` ${styles.layoutCompact}` : ""}`}>
+            {useCompactHeightLayout ? (
+                <>
+                    {/* Show compact previous/next controls for shorter viewports. */}
+                    <Group className={styles.compactNavRow} justify="space-between" gap="md" wrap="nowrap">
 
                             {/* Go to the previous item. */}
                             <button
@@ -89,39 +83,45 @@ export default function ContentTemplate({
                             >
                                 <CaretRight size={36} weight="fill" />
                             </button>
-                        </Group>
+                    </Group>
 
-                        {/* Show the item title below the compact nav controls. */}
+                    {/* Show the item title below the compact nav controls. */}
+                    {!useUltraCompactLandscapeLayout ? (
                         <Box className={styles.nameCard}>
                             <Text className={styles.nameText}>{title}</Text>
                         </Box>
+                    ) : null}
 
-                        {/* Place the image and traits side by side in compact mode. */}
-                        <Flex className={styles.compactDetailsRow} align="stretch" gap="md">
+                    {/* Place the image and traits side by side in compact mode. */}
+                    <Flex className={styles.compactDetailsRow} align="stretch" gap="md">
 
-                            {/* Show the main image or the fallback artwork. */}
-                            <Box className={styles.heroColumn}>
-                                <Box className={`${styles.heroFrame} ${styles.heroFrameCompact}`}>
-                                    {imageSrc ? (
-                                        <img src={imageSrc} alt={imageAlt} className={styles.heroImage} />
-                                    ) : (
-                                        <Box className={styles.heroFallback}>
-                                            {fallbackMarkup}
-                                        </Box>
-                                    )}
-                                </Box>
+                        {/* Show the main image or the fallback artwork. */}
+                        <Box className={styles.heroColumn}>
+                            <Box className={`${styles.heroFrame} ${styles.heroFrameCompact}`}>
+                                {imageSrc ? (
+                                    <img src={imageSrc} alt={imageAlt} className={styles.heroImage} />
+                                ) : (
+                                    <Box className={styles.heroFallback}>
+                                        {fallbackMarkup}
+                                    </Box>
+                                )}
                             </Box>
+                        </Box>
 
-                            {/* Show the traits card next to the image in compact mode. */}
-                            <Box className={`${styles.traitsCard} ${styles.traitsCardCompact}`}>
-                                {renderTraitsGrid()}
-                            </Box>
-                        </Flex>
-                    </>
-                ) : (
-                    <>
-                        {/* Show the standard desktop layout with nav, image, and details stacked below. */}
-                        <Box className={styles.stageRow}>
+                        {/* Show the traits card next to the image in compact mode. */}
+                        <Box className={`${styles.traitsCard} ${styles.traitsCardCompact}${useUltraCompactLandscapeLayout ? ` ${styles.traitsCardUltraCompact}` : ""}`}>
+                            {useUltraCompactLandscapeLayout ? (
+                                <Text className={`${styles.nameText} ${styles.nameTextInline}`}>{title}</Text>
+                            ) : null}
+                            {renderTraitsGrid()}
+                            {useUltraCompactLandscapeLayout ? renderRelatedGroups(styles.bottomOrbitInline) : null}
+                        </Box>
+                    </Flex>
+                </>
+            ) : (
+                <>
+                    {/* Show the standard desktop layout with nav, image, and details stacked below. */}
+                    <Box className={styles.stageRow}>
 
                             {/* Go to the previous item. */}
                             <button type="button" className={styles.sideOrb} onClick={onPrev} aria-label="Previous item">
@@ -145,33 +145,28 @@ export default function ContentTemplate({
                             <button type="button" className={styles.sideOrb} onClick={onNext} aria-label="Next item">
                                 <CaretRight size={36} weight="fill" />
                             </button>
-                        </Box>
+                    </Box>
 
-                        {/* Show the item title below the main stage area. */}
+                    {/* Show the item title below the main stage area. */}
+                    {!useUltraCompactLandscapeLayout ? (
                         <Box className={styles.nameCard}>
                             <Text className={styles.nameText}>{title}</Text>
                         </Box>
+                    ) : null}
 
-                        {/* Show the traits card under the title in the standard layout. */}
-                        <Box className={styles.traitsCard}>
-                            {renderTraitsGrid()}
-                        </Box>
-                    </>
-                )}
+                    {/* Show the traits card under the title in the standard layout. */}
+                    <Box className={`${styles.traitsCard}${useUltraCompactLandscapeLayout ? ` ${styles.traitsCardUltraCompact}` : ""}`}>
+                        {useUltraCompactLandscapeLayout ? (
+                            <Text className={`${styles.nameText} ${styles.nameTextInline}`}>{title}</Text>
+                        ) : null}
+                        {renderTraitsGrid()}
+                        {useUltraCompactLandscapeLayout ? renderRelatedGroups(styles.bottomOrbitInline) : null}
+                    </Box>
+                </>
+            )}
 
-                {/* Show the related-resource buttons along the bottom of the modal. */}
-                <Box className={styles.bottomOrbit}>
-                    {relatedGroups.map((group, index) => (
-                        <RelatedItems
-                            key={`${group.label}-${index}`}
-                            label={group.label}
-                            count={group.count}
-                            items={group.items}
-                            icon={group.icon}
-                        />
-                    ))}
-                </Box>
-            </Box>
-        </>
+            {/* Show the related-resource buttons along the bottom of the modal. */}
+            {!useUltraCompactLandscapeLayout ? renderRelatedGroups() : null}
+        </Box>
     );
 }
