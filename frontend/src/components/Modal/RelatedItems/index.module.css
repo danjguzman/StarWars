@@ -134,7 +134,10 @@
     border: 1px solid var(--popover-border-color);
     background: rgba(15, 22, 31, 0.94);
     box-shadow: var(--popover-shadow);
-    overflow: hidden;
+    max-height: min(320px, calc(100dvh - 32px));
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
 }
 
 .menuDropdown .menuItem:hover,

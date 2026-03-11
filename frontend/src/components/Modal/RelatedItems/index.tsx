@@ -52,7 +52,15 @@ export default function RelatedItems({ label, count, icon, items }: RelatedItems
             {/* Show a dropdown menu when this group has multiple related items. */}
             {hasMenu ? (
 
-                <Menu shadow="md" width={220} position="top" offset={10} withinPortal zIndex={1300}>
+                <Menu
+                    shadow="md"
+                    width={220}
+                    position="top"
+                    offset={10}
+                    withinPortal
+                    zIndex={1300}
+                    middlewares={{ flip: true, shift: true }}
+                >
                     <Menu.Target>
                         {/* Use the bubble as the menu trigger. */}
                         <button type="button" className={styles.triggerButton} aria-label={`Show ${label}`}>

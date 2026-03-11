@@ -18,6 +18,13 @@ export const PEOPLE_ALL_CACHE_TTL_MS = 5 * 60 * 1000;
 export const PEOPLE_CACHE_NAME = "people";
 export const PEOPLE_CACHE_TTL_MS = 5 * 60 * 1000;
 
+/* Shared Films data constants. */
+export const FILMS_FALLBACK_PAGE_SIZE = 12;
+export const FILMS_ALL_CACHE_KEY = "films:all";
+export const FILMS_ALL_CACHE_TTL_MS = 5 * 60 * 1000;
+export const FILMS_CACHE_NAME = "films";
+export const FILMS_CACHE_TTL_MS = 5 * 60 * 1000;
+
 /* Shared loading timing constants. */
 export const MIN_LOADING_MS = 1000;
 

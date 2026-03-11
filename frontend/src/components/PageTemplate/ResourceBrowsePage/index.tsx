@@ -19,6 +19,7 @@ interface ResourceBrowsePageProps<TItem extends { url: string }> {
     error: string | null;
     lastFailedRequestMode: ResourceLoadMode;
     initialItemCount: number;
+    labelKey?: keyof TItem & string;
     fetchResources: (options?: { nextPage?: boolean; targetCount?: number }) => Promise<void>;
     getItemId: (item: TItem) => string | null;
     onOpenItem: (item: TItem) => void;
@@ -52,6 +53,7 @@ export default function ResourceBrowsePage<TItem extends { url: string }>({
     error,
     lastFailedRequestMode,
     initialItemCount,
+    labelKey,
     fetchResources,
     getItemId,
     onOpenItem,
@@ -154,6 +156,7 @@ export default function ResourceBrowsePage<TItem extends { url: string }>({
                 <ListTemplate
                     items={visibleItems}
                     entityKey={entityKey}
+                    labelKey={labelKey}
                     onLoadMore={() => {
                         void fetchResources({ nextPage: true });
                     }}

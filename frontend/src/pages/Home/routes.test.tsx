@@ -4,6 +4,11 @@ import userEvent from '@testing-library/user-event';
 import { homeRoutes } from '@pages/Home/routes';
 import { MemoryRouter, Routes } from 'react-router-dom';
 
+jest.mock('@pages/Films', () => ({
+    __esModule: true,
+    default: () => <div>Films page</div>,
+}));
+
 jest.mock('@pages/People', () => ({
     __esModule: true,
     default: () => <div>People page</div>,
@@ -29,13 +34,12 @@ describe('homeRoutes', () => {
         const user = userEvent.setup();
         renderHomeRoutes('/');
         await user.click(screen.getByRole('link', { name: 'Films' }));
-        expect(await screen.findByRole('heading', { name: 'Films' })).toBeInTheDocument();
-        expect(screen.getByText('Ready...')).toBeInTheDocument();
+        expect(await screen.findByText('Films page')).toBeInTheDocument();
     });
 
     test('renders the section page for a detail route', () => {
         renderHomeRoutes('/films/1');
-        expect(screen.getByRole('heading', { name: 'Films' })).toBeInTheDocument();
+        expect(screen.getByText('Films page')).toBeInTheDocument();
     });
 
     test('shows the NotFound component for an unknown route', () => {
