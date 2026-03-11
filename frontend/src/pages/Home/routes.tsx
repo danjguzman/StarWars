@@ -5,10 +5,11 @@ import HomeLayout, { HomePage, HomeSectionPage } from "@pages/Home";
 import PlanetsPage from "@pages/Planets";
 import PeoplePage from "@pages/People";
 import SpeciesPage from "@pages/Species";
+import StarshipsPage from "@pages/Starships";
 import VehiclesPage from "@pages/Vehicles";
 import { NAV_ITEMS } from "@utils/consts";
 
-const IMPLEMENTED_BROWSE_ROUTES = new Set(["films", "people", "planets", "species", "vehicles"]);
+const IMPLEMENTED_BROWSE_ROUTES = new Set(["films", "people", "planets", "species", "vehicles", "starships"]);
 
 export const homeRoutes = (
     <Route element={<HomeLayout />}>
@@ -23,6 +24,8 @@ export const homeRoutes = (
         <Route path="species/:speciesId" element={<SpeciesPage />} />
         <Route path="vehicles" element={<VehiclesPage />} />
         <Route path="vehicles/:vehicleId" element={<VehiclesPage />} />
+        <Route path="starships" element={<StarshipsPage />} />
+        <Route path="starships/:starshipId" element={<StarshipsPage />} />
         {NAV_ITEMS.filter((item) => !IMPLEMENTED_BROWSE_ROUTES.has(item.path)).map((item) => (
             <Route key={item.path} path={item.path} element={<HomeSectionPage title={item.label} />} />
         ))}

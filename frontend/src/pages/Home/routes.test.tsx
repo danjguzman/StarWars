@@ -24,6 +24,11 @@ jest.mock('@pages/Vehicles', () => ({
     default: () => <div>Vehicles page</div>,
 }));
 
+jest.mock('@pages/Starships', () => ({
+    __esModule: true,
+    default: () => <div>Starships page</div>,
+}));
+
 jest.mock('@pages/People', () => ({
     __esModule: true,
     default: () => <div>People page</div>,
@@ -81,6 +86,11 @@ describe('homeRoutes', () => {
     test('renders the vehicles browse page for a detail route', () => {
         renderHomeRoutes('/vehicles/1');
         expect(screen.getByText('Vehicles page')).toBeInTheDocument();
+    });
+
+    test('renders the starships browse page for a detail route', () => {
+        renderHomeRoutes('/starships/1');
+        expect(screen.getByText('Starships page')).toBeInTheDocument();
     });
 
     test('remounts the top-level page immediately when switching sections', async () => {

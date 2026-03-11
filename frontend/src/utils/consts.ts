@@ -46,6 +46,13 @@ export const VEHICLES_ALL_CACHE_TTL_MS = 5 * 60 * 1000;
 export const VEHICLES_CACHE_NAME = "vehicles";
 export const VEHICLES_CACHE_TTL_MS = 5 * 60 * 1000;
 
+/* Shared Starships data constants. */
+export const STARSHIPS_FALLBACK_PAGE_SIZE = 12;
+export const STARSHIPS_ALL_CACHE_KEY = "starships:all";
+export const STARSHIPS_ALL_CACHE_TTL_MS = 5 * 60 * 1000;
+export const STARSHIPS_CACHE_NAME = "starships";
+export const STARSHIPS_CACHE_TTL_MS = 5 * 60 * 1000;
+
 /* Shared loading timing constants. */
 export const MIN_LOADING_MS = 1000;
 
