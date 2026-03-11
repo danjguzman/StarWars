@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { type Person } from "@types";
 import { loadPeople } from "@services/peopleService";
-import { MIN_LOADING_MS } from "@utils/consts";
+import { getCachedValue } from "@utils/clientCache";
+import { MIN_LOADING_MS, PEOPLE_ALL_CACHE_KEY } from "@utils/consts";
 import { buildUserFacingError } from "@utils/errors";
 import { waitForMinimumLoading } from "@utils/loading";
 import { collectPagedResourcesUntilTarget, filterUniqueResourcesByUrl, shouldSkipFetch } from "@utils/pagedResource";
@@ -33,6 +34,8 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
         const nextPage = options?.nextPage ?? false;
         const targetCount = options?.targetCount ?? 0;
         const state = get();
+        const cachedPeopleCollection = getCachedValue<Person[]>(PEOPLE_ALL_CACHE_KEY);
+        const hasCollectionCache = Array.isArray(cachedPeopleCollection) && cachedPeopleCollection.length > 0;
 
         /* Skip requests when current state cannot fetch. */
         if (shouldSkipFetch({
@@ -91,7 +94,9 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
             });
 
             /* Keep loading visible for at least the minimum duration. */
-            await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
+            if (!hasCollectionCache) {
+                await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
+            }
 
             /* Replace list with aggregated results and update pagination state. */
             set({

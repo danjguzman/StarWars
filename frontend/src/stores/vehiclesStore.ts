@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { loadVehicles } from "@services/vehiclesService";
 import { type Vehicle } from "@types";
-import { MIN_LOADING_MS } from "@utils/consts";
+import { getCachedValue } from "@utils/clientCache";
+import { MIN_LOADING_MS, VEHICLES_ALL_CACHE_KEY } from "@utils/consts";
 import { buildUserFacingError } from "@utils/errors";
 import { waitForMinimumLoading } from "@utils/loading";
 import { collectPagedResourcesUntilTarget, filterUniqueResourcesByUrl, shouldSkipFetch } from "@utils/pagedResource";
@@ -31,6 +32,8 @@ export const useVehiclesStore = create<VehiclesState>((set, get) => ({
         const nextPage = options?.nextPage ?? false;
         const targetCount = options?.targetCount ?? 0;
         const state = get();
+        const cachedVehiclesCollection = getCachedValue<Vehicle[]>(VEHICLES_ALL_CACHE_KEY);
+        const hasCollectionCache = Array.isArray(cachedVehiclesCollection) && cachedVehiclesCollection.length > 0;
 
         if (shouldSkipFetch({
             nextPage,
@@ -72,7 +75,9 @@ export const useVehiclesStore = create<VehiclesState>((set, get) => ({
                 loadPage: loadVehicles,
             });
 
-            await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
+            if (!hasCollectionCache) {
+                await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
+            }
 
             set({
                 loading: false,

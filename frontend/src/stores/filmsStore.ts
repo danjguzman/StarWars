@@ -1,7 +1,8 @@
 import { create } from "zustand";
 import { loadFilms } from "@services/filmsService";
 import { type Film } from "@types";
-import { MIN_LOADING_MS } from "@utils/consts";
+import { getCachedValue } from "@utils/clientCache";
+import { FILMS_ALL_CACHE_KEY, MIN_LOADING_MS } from "@utils/consts";
 import { buildUserFacingError } from "@utils/errors";
 import { waitForMinimumLoading } from "@utils/loading";
 import { collectPagedResourcesUntilTarget, filterUniqueResourcesByUrl, shouldSkipFetch } from "@utils/pagedResource";
@@ -31,6 +32,8 @@ export const useFilmsStore = create<FilmsState>((set, get) => ({
         const nextPage = options?.nextPage ?? false;
         const targetCount = options?.targetCount ?? 0;
         const state = get();
+        const cachedFilmsCollection = getCachedValue<Film[]>(FILMS_ALL_CACHE_KEY);
+        const hasCollectionCache = Array.isArray(cachedFilmsCollection) && cachedFilmsCollection.length > 0;
 
         if (shouldSkipFetch({
             nextPage,
@@ -72,7 +75,9 @@ export const useFilmsStore = create<FilmsState>((set, get) => ({
                 loadPage: loadFilms,
             });
 
-            await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
+            if (!hasCollectionCache) {
+                await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
+            }
 
             set({
                 loading: false,
