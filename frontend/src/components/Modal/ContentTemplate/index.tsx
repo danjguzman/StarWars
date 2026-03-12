@@ -43,12 +43,12 @@ export default function ContentTemplate({
         </dl>
     );
 
-    const renderRelatedGroups = (className = styles.bottomOrbit) => (
+    const renderRelatedGroups = (className = styles.bottomOrbit, useInlineLabels = false) => (
         <Box className={className}>
             {relatedGroups.map((group, index) => (
                 <RelatedItems
                     key={`${group.label}-${index}`}
-                    label={group.label}
+                    label={useInlineLabels && group.label === "Homeworld" ? "Planet" : group.label}
                     count={group.count}
                     items={group.items}
                     icon={group.icon}
@@ -114,7 +114,7 @@ export default function ContentTemplate({
                                 <Text className={`${styles.nameText} ${styles.nameTextInline}`}>{title}</Text>
                             ) : null}
                             {renderTraitsGrid()}
-                            {useUltraCompactLandscapeLayout ? renderRelatedGroups(styles.bottomOrbitInline) : null}
+                            {useUltraCompactLandscapeLayout ? renderRelatedGroups(styles.bottomOrbitInline, true) : null}
                         </Box>
                     </Flex>
                 </>
@@ -160,7 +160,7 @@ export default function ContentTemplate({
                             <Text className={`${styles.nameText} ${styles.nameTextInline}`}>{title}</Text>
                         ) : null}
                         {renderTraitsGrid()}
-                        {useUltraCompactLandscapeLayout ? renderRelatedGroups(styles.bottomOrbitInline) : null}
+                        {useUltraCompactLandscapeLayout ? renderRelatedGroups(styles.bottomOrbitInline, true) : null}
                     </Box>
                 </>
             )}

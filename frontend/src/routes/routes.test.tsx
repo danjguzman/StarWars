@@ -1,7 +1,7 @@
 import { MantineProvider } from '@mantine/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { homeRoutes } from '@pages/Home/routes';
+import { homeRoutes } from '@routes/routes';
 import { MemoryRouter, Routes } from 'react-router-dom';
 
 jest.mock('@pages/Films', () => ({

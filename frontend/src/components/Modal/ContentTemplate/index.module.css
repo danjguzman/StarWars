@@ -235,6 +235,7 @@
     margin: 2px 0 0;
     font-size: 0.98rem;
     color: rgba(234, 239, 247, 0.9);
+    text-transform: capitalize;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -259,8 +260,14 @@
     display: flex;
     flex-wrap: wrap;
     align-items: flex-start;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 12px;
+}
+
+.bottomOrbitInline > * {
+    display: flex;
+    flex: 1 1 72px;
+    justify-content: center;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -430,7 +437,7 @@
     }
 
     .bottomOrbitInline {
-        justify-content: space-between;
+        justify-content: flex-start;
         gap: 8px;
     }
 }

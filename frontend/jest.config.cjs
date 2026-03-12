@@ -27,6 +27,7 @@ module.exports = {
   moduleNameMapper: {
     '^@components/(.*)$': '<rootDir>/src/components/$1',
     '^@pages/(.*)$': '<rootDir>/src/pages/$1',
+    '^@routes/(.*)$': '<rootDir>/src/routes/$1',
     '^@services/(.*)$': '<rootDir>/src/services/$1',
     '^@stores/(.*)$': '<rootDir>/src/stores/$1',
     '^@types$': '<rootDir>/src/types/index.ts',

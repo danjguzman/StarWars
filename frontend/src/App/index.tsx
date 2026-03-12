@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BrowserRouter, Routes } from "react-router-dom";
-import { homeRoutes } from "@pages/Home/routes";
+import { homeRoutes } from "@routes/routes";
 import { preloadSwapiData } from "@services/preloadService";
 import { buildUserFacingError } from "@utils/errors";
 import { waitForMinimumLoading } from "@utils/loading";

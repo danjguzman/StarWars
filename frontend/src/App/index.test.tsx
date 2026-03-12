@@ -14,7 +14,7 @@ jest.mock('@utils/loading', () => ({
     waitForMinimumLoading: jest.fn(() => Promise.resolve()),
 }));
 
-jest.mock('@pages/Home/routes', () => ({
+jest.mock('@routes/routes', () => ({
     homeRoutes: <div data-testid="home-routes">Home routes</div>,
 }));
 
