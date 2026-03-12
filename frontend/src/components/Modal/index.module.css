@@ -9,15 +9,23 @@
     background: transparent;
     overflow: hidden;
     overscroll-behavior: none;
+    isolation: isolate;
 }
 
 .frostLayer {
-    position: absolute;
+    position: fixed;
     inset: 0;
     z-index: 1;
     pointer-events: none;
-    background: rgba(255, 255, 255, 0.001);
-    will-change: opacity, backdrop-filter, -webkit-backdrop-filter;
+    background: rgba(10, 14, 20, 0.14);
+    backdrop-filter: blur(24px) saturate(1.08);
+    -webkit-backdrop-filter: blur(24px) saturate(1.08);
+    contain: paint;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    will-change: opacity;
 }
 
 .frostEnter {
@@ -32,14 +40,16 @@
     position: absolute;
     left: 50%;
     top: 50%;
-    transform: translate(-50%, -50%);
-    width: clamp(1250px, 125dvh, 1500px);
-    height: clamp(1250px, 125dvh, 1500px);
+    transform: translate3d(-50%, -50%, 0);
+    width: clamp(1250px, 125vmax, 1500px);
+    height: clamp(1250px, 125vmax, 1500px);
     border-radius: 50%;
     background: transparent;
     isolation: isolate;
     pointer-events: auto;
     z-index: 2;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 .backdropCircle::before {
@@ -51,6 +61,10 @@
     filter: blur(25px);
     pointer-events: none;
     z-index: 0;
+    transform: translateZ(0);
+    -webkit-transform: translateZ(0);
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
 }
 
 .backdropCircle::after {
@@ -182,28 +196,20 @@
 @keyframes frostIn {
     from {
         opacity: 0;
-        backdrop-filter: blur(0px) saturate(1);
-        -webkit-backdrop-filter: blur(0px) saturate(1);
     }
 
     to {
         opacity: 1;
-        backdrop-filter: blur(24px) saturate(1.08);
-        -webkit-backdrop-filter: blur(24px) saturate(1.08);
     }
 }
 
 @keyframes frostOut {
     from {
         opacity: 1;
-        backdrop-filter: blur(24px) saturate(1.08);
-        -webkit-backdrop-filter: blur(24px) saturate(1.08);
     }
 
     to {
         opacity: 0;
-        backdrop-filter: blur(0px) saturate(1);
-        -webkit-backdrop-filter: blur(0px) saturate(1);
     }
 }
 
