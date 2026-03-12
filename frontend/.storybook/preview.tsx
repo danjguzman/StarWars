@@ -1,11 +1,18 @@
 import type { Preview } from '@storybook/react';
-import type { ViewportMap } from '@storybook/addon-viewport';
 import { createTheme, MantineProvider } from '@mantine/core';
 import '@mantine/core/styles.css';
 import globalStyles from '../src/index.module.css';
 import { MemoryRouter } from 'react-router-dom';
 
 void globalStyles;
+
+type StoryViewportMap = Record<string, {
+    name: string;
+    styles: {
+        width: string;
+        height: string;
+    };
+}>;
 
 const theme = createTheme({
     primaryColor: 'yellow',
@@ -54,7 +61,7 @@ const customViewports = {
             height: '430px',
         },
     },
-} satisfies ViewportMap;
+} satisfies StoryViewportMap;
 
 const preview: Preview = {
     initialGlobals: {

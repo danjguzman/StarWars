@@ -126,15 +126,29 @@ describe('Films page modal behavior', () => {
         expect(screen.getByTestId('location-display')).toHaveTextContent('/films');
     });
 
-    test('uses the cached films list for previous and next modal navigation', async () => {
+    test('uses only the loaded films store list for previous and next modal navigation', async () => {
         const user = userEvent.setup();
+        const fetchFilms = jest.fn();
+
+        mockedUseFilmsStore.mockReturnValue({
+            films: films.slice(0, 2),
+            loading: false,
+            loadingMore: false,
+            error: null,
+            lastFailedRequestMode: null,
+            hasMore: true,
+            fetchFilms,
+        } as ReturnType<typeof useFilmsStore>);
+        mockedGetCachedValue.mockImplementation((key) => (key === 'films:all' ? films : null));
+
         renderFilmsPage('/films/1');
 
         await user.click(screen.getByRole('button', { name: 'Prev film' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/films/3');
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/films/2');
 
         await user.click(screen.getByRole('button', { name: 'Next film' }));
         expect(screen.getByTestId('location-display')).toHaveTextContent('/films/1');
+        expect(fetchFilms).not.toHaveBeenCalledWith({ nextPage: true });
     });
 
     test('shows a retry action when the initial films load fails', async () => {

@@ -126,15 +126,29 @@ describe('Planets page modal behavior', () => {
         expect(screen.getByTestId('location-display')).toHaveTextContent('/planets');
     });
 
-    test('uses the cached planets list for previous and next modal navigation', async () => {
+    test('uses only the loaded planets store list for previous and next modal navigation', async () => {
         const user = userEvent.setup();
+        const fetchPlanets = jest.fn();
+
+        mockedUsePlanetsStore.mockReturnValue({
+            planets: planets.slice(0, 2),
+            loading: false,
+            loadingMore: false,
+            error: null,
+            lastFailedRequestMode: null,
+            hasMore: true,
+            fetchPlanets,
+        } as ReturnType<typeof usePlanetsStore>);
+        mockedGetCachedValue.mockImplementation((key) => (key === 'planets:all' ? planets : null));
+
         renderPlanetsPage('/planets/1');
 
         await user.click(screen.getByRole('button', { name: 'Prev planet' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/planets/3');
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/planets/2');
 
         await user.click(screen.getByRole('button', { name: 'Next planet' }));
         expect(screen.getByTestId('location-display')).toHaveTextContent('/planets/1');
+        expect(fetchPlanets).not.toHaveBeenCalledWith({ nextPage: true });
     });
 
     test('shows a retry action when the initial planets load fails', async () => {

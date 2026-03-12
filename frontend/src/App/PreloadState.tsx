@@ -23,7 +23,7 @@ export default function PreloadState({ error = null, exiting = false, onRetry }:
                         <Text c="red.4" ta="center" className={styles.errorText}>{error}</Text>
                         {onRetry ? (
                             <Button color="yellow" variant="light" onClick={onRetry}>
-                                Retry preload
+                                Retry
                             </Button>
                         ) : null}
                     </>

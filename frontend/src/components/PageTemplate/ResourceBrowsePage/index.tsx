@@ -68,11 +68,12 @@ export default function ResourceBrowsePage<TItem extends { url: string }>({
         nextPageRetryLabel: "Try loading more again",
     },
 }: ResourceBrowsePageProps<TItem>) {
-    /* Use the full cached resource list for modal navigation when it is available. */
+    void cachedResources;
+
+    /* Use the live store data for modal navigation so prev/next stays inside the loaded list. */
     const modalItems = useMemo(() => {
-        if (cachedResources && cachedResources.length > 0) return cachedResources;
         return resources;
-    }, [cachedResources, resources]);
+    }, [resources]);
 
     /* Show loaded items first, or a small cached slice while the first request is still loading. */
     const visibleItems = useMemo(() => {

@@ -1,9 +1,10 @@
 import type { StorybookConfig } from '@storybook/react-vite';
 import { mergeConfig } from 'vite';
+import { viteAliases } from '../config/viteAliases.ts';
 
 const config: StorybookConfig = {
     stories: ['../src/**/*.stories.@(ts|tsx)'],
-    addons: ['@storybook/addon-docs', '@storybook/addon-a11y', '@storybook/addon-viewport'],
+    addons: ['@storybook/addon-docs', '@storybook/addon-a11y'],
     framework: {
         name: '@storybook/react-vite',
         options: {},
@@ -13,15 +14,9 @@ const config: StorybookConfig = {
     },
     async viteFinal(config) {
         return mergeConfig(config, {
+            cacheDir: 'node_modules/.vite-storybook',
             resolve: {
-                alias: {
-                    '@components': '/src/components',
-                    '@pages': '/src/pages',
-                    '@services': '/src/services',
-                    '@stores': '/src/stores',
-                    '@types': '/src/types',
-                    '@utils': '/src/utils',
-                },
+                alias: viteAliases,
             },
         });
     },

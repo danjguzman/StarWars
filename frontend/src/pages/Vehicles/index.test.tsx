@@ -130,15 +130,29 @@ describe('Vehicles page modal behavior', () => {
         expect(screen.getByTestId('location-display')).toHaveTextContent('/vehicles');
     });
 
-    test('uses the cached vehicles list for previous and next modal navigation', async () => {
+    test('uses only the loaded vehicles store list for previous and next modal navigation', async () => {
         const user = userEvent.setup();
+        const fetchVehicles = jest.fn();
+
+        mockedUseVehiclesStore.mockReturnValue({
+            vehicles: vehicles.slice(0, 2),
+            loading: false,
+            loadingMore: false,
+            error: null,
+            lastFailedRequestMode: null,
+            hasMore: true,
+            fetchVehicles,
+        } as ReturnType<typeof useVehiclesStore>);
+        mockedGetCachedValue.mockImplementation((key) => (key === 'vehicles:all' ? vehicles : null));
+
         renderVehiclesPage('/vehicles/1');
 
         await user.click(screen.getByRole('button', { name: 'Prev vehicle' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/vehicles/3');
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/vehicles/2');
 
         await user.click(screen.getByRole('button', { name: 'Next vehicle' }));
         expect(screen.getByTestId('location-display')).toHaveTextContent('/vehicles/1');
+        expect(fetchVehicles).not.toHaveBeenCalledWith({ nextPage: true });
     });
 
     test('shows a retry action when the initial vehicles load fails', async () => {

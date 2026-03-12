@@ -32,6 +32,7 @@
 
 .errorText {
     max-width: 28rem;
+    white-space: pre-line;
 }
 
 .appReveal {

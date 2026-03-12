@@ -127,15 +127,29 @@ describe('Species page modal behavior', () => {
         expect(screen.getByTestId('location-display')).toHaveTextContent('/species');
     });
 
-    test('uses the cached species list for previous and next modal navigation', async () => {
+    test('uses only the loaded species store list for previous and next modal navigation', async () => {
         const user = userEvent.setup();
+        const fetchSpecies = jest.fn();
+
+        mockedUseSpeciesStore.mockReturnValue({
+            species: species.slice(0, 2),
+            loading: false,
+            loadingMore: false,
+            error: null,
+            lastFailedRequestMode: null,
+            hasMore: true,
+            fetchSpecies,
+        } as ReturnType<typeof useSpeciesStore>);
+        mockedGetCachedValue.mockImplementation((key) => (key === 'species:all' ? species : null));
+
         renderSpeciesPage('/species/1');
 
         await user.click(screen.getByRole('button', { name: 'Prev species' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/species/3');
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/species/2');
 
         await user.click(screen.getByRole('button', { name: 'Next species' }));
         expect(screen.getByTestId('location-display')).toHaveTextContent('/species/1');
+        expect(fetchSpecies).not.toHaveBeenCalledWith({ nextPage: true });
     });
 
     test('shows a retry action when the initial species load fails', async () => {

@@ -126,13 +126,27 @@ describe('People page modal behavior', () => {
         expect(screen.getByTestId('location-display')).toHaveTextContent('/people');
     });
 
-    test('uses the cached people list for previous and next modal navigation', async () => {
+    test('uses only the loaded people store list for previous and next modal navigation', async () => {
         const user = userEvent.setup();
+        const fetchPeople = jest.fn();
+
+        mockedUsePeopleStore.mockReturnValue({
+            people: people.slice(0, 2),
+            loading: false,
+            loadingMore: false,
+            error: null,
+            lastFailedRequestMode: null,
+            hasMore: true,
+            fetchPeople,
+        } as ReturnType<typeof usePeopleStore>);
+        mockedGetCachedValue.mockImplementation((key) => (key === 'people:all' ? people : null));
+
         renderPeoplePage('/people/1');
         await user.click(screen.getByRole('button', { name: 'Prev person' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/people/3');
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/people/2');
         await user.click(screen.getByRole('button', { name: 'Next person' }));
         expect(screen.getByTestId('location-display')).toHaveTextContent('/people/1');
+        expect(fetchPeople).not.toHaveBeenCalledWith({ nextPage: true });
     });
 
     test('shows a retry action when the initial people load fails', async () => {

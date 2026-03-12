@@ -102,7 +102,7 @@ export const SlowConnection: Story = {
         return (
             <SimulatedPreloadState
                 failureDelayMs={2000}
-                failureMessage="We couldn't prepare the Star Wars archive. The request took too long and timed out."
+                failureMessage={"We couldn't prepare the Galactic Archives.\nThe request timed out."}
             />
         );
     },

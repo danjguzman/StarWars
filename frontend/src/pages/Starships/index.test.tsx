@@ -130,15 +130,29 @@ describe('Starships page modal behavior', () => {
         expect(screen.getByTestId('location-display')).toHaveTextContent('/starships');
     });
 
-    test('uses the cached starships list for previous and next modal navigation', async () => {
+    test('uses only the loaded starships store list for previous and next modal navigation', async () => {
         const user = userEvent.setup();
+        const fetchStarships = jest.fn();
+
+        mockedUseStarshipsStore.mockReturnValue({
+            starships: starships.slice(0, 2),
+            loading: false,
+            loadingMore: false,
+            error: null,
+            lastFailedRequestMode: null,
+            hasMore: true,
+            fetchStarships,
+        } as ReturnType<typeof useStarshipsStore>);
+        mockedGetCachedValue.mockImplementation((key) => (key === 'starships:all' ? starships : null));
+
         renderStarshipsPage('/starships/1');
 
         await user.click(screen.getByRole('button', { name: 'Prev starship' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/starships/3');
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/starships/2');
 
         await user.click(screen.getByRole('button', { name: 'Next starship' }));
         expect(screen.getByTestId('location-display')).toHaveTextContent('/starships/1');
+        expect(fetchStarships).not.toHaveBeenCalledWith({ nextPage: true });
     });
 
     test('shows a retry action when the initial starships load fails', async () => {
