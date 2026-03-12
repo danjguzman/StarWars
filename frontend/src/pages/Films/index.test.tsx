@@ -1,7 +1,9 @@
 import { MantineProvider } from '@mantine/core';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Films from '@pages/Films';
+import AppModalHost from '@pages/_shared/AppModalHost';
+import { useModalStackStore } from '@stores/modalStackStore';
 import { useFilmsStore } from '@stores/filmsStore';
 import { getCachedValue } from '@utils/clientCache';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -81,6 +83,7 @@ function renderFilmsPage(initialEntry: string) {
                     <Route path="/films" element={<Films />} />
                     <Route path="/films/:filmId" element={<Films />} />
                 </Routes>
+                <AppModalHost />
                 <LocationDisplay />
             </MemoryRouter>
         </MantineProvider>
@@ -109,6 +112,9 @@ describe('Films page modal behavior', () => {
     });
 
     afterEach(() => {
+        act(() => {
+            useModalStackStore.getState().resetStack();
+        });
         jest.clearAllMocks();
     });
 

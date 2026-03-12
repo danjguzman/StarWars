@@ -1,7 +1,6 @@
 import { type ReactNode } from "react";
 import { Alert, Button, Stack, Text } from "@mantine/core";
 import HeaderSearch from "@components/PageTemplate/HeaderSearch";
-import Modal from "@components/Modal";
 import ListTemplate from "@components/PageTemplate/ListTemplate";
 import PageTemplate from "@components/PageTemplate";
 
@@ -10,9 +9,6 @@ interface ResourceBrowseViewProps<TItem extends { url: string }> {
     headerIcon?: ReactNode;
     entityKey: string;
     items: TItem[];
-    selectedItem: TItem | null;
-    selectedIndex: number;
-    totalItems: number;
     loading: boolean;
     loadingMore: boolean;
     hasMore: boolean;
@@ -21,20 +17,9 @@ interface ResourceBrowseViewProps<TItem extends { url: string }> {
     errorTitle: string;
     retryLabel: string;
     labelKey?: keyof TItem & string;
-    getModalAriaLabel?: (item: TItem) => string;
     onRetry: () => void;
     onLoadMore: () => void;
     onOpenItem: (item: TItem) => void;
-    onCloseModal: () => void;
-    onNavigatePrev: () => void;
-    onNavigateNext: () => void;
-    renderModalContent: (options: {
-        item: TItem;
-        selectedIndex: number;
-        total: number;
-        onPrev: () => void;
-        onNext: () => void;
-    }) => ReactNode;
 }
 
 /* Shared presentational view for browse pages. */
@@ -43,9 +28,6 @@ export default function ResourceBrowseView<TItem extends { url: string }>({
     headerIcon,
     entityKey,
     items,
-    selectedItem,
-    selectedIndex,
-    totalItems,
     loading,
     loadingMore,
     hasMore,
@@ -54,14 +36,9 @@ export default function ResourceBrowseView<TItem extends { url: string }>({
     errorTitle,
     retryLabel,
     labelKey,
-    getModalAriaLabel,
     onRetry,
     onLoadMore,
     onOpenItem,
-    onCloseModal,
-    onNavigatePrev,
-    onNavigateNext,
-    renderModalContent,
 }: ResourceBrowseViewProps<TItem>) {
     return (
         <PageTemplate
@@ -103,22 +80,6 @@ export default function ResourceBrowseView<TItem extends { url: string }>({
                     }}
                 />
             </Stack>
-
-            <Modal
-                opened={selectedItem !== null}
-                ariaLabel={selectedItem ? getModalAriaLabel?.(selectedItem) ?? `${title} details` : `${title} details`}
-                onClose={onCloseModal}
-                onNavigatePrev={onNavigatePrev}
-                onNavigateNext={onNavigateNext}
-            >
-                {selectedItem ? renderModalContent({
-                    item: selectedItem,
-                    selectedIndex,
-                    total: totalItems,
-                    onPrev: onNavigatePrev,
-                    onNext: onNavigateNext,
-                }) : null}
-            </Modal>
         </PageTemplate>
     );
 }

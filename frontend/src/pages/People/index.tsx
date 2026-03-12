@@ -2,10 +2,7 @@ import { useCallback, useMemo } from "react";
 import { Box } from "@mantine/core";
 import { Users } from "phosphor-react";
 import ResourceBrowseRoute from "@pages/_shared/ResourceBrowseRoute";
-import ResourceModalRoute from "@pages/_shared/ResourceModalRoute";
 import useModalRouteNavigation from "@pages/_shared/useModalRouteNavigation";
-import PersonModalContent from "@pages/People/PersonModalContent";
-import { getPreloadedCollection } from "@services/preloadService";
 import { type Person } from "@types";
 import { usePeopleStore } from "@stores/peopleStore";
 import { estimateInitialTargetCount } from "@utils/layout";
@@ -14,7 +11,7 @@ import { useParams } from "react-router-dom";
 import styles from "./index.module.css";
 
 /* People page wrapper that passes the people-specific data into the shared browse page layout. */
-export default function People({ modalOnly = false }: { modalOnly?: boolean }) {
+export default function People() {
     const { personId } = useParams<{ personId?: string }>();
     const {
         people,
@@ -26,8 +23,7 @@ export default function People({ modalOnly = false }: { modalOnly?: boolean }) {
         fetchPeople,
     } = usePeopleStore();
     const initialTargetCount = useMemo(() => estimateInitialTargetCount(), []);
-    const modalPeople = getPreloadedCollection<Person>("people") ?? people;
-    const { openModalRoute, closeModalRoute } = useModalRouteNavigation("/people");
+    const { openModalRoute } = useModalRouteNavigation("/people");
 
     /* Open a person modal by moving the route to that person's detail path. */
     const openPersonModal = useCallback((person: Person) => {
@@ -50,28 +46,7 @@ export default function People({ modalOnly = false }: { modalOnly?: boolean }) {
         fetchResources: fetchPeople,
         getItemId: (person: Person) => resourceIdFromUrl(person.url),
         onOpenItem: openPersonModal,
-        onCloseModal: closeModalRoute,
-        getModalAriaLabel: (person: Person) => `${person.name} details`,
-        renderModalContent: ({ item, selectedIndex, total, onPrev, onNext }: {
-            item: Person;
-            selectedIndex: number;
-            total: number;
-            onPrev: () => void;
-            onNext: () => void;
-        }) => (
-            <PersonModalContent
-                person={item}
-                selectedIndex={selectedIndex}
-                total={total}
-                onPrev={onPrev}
-                onNext={onNext}
-            />
-        ),
     };
-
-    if (modalOnly) {
-        return <ResourceModalRoute {...sharedProps} resources={modalPeople} />;
-    }
 
     return (
         <ResourceBrowseRoute

@@ -5,7 +5,7 @@
  */
 
 /* Map each supported resource key to the label shown in the UI. */
-const RESOURCE_CATEGORY_LABELS = {
+export const RESOURCE_CATEGORY_LABELS = {
     people: "People",
     species: "Species",
     starships: "Starships",
@@ -15,10 +15,19 @@ const RESOURCE_CATEGORY_LABELS = {
 } as const;
 
 /* Represent the valid resource keys supported by the label map above. */
-type ResourceCategoryKey = keyof typeof RESOURCE_CATEGORY_LABELS;
+export type ResourceCategoryKey = keyof typeof RESOURCE_CATEGORY_LABELS;
+
+export const SUPPORTED_RESOURCE_CATEGORY_KEYS = Object.keys(RESOURCE_CATEGORY_LABELS) as ResourceCategoryKey[];
+
+export interface ModalRouteTarget {
+    resourceKey: ResourceCategoryKey;
+    resourceId: string;
+    routePath: string;
+    closePath: string;
+}
 
 /* Check whether a string matches one of the supported resource category keys. */
-function isResourceCategoryKey(value: string | null): value is ResourceCategoryKey {
+export function isResourceCategoryKey(value: string | null): value is ResourceCategoryKey {
     return value !== null && value in RESOURCE_CATEGORY_LABELS;
 }
 
@@ -49,16 +58,56 @@ export function resourceKeyFromUrl(url: string) {
     return match[1].toLowerCase();
 }
 
+/* Pull the resource key from an app pathname, like `/people/1`. */
+export function resourceKeyFromPathname(pathname: string) {
+    const match = pathname.match(/^\/([^/]+)/);
+
+    if (!match) {
+        return null;
+    }
+
+    const resourceKey = match[1].toLowerCase();
+    return isResourceCategoryKey(resourceKey) ? resourceKey : null;
+}
+
+/* Build the app route path from a known resource key and id. */
+export function resourceRoutePathFromParts(resourceKey: ResourceCategoryKey, resourceId: string) {
+    return `/${resourceKey}/${resourceId}`;
+}
+
 /* Build the app route path for a resource URL, like `/people/1`. */
 export function resourceRoutePathFromUrl(url: string) {
     const resourceKey = resourceKeyFromUrl(url);
     const resourceId = resourceIdFromUrl(url);
 
-    if (!resourceKey || !resourceId) {
+    if (!isResourceCategoryKey(resourceKey) || !resourceId) {
         return null;
     }
 
-    return `/${resourceKey}/${resourceId}`;
+    return resourceRoutePathFromParts(resourceKey, resourceId);
+}
+
+/* Parse a modal-capable pathname into a resource target, like `/people/1`. */
+export function modalRouteTargetFromPathname(pathname: string): ModalRouteTarget | null {
+    const match = pathname.match(/^\/([^/]+)\/(\d+)\/?$/i);
+
+    if (!match) {
+        return null;
+    }
+
+    const resourceKey = match[1].toLowerCase();
+    const resourceId = match[2];
+
+    if (!isResourceCategoryKey(resourceKey)) {
+        return null;
+    }
+
+    return {
+        resourceKey,
+        resourceId,
+        routePath: resourceRoutePathFromParts(resourceKey, resourceId),
+        closePath: `/${resourceKey}`,
+    };
 }
 
 /* Return either the lowercase resource key or the display label for a resource URL. */

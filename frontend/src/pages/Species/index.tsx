@@ -2,10 +2,7 @@ import { useCallback, useMemo } from "react";
 import { Box } from "@mantine/core";
 import { Alien as AlienIcon } from "phosphor-react";
 import ResourceBrowseRoute from "@pages/_shared/ResourceBrowseRoute";
-import ResourceModalRoute from "@pages/_shared/ResourceModalRoute";
 import useModalRouteNavigation from "@pages/_shared/useModalRouteNavigation";
-import SpeciesModalContent from "@pages/Species/SpeciesModalContent";
-import { getPreloadedCollection } from "@services/preloadService";
 import { type Species } from "@types";
 import { useSpeciesStore } from "@stores/speciesStore";
 import { estimateInitialTargetCount } from "@utils/layout";
@@ -14,7 +11,7 @@ import { useParams } from "react-router-dom";
 import styles from "./index.module.css";
 
 /* Species page wrapper that passes species-specific data into the shared browse page layout. */
-export default function SpeciesPage({ modalOnly = false }: { modalOnly?: boolean }) {
+export default function SpeciesPage() {
     const { speciesId } = useParams<{ speciesId?: string }>();
     const {
         species,
@@ -26,8 +23,7 @@ export default function SpeciesPage({ modalOnly = false }: { modalOnly?: boolean
         fetchSpecies,
     } = useSpeciesStore();
     const initialTargetCount = useMemo(() => estimateInitialTargetCount(), []);
-    const modalSpecies = getPreloadedCollection<Species>("species") ?? species;
-    const { openModalRoute, closeModalRoute } = useModalRouteNavigation("/species");
+    const { openModalRoute } = useModalRouteNavigation("/species");
 
     /* Open a species modal by moving the route to that species detail path. */
     const openSpeciesModal = useCallback((item: Species) => {
@@ -50,28 +46,7 @@ export default function SpeciesPage({ modalOnly = false }: { modalOnly?: boolean
         fetchResources: fetchSpecies,
         getItemId: (item: Species) => resourceIdFromUrl(item.url),
         onOpenItem: openSpeciesModal,
-        onCloseModal: closeModalRoute,
-        getModalAriaLabel: (item: Species) => `${item.name} details`,
-        renderModalContent: ({ item, selectedIndex, total, onPrev, onNext }: {
-            item: Species;
-            selectedIndex: number;
-            total: number;
-            onPrev: () => void;
-            onNext: () => void;
-        }) => (
-            <SpeciesModalContent
-                species={item}
-                selectedIndex={selectedIndex}
-                total={total}
-                onPrev={onPrev}
-                onNext={onNext}
-            />
-        ),
     };
-
-    if (modalOnly) {
-        return <ResourceModalRoute {...sharedProps} resources={modalSpecies} />;
-    }
 
     return (
         <ResourceBrowseRoute

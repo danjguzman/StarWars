@@ -2,10 +2,7 @@ import { useCallback, useMemo } from "react";
 import { Box } from "@mantine/core";
 import { FlyingSaucer as FlyingSaucerIcon } from "phosphor-react";
 import ResourceBrowseRoute from "@pages/_shared/ResourceBrowseRoute";
-import ResourceModalRoute from "@pages/_shared/ResourceModalRoute";
 import useModalRouteNavigation from "@pages/_shared/useModalRouteNavigation";
-import StarshipModalContent from "@pages/Starships/StarshipModalContent";
-import { getPreloadedCollection } from "@services/preloadService";
 import { type Starship } from "@types";
 import { useStarshipsStore } from "@stores/starshipsStore";
 import { estimateInitialTargetCount } from "@utils/layout";
@@ -14,7 +11,7 @@ import { useParams } from "react-router-dom";
 import styles from "./index.module.css";
 
 /* Starships page wrapper that passes starship-specific data into the shared browse page layout. */
-export default function StarshipsPage({ modalOnly = false }: { modalOnly?: boolean }) {
+export default function StarshipsPage() {
     const { starshipId } = useParams<{ starshipId?: string }>();
     const {
         starships,
@@ -26,8 +23,7 @@ export default function StarshipsPage({ modalOnly = false }: { modalOnly?: boole
         fetchStarships,
     } = useStarshipsStore();
     const initialTargetCount = useMemo(() => estimateInitialTargetCount(), []);
-    const modalStarships = getPreloadedCollection<Starship>("starships") ?? starships;
-    const { openModalRoute, closeModalRoute } = useModalRouteNavigation("/starships");
+    const { openModalRoute } = useModalRouteNavigation("/starships");
 
     /* Open a starship modal by moving the route to that starship detail path. */
     const openStarshipModal = useCallback((item: Starship) => {
@@ -50,28 +46,7 @@ export default function StarshipsPage({ modalOnly = false }: { modalOnly?: boole
         fetchResources: fetchStarships,
         getItemId: (item: Starship) => resourceIdFromUrl(item.url),
         onOpenItem: openStarshipModal,
-        onCloseModal: closeModalRoute,
-        getModalAriaLabel: (item: Starship) => `${item.name} details`,
-        renderModalContent: ({ item, selectedIndex, total, onPrev, onNext }: {
-            item: Starship;
-            selectedIndex: number;
-            total: number;
-            onPrev: () => void;
-            onNext: () => void;
-        }) => (
-            <StarshipModalContent
-                starship={item}
-                selectedIndex={selectedIndex}
-                total={total}
-                onPrev={onPrev}
-                onNext={onNext}
-            />
-        ),
     };
-
-    if (modalOnly) {
-        return <ResourceModalRoute {...sharedProps} resources={modalStarships} />;
-    }
 
     return (
         <ResourceBrowseRoute

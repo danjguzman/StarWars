@@ -4,6 +4,8 @@ import { Box } from "@mantine/core";
 import { X } from "phosphor-react";
 import styles from "./index.module.css";
 
+export const MODAL_EXIT_DURATION_MS = 1000;
+
 /*
  * This file renders the shared full-screen modal shell.
  * It handles the blurred backdrop, outside-click closing, keyboard navigation,
@@ -60,21 +62,35 @@ function isTypingTarget(target: EventTarget | null) {
 
 interface ModalProps {
     opened: boolean;
+    closing?: boolean;
     ariaLabel: string;
     onClose: () => void;
     children: ReactNode;
     onNavigatePrev?: () => void;
     onNavigateNext?: () => void;
+    allowInteraction?: boolean;
+    lockScroll?: boolean;
+    onExitComplete?: () => void;
+    zIndex?: number;
 }
 
 export default function Modal({
     opened,
+    closing = false,
     ariaLabel,
     onClose,
     children,
     onNavigatePrev,
     onNavigateNext,
+    allowInteraction = opened,
+    lockScroll,
+    onExitComplete,
+    zIndex,
 }: ModalProps) {
+    const isVisible = opened || closing;
+    const shouldLockScroll = lockScroll ?? isVisible;
+    const blocksPointerEvents = allowInteraction || shouldLockScroll;
+
     /* Store touch gesture state so scroll drags are not misread as swipe actions. */
     const touchGestureRef = useRef<{
         x: number;
@@ -84,10 +100,22 @@ export default function Modal({
     } | null>(null);
     const shouldCloseFromOverlayClickRef = useRef(false);
 
+    useEffect(() => {
+        if (!closing || !onExitComplete) return;
+
+        const timeoutId = window.setTimeout(() => {
+            onExitComplete();
+        }, MODAL_EXIT_DURATION_MS);
+
+        return () => {
+            window.clearTimeout(timeoutId);
+        };
+    }, [closing, onExitComplete]);
+
     /* Handle keyboard close and previous/next navigation while the modal is open. */
     useEffect(() => {
         /* Do nothing until the modal is actually open. */
-        if (!opened) return;
+        if (!isVisible || !allowInteraction) return;
 
         /* Watch modal keyboard shortcuts and block keys that would scroll the page. */
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -129,12 +157,12 @@ export default function Modal({
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         };
-    }, [onClose, onNavigateNext, onNavigatePrev, opened]);
+    }, [allowInteraction, isVisible, onClose, onNavigateNext, onNavigatePrev]);
 
     /* Block page scrolling while the modal is open, but still allow inner scrollable areas to work. */
     useEffect(() => {
         /* Do nothing until the modal is actually open. */
-        if (!opened) return;
+        if (!isVisible || !shouldLockScroll) return;
 
         /* Measure the scrollbar gap so layout does not shift when scroll is blocked. */
         const scrollbarGap = window.innerWidth - document.documentElement.clientWidth;
@@ -194,12 +222,14 @@ export default function Modal({
             document.body.style.paddingRight = previousBodyPaddingRight;
             document.documentElement.style.overscrollBehavior = previousHtmlOverscrollBehavior;
         };
-    }, [opened]);
+    }, [isVisible, shouldLockScroll]);
 
-    if (!opened || typeof document === "undefined") return null;
+    if (!isVisible || typeof document === "undefined") return null;
 
     /* Save the first touch point so swipe direction and distance can be calculated. */
     const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
+        if (!allowInteraction) return;
+
         const touch = event.touches[0];
         if (!touch) return;
         touchGestureRef.current = {
@@ -216,6 +246,8 @@ export default function Modal({
 
     /* Turn touch gestures into modal close, previous, or next actions. */
     const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
+        if (!allowInteraction) return;
+
         const gesture = touchGestureRef.current;
         const touch = event.changedTouches[0];
 
@@ -263,10 +295,14 @@ export default function Modal({
                 role="dialog"
                 aria-modal="true"
                 aria-label={ariaLabel}
+                style={{ zIndex, pointerEvents: blocksPointerEvents ? "auto" : "none" }}
                 onPointerDown={(event) => {
+                    if (!allowInteraction) return;
                     shouldCloseFromOverlayClickRef.current = event.target === event.currentTarget;
                 }}
                 onClick={(event) => {
+                    if (!allowInteraction) return;
+
                     if (event.target !== event.currentTarget || !shouldCloseFromOverlayClickRef.current) {
                         shouldCloseFromOverlayClickRef.current = false;
                         return;
@@ -278,13 +314,13 @@ export default function Modal({
             >
 
                 {/* Blur and soften the page behind the modal. */}
-                <Box className={`${styles.frostLayer} ${styles.frostEnter}`} aria-hidden="true" />
+                <Box className={`${styles.frostLayer} ${closing ? styles.frostExit : styles.frostEnter}`} aria-hidden="true" />
 
                 {/* Keep the decorative circle clickable without letting it close the modal. */}
                 <Box
-                    className={`${styles.backdropCircle} ${styles.backdropEnter}`}
+                    className={`${styles.backdropCircle} ${closing ? styles.backdropExit : styles.backdropEnter}`}
                     style={{
-                        pointerEvents: "auto",
+                        pointerEvents: allowInteraction ? "auto" : "none",
                     }}
                     onClick={(event) => {
                         event.stopPropagation();
@@ -296,22 +332,24 @@ export default function Modal({
                 <Box className={styles.contentLayer}>
 
                     {/* Show a floating close button at the top-right of the modal shell. */}
-                    <button
-                        type="button"
-                        className={styles.floatingCloseButton}
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            onClose();
-                        }}
-                        aria-label="Close modal"
-                    >
-                        <X size={20} weight="bold" />
-                    </button>
+                    {allowInteraction ? (
+                        <button
+                            type="button"
+                            className={styles.floatingCloseButton}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                onClose();
+                            }}
+                            aria-label="Close modal"
+                        >
+                            <X size={20} weight="bold" />
+                        </button>
+                    ) : null}
 
                     {/* Render the modal content and keep touch/click events inside the modal. */}
                     <Box
-                        className={`${styles.contentMotion} ${styles.contentEnter}`}
-                        style={{ pointerEvents: "auto" }}
+                        className={`${styles.contentMotion} ${closing ? styles.contentExit : styles.contentEnter}`}
+                        style={{ pointerEvents: allowInteraction ? "auto" : "none" }}
                         onTouchStart={handleTouchStart}
                         onTouchEnd={handleTouchEnd}
                         onTouchCancel={clearTouchGesture}

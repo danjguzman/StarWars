@@ -1,23 +1,18 @@
 import { type ReactNode, useCallback, useMemo } from "react";
 import { Stack, Text } from "@mantine/core";
 import Modal from "@components/Modal";
+import { type ModalStackEntry } from "@stores/modalStackStore";
 
-type ResourceLoadMode = "initial" | "nextPage" | null;
-
-interface ResourceModalRouteProps<TItem extends { url: string }> {
+interface ResourceModalLayerProps<TItem extends { url: string }> {
     title: string;
-    routeItemId?: string;
+    entry: ModalStackEntry;
     resources: TItem[];
     loading: boolean;
     loadingMore: boolean;
-    hasMore: boolean;
     error: string | null;
-    lastFailedRequestMode: ResourceLoadMode;
-    initialItemCount: number;
-    fetchResources: (options?: { nextPage?: boolean; targetCount?: number }) => Promise<void>;
-    getItemId: (item: TItem) => string | null;
-    onOpenItem: (item: TItem) => void;
     onCloseModal: () => void;
+    onOpenItem: (item: TItem) => void;
+    getItemId: (item: TItem) => string | null;
     renderModalContent: (options: {
         item: TItem;
         selectedIndex: number;
@@ -26,26 +21,34 @@ interface ResourceModalRouteProps<TItem extends { url: string }> {
         onNext: () => void;
     }) => ReactNode;
     getModalAriaLabel?: (item: TItem) => string;
+    zIndex: number;
+    interactive: boolean;
+    lockScroll: boolean;
+    onExitComplete: (instanceId: string) => void;
 }
 
-/* Shared route-level container that renders a modal over the current browse page. */
-export default function ResourceModalRoute<TItem extends { url: string }>({
+export default function ResourceModalLayer<TItem extends { url: string }>({
     title,
-    routeItemId,
+    entry,
     resources,
+    loading,
+    loadingMore,
     error,
-    getItemId,
-    onOpenItem,
     onCloseModal,
+    onOpenItem,
+    getItemId,
     renderModalContent,
     getModalAriaLabel,
-}: ResourceModalRouteProps<TItem>) {
+    zIndex,
+    interactive,
+    lockScroll,
+    onExitComplete,
+}: ResourceModalLayerProps<TItem>) {
     const selectedItemIndex = useMemo(() => {
-        if (!routeItemId) return null;
-        return resources.findIndex((item) => getItemId(item) === routeItemId);
-    }, [getItemId, resources, routeItemId]);
+        return resources.findIndex((item) => getItemId(item) === entry.resourceId);
+    }, [entry.resourceId, getItemId, resources]);
 
-    const selectedItem = selectedItemIndex !== null && selectedItemIndex >= 0 && selectedItemIndex < resources.length
+    const selectedItem = selectedItemIndex >= 0 && selectedItemIndex < resources.length
         ? resources[selectedItemIndex]
         : null;
 
@@ -56,36 +59,45 @@ export default function ResourceModalRoute<TItem extends { url: string }>({
     }, [onOpenItem, resources]);
 
     const showPrevItem = useCallback(() => {
-        if (selectedItemIndex === null || selectedItemIndex < 0 || resources.length === 0) return;
+        if (selectedItemIndex < 0 || resources.length === 0) return;
         openItemByIndex((selectedItemIndex - 1 + resources.length) % resources.length);
     }, [openItemByIndex, resources.length, selectedItemIndex]);
 
     const showNextItem = useCallback(() => {
-        if (selectedItemIndex === null || selectedItemIndex < 0 || resources.length === 0) return;
+        if (selectedItemIndex < 0 || resources.length === 0) return;
         openItemByIndex((selectedItemIndex + 1) % resources.length);
     }, [openItemByIndex, resources.length, selectedItemIndex]);
 
     const modalBody = selectedItem ? renderModalContent({
         item: selectedItem,
-        selectedIndex: selectedItemIndex ?? 0,
+        selectedIndex: selectedItemIndex,
         total: resources.length,
         onPrev: showPrevItem,
         onNext: showNextItem,
     }) : (
         <Stack align="center" gap="sm" py="lg">
-            <Text c={error ? "red.4" : undefined} ta="center">
-                {error ?? `${title} details are unavailable right now.`}
+            <Text ta="center">
+                {loading || loadingMore
+                    ? `Loading ${title.toLowerCase()} details...`
+                    : error ?? `${title} details are unavailable right now.`}
             </Text>
         </Stack>
     );
 
     return (
         <Modal
-            opened={Boolean(routeItemId)}
+            opened={entry.state === "open"}
+            closing={entry.state === "closing"}
             ariaLabel={selectedItem ? getModalAriaLabel?.(selectedItem) ?? `${title} details` : `Loading ${title} details`}
             onClose={onCloseModal}
             onNavigatePrev={showPrevItem}
             onNavigateNext={showNextItem}
+            allowInteraction={interactive}
+            lockScroll={lockScroll}
+            zIndex={zIndex}
+            onExitComplete={() => {
+                onExitComplete(entry.instanceId);
+            }}
         >
             {modalBody}
         </Modal>

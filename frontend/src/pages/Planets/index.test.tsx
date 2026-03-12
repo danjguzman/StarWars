@@ -1,7 +1,9 @@
 import { MantineProvider } from '@mantine/core';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Planets from '@pages/Planets';
+import AppModalHost from '@pages/_shared/AppModalHost';
+import { useModalStackStore } from '@stores/modalStackStore';
 import { usePlanetsStore } from '@stores/planetsStore';
 import { getCachedValue } from '@utils/clientCache';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -81,6 +83,7 @@ function renderPlanetsPage(initialEntry: string) {
                     <Route path="/planets" element={<Planets />} />
                     <Route path="/planets/:planetId" element={<Planets />} />
                 </Routes>
+                <AppModalHost />
                 <LocationDisplay />
             </MemoryRouter>
         </MantineProvider>
@@ -109,6 +112,9 @@ describe('Planets page modal behavior', () => {
     });
 
     afterEach(() => {
+        act(() => {
+            useModalStackStore.getState().resetStack();
+        });
         jest.clearAllMocks();
     });
 

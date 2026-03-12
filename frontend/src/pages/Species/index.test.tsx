@@ -1,7 +1,9 @@
 import { MantineProvider } from '@mantine/core';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SpeciesPage from '@pages/Species';
+import AppModalHost from '@pages/_shared/AppModalHost';
+import { useModalStackStore } from '@stores/modalStackStore';
 import { useSpeciesStore } from '@stores/speciesStore';
 import { getCachedValue } from '@utils/clientCache';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -82,6 +84,7 @@ function renderSpeciesPage(initialEntry: string) {
                     <Route path="/species" element={<SpeciesPage />} />
                     <Route path="/species/:speciesId" element={<SpeciesPage />} />
                 </Routes>
+                <AppModalHost />
                 <LocationDisplay />
             </MemoryRouter>
         </MantineProvider>
@@ -110,6 +113,9 @@ describe('Species page modal behavior', () => {
     });
 
     afterEach(() => {
+        act(() => {
+            useModalStackStore.getState().resetStack();
+        });
         jest.clearAllMocks();
     });
 

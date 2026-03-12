@@ -2,6 +2,8 @@ import { MantineProvider } from '@mantine/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import VehiclesPage from '@pages/Vehicles';
+import AppModalHost from '@pages/_shared/AppModalHost';
+import { useModalStackStore } from '@stores/modalStackStore';
 import { useVehiclesStore } from '@stores/vehiclesStore';
 import { getCachedValue } from '@utils/clientCache';
 import { act } from 'react';
@@ -84,6 +86,7 @@ function renderVehiclesPage(initialEntry: string) {
                     <Route path="/vehicles" element={<VehiclesPage />} />
                     <Route path="/vehicles/:vehicleId" element={<VehiclesPage />} />
                 </Routes>
+                <AppModalHost />
                 <LocationDisplay />
             </MemoryRouter>
         </MantineProvider>
@@ -112,6 +115,9 @@ describe('Vehicles page modal behavior', () => {
     });
 
     afterEach(() => {
+        act(() => {
+            useModalStackStore.getState().resetStack();
+        });
         jest.clearAllMocks();
         jest.useRealTimers();
     });

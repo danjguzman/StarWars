@@ -2,6 +2,8 @@ import { MantineProvider } from '@mantine/core';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import People from '@pages/People';
+import AppModalHost from '@pages/_shared/AppModalHost';
+import { useModalStackStore } from '@stores/modalStackStore';
 import { usePeopleStore } from '@stores/peopleStore';
 import { getCachedValue } from '@utils/clientCache';
 import { act } from 'react';
@@ -85,6 +87,7 @@ function renderPeoplePage(initialEntry: string) {
                     <Route path="/people" element={<People />} />
                     <Route path="/people/:personId" element={<People />} />
                 </Routes>
+                <AppModalHost />
                 <LocationDisplay />
             </MemoryRouter>
         </MantineProvider>
@@ -113,6 +116,9 @@ describe('People page modal behavior', () => {
     });
 
     afterEach(() => {
+        act(() => {
+            useModalStackStore.getState().resetStack();
+        });
         jest.clearAllMocks();
         jest.useRealTimers();
     });

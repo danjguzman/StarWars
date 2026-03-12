@@ -1,9 +1,9 @@
 import { MantineProvider } from '@mantine/core';
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ComponentProps } from 'react';
 import { createPortal } from 'react-dom';
-import Modal from './index';
+import Modal, { MODAL_EXIT_DURATION_MS } from './index';
 
 function renderModal(props?: Partial<ComponentProps<typeof Modal>>) {
     const onClose = jest.fn();
@@ -174,5 +174,27 @@ describe('Modal', () => {
         );
 
         expect(document.documentElement.style.overscrollBehavior).toBe('');
+    });
+
+    test('waits for the exit animation before notifying the host', () => {
+        jest.useFakeTimers();
+        const onExitComplete = jest.fn();
+
+        render(
+            <MantineProvider>
+                <Modal opened={false} closing ariaLabel="Character details" onClose={jest.fn()} onExitComplete={onExitComplete}>
+                    <div>Modal body</div>
+                </Modal>
+            </MantineProvider>
+        );
+
+        expect(onExitComplete).not.toHaveBeenCalled();
+
+        act(() => {
+            jest.advanceTimersByTime(MODAL_EXIT_DURATION_MS);
+        });
+
+        expect(onExitComplete).toHaveBeenCalledTimes(1);
+        jest.useRealTimers();
     });
 });

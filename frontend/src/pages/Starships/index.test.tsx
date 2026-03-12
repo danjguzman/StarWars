@@ -1,7 +1,9 @@
 import { MantineProvider } from '@mantine/core';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StarshipsPage from '@pages/Starships';
+import AppModalHost from '@pages/_shared/AppModalHost';
+import { useModalStackStore } from '@stores/modalStackStore';
 import { useStarshipsStore } from '@stores/starshipsStore';
 import { getCachedValue } from '@utils/clientCache';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -85,6 +87,7 @@ function renderStarshipsPage(initialEntry: string) {
                     <Route path="/starships" element={<StarshipsPage />} />
                     <Route path="/starships/:starshipId" element={<StarshipsPage />} />
                 </Routes>
+                <AppModalHost />
                 <LocationDisplay />
             </MemoryRouter>
         </MantineProvider>
@@ -113,6 +116,9 @@ describe('Starships page modal behavior', () => {
     });
 
     afterEach(() => {
+        act(() => {
+            useModalStackStore.getState().resetStack();
+        });
         jest.clearAllMocks();
     });
 
