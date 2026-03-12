@@ -54,6 +54,7 @@ describe('vehiclesStore', () => {
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
+            lastSyncedAt: null,
             currentPage: 0,
             hasMore: true,
         });
@@ -95,6 +96,7 @@ describe('vehiclesStore', () => {
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
+            lastSyncedAt: null,
         });
         mockedLoadVehicles.mockResolvedValue({
             items: [existingVehicle, newVehicle],
@@ -136,6 +138,7 @@ describe('vehiclesStore', () => {
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
+            lastSyncedAt: null,
         });
         mockedLoadVehicles.mockRejectedValue(new Error('boom'));
 

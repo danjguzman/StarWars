@@ -3,6 +3,7 @@ import {
     getJson,
     isSwapiPagedResponse,
 } from "@services/api";
+import { getPreloadedCollection } from "@services/preloadService";
 import { type Starship, type SwapiPagedResponse } from "@types";
 import { getCachedPage, getCachedValue, setCachedValue } from "@utils/clientCache";
 import {
@@ -21,13 +22,19 @@ export interface StarshipsPage {
 /* Return one page-shaped chunk of starships, preferably from the preloaded full-list cache. */
 export async function fetchStarshipsPage(page: number, pageSize = STARSHIPS_FALLBACK_PAGE_SIZE) {
     const cachedAllStarships = getCachedValue<Starship[]>(STARSHIPS_ALL_CACHE_KEY);
+    const preloadedStarships = getPreloadedCollection<Starship>("starships");
+    const sourceStarships = cachedAllStarships ?? preloadedStarships;
 
-    if (cachedAllStarships) {
+    if (!cachedAllStarships && preloadedStarships) {
+        setCachedValue(STARSHIPS_ALL_CACHE_KEY, preloadedStarships, STARSHIPS_ALL_CACHE_TTL_MS);
+    }
+
+    if (sourceStarships) {
         const start = (page - 1) * pageSize;
         const end = start + pageSize;
         return {
-            starships: cachedAllStarships.slice(start, end),
-            hasMore: end < cachedAllStarships.length,
+            starships: sourceStarships.slice(start, end),
+            hasMore: end < sourceStarships.length,
         } satisfies StarshipsPage;
     }
 

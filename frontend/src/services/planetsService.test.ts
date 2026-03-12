@@ -1,5 +1,6 @@
 import { fetchPlanetsPage, loadPlanets } from '@services/planetsService';
 import { apiUrl, getJson, isSwapiPagedResponse } from '@services/api';
+import { getPreloadedCollection } from '@services/preloadService';
 import { getCachedPage, getCachedValue, setCachedValue } from '@utils/clientCache';
 import type { Planet } from '@types';
 
@@ -7,6 +8,10 @@ jest.mock('@services/api', () => ({
     apiUrl: jest.fn((path: string) => `https://swapi.info/api${path}`),
     getJson: jest.fn(),
     isSwapiPagedResponse: jest.fn(),
+}));
+
+jest.mock('@services/preloadService', () => ({
+    getPreloadedCollection: jest.fn(),
 }));
 
 jest.mock('@utils/clientCache', () => ({
@@ -21,6 +26,7 @@ const mockedIsSwapiPagedResponse = jest.mocked(isSwapiPagedResponse);
 const mockedGetCachedPage = jest.mocked(getCachedPage);
 const mockedGetCachedValue = jest.mocked(getCachedValue);
 const mockedSetCachedValue = jest.mocked(setCachedValue);
+const mockedGetPreloadedCollection = jest.mocked(getPreloadedCollection);
 
 function createPlanet(id: number, name = `Planet ${id}`): Planet {
     return {
@@ -44,6 +50,7 @@ function createPlanet(id: number, name = `Planet ${id}`): Planet {
 describe('planetsService', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        mockedGetPreloadedCollection.mockReturnValue(null);
     });
 
     test('fetchPlanetsPage slices the preloaded planets cache before falling back to the API', async () => {
@@ -70,6 +77,21 @@ describe('planetsService', () => {
             planets: [allPlanets[0], allPlanets[1]],
             hasMore: true,
         });
+    });
+
+    test('fetchPlanetsPage repopulates cache from preloaded data when the TTL cache expired', async () => {
+        const preloadedPlanets = [createPlanet(1), createPlanet(2), createPlanet(3)];
+        mockedGetCachedValue.mockReturnValue(null);
+        mockedGetPreloadedCollection.mockReturnValue(preloadedPlanets);
+
+        const result = await fetchPlanetsPage(1, 2);
+
+        expect(result).toEqual({
+            planets: [preloadedPlanets[0], preloadedPlanets[1]],
+            hasMore: true,
+        });
+        expect(mockedSetCachedValue).toHaveBeenCalledWith('planets:all', preloadedPlanets, 300000);
+        expect(mockedGetJson).not.toHaveBeenCalled();
     });
 
     test('fetchPlanetsPage returns SWAPI paged results when the API responds with a page object', async () => {

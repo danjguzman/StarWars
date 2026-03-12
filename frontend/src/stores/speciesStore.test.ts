@@ -53,6 +53,7 @@ describe('speciesStore', () => {
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
+            lastSyncedAt: null,
             currentPage: 0,
             hasMore: true,
         });
@@ -94,6 +95,7 @@ describe('speciesStore', () => {
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
+            lastSyncedAt: null,
         });
         mockedLoadSpecies.mockResolvedValue({
             items: [existingSpecies, newSpecies],
@@ -135,6 +137,7 @@ describe('speciesStore', () => {
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
+            lastSyncedAt: null,
         });
         mockedLoadSpecies.mockRejectedValue(new Error('boom'));
 

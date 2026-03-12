@@ -1,5 +1,6 @@
 import { fetchFilmsPage, loadFilms } from '@services/filmsService';
 import { apiUrl, getJson, isSwapiPagedResponse } from '@services/api';
+import { getPreloadedCollection } from '@services/preloadService';
 import { getCachedPage, getCachedValue, setCachedValue } from '@utils/clientCache';
 import type { Film } from '@types';
 
@@ -7,6 +8,10 @@ jest.mock('@services/api', () => ({
     apiUrl: jest.fn((path: string) => `https://swapi.info/api${path}`),
     getJson: jest.fn(),
     isSwapiPagedResponse: jest.fn(),
+}));
+
+jest.mock('@services/preloadService', () => ({
+    getPreloadedCollection: jest.fn(),
 }));
 
 jest.mock('@utils/clientCache', () => ({
@@ -21,6 +26,7 @@ const mockedIsSwapiPagedResponse = jest.mocked(isSwapiPagedResponse);
 const mockedGetCachedPage = jest.mocked(getCachedPage);
 const mockedGetCachedValue = jest.mocked(getCachedValue);
 const mockedSetCachedValue = jest.mocked(setCachedValue);
+const mockedGetPreloadedCollection = jest.mocked(getPreloadedCollection);
 
 function createFilm(id: number, title = `Film ${id}`): Film {
     return {
@@ -44,6 +50,7 @@ function createFilm(id: number, title = `Film ${id}`): Film {
 describe('filmsService', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        mockedGetPreloadedCollection.mockReturnValue(null);
     });
 
     test('fetchFilmsPage slices the preloaded films cache before falling back to the API', async () => {
@@ -70,6 +77,21 @@ describe('filmsService', () => {
             films: [allFilms[0], allFilms[1]],
             hasMore: true,
         });
+    });
+
+    test('fetchFilmsPage repopulates cache from preloaded data when the TTL cache expired', async () => {
+        const preloadedFilms = [createFilm(1), createFilm(2), createFilm(3)];
+        mockedGetCachedValue.mockReturnValue(null);
+        mockedGetPreloadedCollection.mockReturnValue(preloadedFilms);
+
+        const result = await fetchFilmsPage(1, 2);
+
+        expect(result).toEqual({
+            films: [preloadedFilms[0], preloadedFilms[1]],
+            hasMore: true,
+        });
+        expect(mockedSetCachedValue).toHaveBeenCalledWith('films:all', preloadedFilms, 300000);
+        expect(mockedGetJson).not.toHaveBeenCalled();
     });
 
     test('fetchFilmsPage returns SWAPI paged results when the API responds with a page object', async () => {

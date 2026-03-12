@@ -3,6 +3,7 @@ import {
     getJson,
     isSwapiPagedResponse,
 } from "@services/api";
+import { getPreloadedCollection } from "@services/preloadService";
 import { type Film, type SwapiPagedResponse } from "@types";
 import { getCachedPage, getCachedValue, setCachedValue } from "@utils/clientCache";
 import {
@@ -21,13 +22,19 @@ export interface FilmsPage {
 /* Return one page-shaped chunk of films, preferably from the preloaded full-list cache. */
 export async function fetchFilmsPage(page: number, pageSize = FILMS_FALLBACK_PAGE_SIZE) {
     const cachedAllFilms = getCachedValue<Film[]>(FILMS_ALL_CACHE_KEY);
+    const preloadedFilms = getPreloadedCollection<Film>("films");
+    const sourceFilms = cachedAllFilms ?? preloadedFilms;
 
-    if (cachedAllFilms) {
+    if (!cachedAllFilms && preloadedFilms) {
+        setCachedValue(FILMS_ALL_CACHE_KEY, preloadedFilms, FILMS_ALL_CACHE_TTL_MS);
+    }
+
+    if (sourceFilms) {
         const start = (page - 1) * pageSize;
         const end = start + pageSize;
         return {
-            films: cachedAllFilms.slice(start, end),
-            hasMore: end < cachedAllFilms.length,
+            films: sourceFilms.slice(start, end),
+            hasMore: end < sourceFilms.length,
         } satisfies FilmsPage;
     }
 

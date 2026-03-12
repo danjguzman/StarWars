@@ -54,6 +54,7 @@ describe('peopleStore', () => {
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
+            lastSyncedAt: null,
             currentPage: 0,
             hasMore: true,
         });
@@ -93,6 +94,7 @@ describe('peopleStore', () => {
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
+            lastSyncedAt: null,
         });
         mockedLoadPeople.mockResolvedValue({
             items: [existingPerson, newPerson],
@@ -119,6 +121,7 @@ describe('peopleStore', () => {
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
+            lastSyncedAt: null,
         });
         await usePeopleStore.getState().fetchPeople({ nextPage: true });
         expect(mockedLoadPeople).not.toHaveBeenCalled();
@@ -145,6 +148,7 @@ describe('peopleStore', () => {
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
+            lastSyncedAt: null,
         });
         mockedLoadPeople.mockRejectedValue(new Error('boom'));
         await usePeopleStore.getState().fetchPeople({ nextPage: true });

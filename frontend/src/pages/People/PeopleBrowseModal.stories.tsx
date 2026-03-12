@@ -199,6 +199,12 @@ const meta = {
     title: 'Flows/Modals',
     component: PeopleBrowseModalStory,
     tags: ['autodocs'],
+    globals: {
+        viewport: {
+            value: 'responsive',
+            isRotated: false,
+        },
+    },
     parameters: {
         layout: 'fullscreen',
         docs: {
@@ -224,7 +230,7 @@ export const ModalOpenDesktop: Story = {
     },
     globals: {
         viewport: {
-            value: 'desktopWide',
+            value: 'responsive',
             isRotated: false,
         },
     },

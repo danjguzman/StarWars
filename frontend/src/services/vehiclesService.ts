@@ -3,6 +3,7 @@ import {
     getJson,
     isSwapiPagedResponse,
 } from "@services/api";
+import { getPreloadedCollection } from "@services/preloadService";
 import { type SwapiPagedResponse, type Vehicle } from "@types";
 import { getCachedPage, getCachedValue, setCachedValue } from "@utils/clientCache";
 import {
@@ -21,13 +22,19 @@ export interface VehiclesPage {
 /* Return one page-shaped chunk of vehicles, preferably from the preloaded full-list cache. */
 export async function fetchVehiclesPage(page: number, pageSize = VEHICLES_FALLBACK_PAGE_SIZE) {
     const cachedAllVehicles = getCachedValue<Vehicle[]>(VEHICLES_ALL_CACHE_KEY);
+    const preloadedVehicles = getPreloadedCollection<Vehicle>("vehicles");
+    const sourceVehicles = cachedAllVehicles ?? preloadedVehicles;
 
-    if (cachedAllVehicles) {
+    if (!cachedAllVehicles && preloadedVehicles) {
+        setCachedValue(VEHICLES_ALL_CACHE_KEY, preloadedVehicles, VEHICLES_ALL_CACHE_TTL_MS);
+    }
+
+    if (sourceVehicles) {
         const start = (page - 1) * pageSize;
         const end = start + pageSize;
         return {
-            vehicles: cachedAllVehicles.slice(start, end),
-            hasMore: end < cachedAllVehicles.length,
+            vehicles: sourceVehicles.slice(start, end),
+            hasMore: end < sourceVehicles.length,
         } satisfies VehiclesPage;
     }
 

@@ -175,8 +175,9 @@
 
 .traitsCardCompact {
     width: auto;
-    flex: 1;
+    flex: 1 1 0;
     min-width: 0;
+    max-width: none;
     position: relative;
     padding-top: 14px;
     transition: padding-top 240ms ease;
@@ -404,8 +405,32 @@
     }
 
     .layoutCompact {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+        grid-template-columns: minmax(0, 1fr);
+        justify-items: stretch;
         grid-template-rows: auto;
         gap: 0;
         padding-bottom: 0;
+    }
+
+    .compactDetailsRow {
+        width: 100%;
+    }
+
+    .heroColumn {
+        flex: 0 0 200px;
+    }
+
+    .traitsCardCompact {
+        width: 100%;
+        min-width: 0;
+        max-width: none;
+    }
+
+    .bottomOrbitInline {
+        justify-content: space-between;
+        gap: 8px;
     }
 }

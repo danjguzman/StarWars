@@ -1,5 +1,6 @@
 import { fetchSpeciesPage, loadSpecies } from '@services/speciesService';
 import { apiUrl, getJson, isSwapiPagedResponse } from '@services/api';
+import { getPreloadedCollection } from '@services/preloadService';
 import { getCachedPage, getCachedValue, setCachedValue } from '@utils/clientCache';
 import type { Species } from '@types';
 
@@ -7,6 +8,10 @@ jest.mock('@services/api', () => ({
     apiUrl: jest.fn((path: string) => `https://swapi.info/api${path}`),
     getJson: jest.fn(),
     isSwapiPagedResponse: jest.fn(),
+}));
+
+jest.mock('@services/preloadService', () => ({
+    getPreloadedCollection: jest.fn(),
 }));
 
 jest.mock('@utils/clientCache', () => ({
@@ -21,6 +26,7 @@ const mockedIsSwapiPagedResponse = jest.mocked(isSwapiPagedResponse);
 const mockedGetCachedPage = jest.mocked(getCachedPage);
 const mockedGetCachedValue = jest.mocked(getCachedValue);
 const mockedSetCachedValue = jest.mocked(setCachedValue);
+const mockedGetPreloadedCollection = jest.mocked(getPreloadedCollection);
 
 function createSpecies(id: number, name = `Species ${id}`): Species {
     return {
@@ -45,6 +51,7 @@ function createSpecies(id: number, name = `Species ${id}`): Species {
 describe('speciesService', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        mockedGetPreloadedCollection.mockReturnValue(null);
     });
 
     test('fetchSpeciesPage slices the preloaded species cache before falling back to the API', async () => {
@@ -71,6 +78,21 @@ describe('speciesService', () => {
             species: [allSpecies[0], allSpecies[1]],
             hasMore: true,
         });
+    });
+
+    test('fetchSpeciesPage repopulates cache from preloaded data when the TTL cache expired', async () => {
+        const preloadedSpecies = [createSpecies(1), createSpecies(2), createSpecies(3)];
+        mockedGetCachedValue.mockReturnValue(null);
+        mockedGetPreloadedCollection.mockReturnValue(preloadedSpecies);
+
+        const result = await fetchSpeciesPage(1, 2);
+
+        expect(result).toEqual({
+            species: [preloadedSpecies[0], preloadedSpecies[1]],
+            hasMore: true,
+        });
+        expect(mockedSetCachedValue).toHaveBeenCalledWith('species:all', preloadedSpecies, 300000);
+        expect(mockedGetJson).not.toHaveBeenCalled();
     });
 
     test('fetchSpeciesPage returns SWAPI paged results when the API responds with a page object', async () => {

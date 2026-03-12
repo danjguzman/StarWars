@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import { loadFilms } from "@services/filmsService";
 import { type Film } from "@types";
-import { getCachedValue } from "@utils/clientCache";
-import { FILMS_ALL_CACHE_KEY, MIN_LOADING_MS } from "@utils/consts";
+import { getCachedValue, invalidatePageCache } from "@utils/clientCache";
+import { FILMS_ALL_CACHE_KEY, FILMS_ALL_CACHE_TTL_MS, FILMS_CACHE_NAME, MIN_LOADING_MS } from "@utils/consts";
 import { buildUserFacingError } from "@utils/errors";
 import { waitForMinimumLoading } from "@utils/loading";
 import { collectPagedResourcesUntilTarget, filterUniqueResourcesByUrl, shouldSkipFetch } from "@utils/pagedResource";
@@ -15,6 +15,7 @@ interface FilmsState {
     loadingMore: boolean;
     error: string | null;
     lastFailedRequestMode: FilmsRequestMode | null;
+    lastSyncedAt: number | null;
     currentPage: number;
     hasMore: boolean;
     fetchFilms: (options?: { nextPage?: boolean; targetCount?: number }) => Promise<void>;
@@ -26,6 +27,7 @@ export const useFilmsStore = create<FilmsState>((set, get) => ({
     loadingMore: false,
     error: null,
     lastFailedRequestMode: null,
+    lastSyncedAt: null,
     currentPage: 0,
     hasMore: true,
     fetchFilms: async (options) => {
@@ -35,13 +37,33 @@ export const useFilmsStore = create<FilmsState>((set, get) => ({
         const cachedFilmsCollection = getCachedValue<Film[]>(FILMS_ALL_CACHE_KEY);
         const hasCollectionCache = Array.isArray(cachedFilmsCollection) && cachedFilmsCollection.length > 0;
 
+        const isStateExpired = !nextPage
+            && state.lastSyncedAt !== null
+            && Date.now() - state.lastSyncedAt >= FILMS_ALL_CACHE_TTL_MS;
+
+        if (isStateExpired) {
+            invalidatePageCache(FILMS_CACHE_NAME);
+            set({
+                films: [],
+                currentPage: 0,
+                hasMore: true,
+                error: null,
+                lastFailedRequestMode: null,
+                loading: false,
+                loadingMore: false,
+                lastSyncedAt: null,
+            });
+        }
+
+        const activeState = isStateExpired ? get() : state;
+
         if (shouldSkipFetch({
             nextPage,
-            loading: state.loading,
-            loadingMore: state.loadingMore,
-            hasMore: state.hasMore,
-            currentPage: state.currentPage,
-            itemCount: state.films.length,
+            loading: activeState.loading,
+            loadingMore: activeState.loadingMore,
+            hasMore: activeState.hasMore,
+            currentPage: activeState.currentPage,
+            itemCount: activeState.films.length,
         })) return;
 
         try {
@@ -50,7 +72,7 @@ export const useFilmsStore = create<FilmsState>((set, get) => ({
             if (nextPage) {
                 set({ loadingMore: true, error: null, lastFailedRequestMode: null });
 
-                const pageToLoad = state.currentPage + 1;
+                const pageToLoad = activeState.currentPage + 1;
                 const pageData = await loadFilms(pageToLoad);
 
                 await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
@@ -64,6 +86,7 @@ export const useFilmsStore = create<FilmsState>((set, get) => ({
                     hasMore: pageData.hasMore && newFilms.length > 0,
                     loadingMore: false,
                     lastFailedRequestMode: null,
+                    lastSyncedAt: Date.now(),
                 });
                 return;
             }
@@ -85,6 +108,7 @@ export const useFilmsStore = create<FilmsState>((set, get) => ({
                 currentPage: initialFilmsLoad.currentPage,
                 hasMore: initialFilmsLoad.hasMore,
                 lastFailedRequestMode: null,
+                lastSyncedAt: Date.now(),
             });
         } catch (error) {
             set({

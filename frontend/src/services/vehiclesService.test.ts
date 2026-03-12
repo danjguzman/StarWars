@@ -1,5 +1,6 @@
 import { fetchVehiclesPage, loadVehicles } from '@services/vehiclesService';
 import { apiUrl, getJson, isSwapiPagedResponse } from '@services/api';
+import { getPreloadedCollection } from '@services/preloadService';
 import { getCachedPage, getCachedValue, setCachedValue } from '@utils/clientCache';
 import type { Vehicle } from '@types';
 
@@ -7,6 +8,10 @@ jest.mock('@services/api', () => ({
     apiUrl: jest.fn((path: string) => `https://swapi.info/api${path}`),
     getJson: jest.fn(),
     isSwapiPagedResponse: jest.fn(),
+}));
+
+jest.mock('@services/preloadService', () => ({
+    getPreloadedCollection: jest.fn(),
 }));
 
 jest.mock('@utils/clientCache', () => ({
@@ -21,6 +26,7 @@ const mockedIsSwapiPagedResponse = jest.mocked(isSwapiPagedResponse);
 const mockedGetCachedPage = jest.mocked(getCachedPage);
 const mockedGetCachedValue = jest.mocked(getCachedValue);
 const mockedSetCachedValue = jest.mocked(setCachedValue);
+const mockedGetPreloadedCollection = jest.mocked(getPreloadedCollection);
 
 function createVehicle(id: number, name = `Vehicle ${id}`): Vehicle {
     return {
@@ -46,6 +52,7 @@ function createVehicle(id: number, name = `Vehicle ${id}`): Vehicle {
 describe('vehiclesService', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        mockedGetPreloadedCollection.mockReturnValue(null);
     });
 
     test('fetchVehiclesPage slices the preloaded vehicles cache before falling back to the API', async () => {
@@ -72,6 +79,21 @@ describe('vehiclesService', () => {
             vehicles: [allVehicles[0], allVehicles[1]],
             hasMore: true,
         });
+    });
+
+    test('fetchVehiclesPage repopulates cache from preloaded data when the TTL cache expired', async () => {
+        const preloadedVehicles = [createVehicle(1), createVehicle(2), createVehicle(3)];
+        mockedGetCachedValue.mockReturnValue(null);
+        mockedGetPreloadedCollection.mockReturnValue(preloadedVehicles);
+
+        const result = await fetchVehiclesPage(1, 2);
+
+        expect(result).toEqual({
+            vehicles: [preloadedVehicles[0], preloadedVehicles[1]],
+            hasMore: true,
+        });
+        expect(mockedSetCachedValue).toHaveBeenCalledWith('vehicles:all', preloadedVehicles, 300000);
+        expect(mockedGetJson).not.toHaveBeenCalled();
     });
 
     test('fetchVehiclesPage returns SWAPI paged results when the API responds with a page object', async () => {

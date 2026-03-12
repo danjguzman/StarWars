@@ -19,6 +19,7 @@ type PreloadEndpoint = (typeof RESOURCE_COLLECTIONS)[number];
 type SwapiEntity = Record<string, unknown>;
 
 let preloadPromise: Promise<void> | null = null;
+const preloadedCollections = new Map<PreloadEndpoint, SwapiEntity[]>();
 
 function preloadLabel(endpoint: PreloadEndpoint) {
     const singularLabel = endpoint === "species" ? "species archive" : `${endpoint} archive`;
@@ -56,10 +57,13 @@ async function collectAllEntities(endpoint: PreloadEndpoint): Promise<SwapiEntit
 
 /* Preload every supported resource collection and save each one in cache. */
 async function preloadSwapiDataInternal(): Promise<void> {
+    preloadedCollections.clear();
+
     await Promise.all(
         RESOURCE_COLLECTIONS.map(async (endpoint) => {
             try {
                 const entities = await collectAllEntities(endpoint);
+                preloadedCollections.set(endpoint, entities);
                 setCachedValue(allResourceCacheKey(endpoint), entities, PRELOAD_CACHE_TTL_MS);
             } catch (error) {
                 throw new Error(buildUserFacingError(`We couldn't prepare the ${preloadLabel(endpoint)}`, error));
@@ -78,4 +82,10 @@ export function preloadSwapiData(): Promise<void> {
     }
 
     return preloadPromise;
+}
+
+/* Read the long-lived preload snapshot for one resource collection. */
+export function getPreloadedCollection<T>(endpoint: PreloadEndpoint): T[] | null {
+    const collection = preloadedCollections.get(endpoint);
+    return collection ? (collection as T[]) : null;
 }

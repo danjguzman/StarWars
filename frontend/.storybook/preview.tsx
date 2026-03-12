@@ -12,6 +12,13 @@ const theme = createTheme({
 });
 
 const customViewports = {
+    responsive: {
+        name: 'Responsive',
+        styles: {
+            width: '100%',
+            height: '100%',
+        },
+    },
     desktopWide: {
         name: 'Desktop Wide',
         styles: {
@@ -52,7 +59,7 @@ const customViewports = {
 const preview: Preview = {
     initialGlobals: {
         viewport: {
-            value: 'desktopWide',
+            value: 'responsive',
             isRotated: false,
         },
     },

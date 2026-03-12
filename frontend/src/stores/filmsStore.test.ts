@@ -52,6 +52,7 @@ describe('filmsStore', () => {
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
+            lastSyncedAt: null,
             currentPage: 0,
             hasMore: true,
         });
@@ -93,6 +94,7 @@ describe('filmsStore', () => {
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
+            lastSyncedAt: null,
         });
         mockedLoadFilms.mockResolvedValue({
             items: [existingFilm, newFilm],
@@ -134,6 +136,7 @@ describe('filmsStore', () => {
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
+            lastSyncedAt: null,
         });
         mockedLoadFilms.mockRejectedValue(new Error('boom'));
 

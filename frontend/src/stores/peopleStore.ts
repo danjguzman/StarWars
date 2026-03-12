@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import { type Person } from "@types";
 import { loadPeople } from "@services/peopleService";
-import { getCachedValue } from "@utils/clientCache";
-import { MIN_LOADING_MS, PEOPLE_ALL_CACHE_KEY } from "@utils/consts";
+import { getCachedValue, invalidatePageCache } from "@utils/clientCache";
+import { MIN_LOADING_MS, PEOPLE_ALL_CACHE_KEY, PEOPLE_ALL_CACHE_TTL_MS, PEOPLE_CACHE_NAME } from "@utils/consts";
 import { buildUserFacingError } from "@utils/errors";
 import { waitForMinimumLoading } from "@utils/loading";
 import { collectPagedResourcesUntilTarget, filterUniqueResourcesByUrl, shouldSkipFetch } from "@utils/pagedResource";
@@ -15,6 +15,7 @@ interface PeopleState {
     loadingMore: boolean;
     error: string | null;
     lastFailedRequestMode: PeopleRequestMode | null;
+    lastSyncedAt: number | null;
     currentPage: number;
     hasMore: boolean;
     fetchPeople: (options?: { nextPage?: boolean; targetCount?: number }) => Promise<void>;
@@ -26,6 +27,7 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
     loadingMore: false,
     error: null,
     lastFailedRequestMode: null,
+    lastSyncedAt: null,
     currentPage: 0,
     hasMore: true,
     fetchPeople: async (options) => {
@@ -37,14 +39,34 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
         const cachedPeopleCollection = getCachedValue<Person[]>(PEOPLE_ALL_CACHE_KEY);
         const hasCollectionCache = Array.isArray(cachedPeopleCollection) && cachedPeopleCollection.length > 0;
 
+        const isStateExpired = !nextPage
+            && state.lastSyncedAt !== null
+            && Date.now() - state.lastSyncedAt >= PEOPLE_ALL_CACHE_TTL_MS;
+
+        if (isStateExpired) {
+            invalidatePageCache(PEOPLE_CACHE_NAME);
+            set({
+                people: [],
+                currentPage: 0,
+                hasMore: true,
+                error: null,
+                lastFailedRequestMode: null,
+                loading: false,
+                loadingMore: false,
+                lastSyncedAt: null,
+            });
+        }
+
+        const activeState = isStateExpired ? get() : state;
+
         /* Skip requests when current state cannot fetch. */
         if (shouldSkipFetch({
             nextPage,
-            loading: state.loading,
-            loadingMore: state.loadingMore,
-            hasMore: state.hasMore,
-            currentPage: state.currentPage,
-            itemCount: state.people.length,
+            loading: activeState.loading,
+            loadingMore: activeState.loadingMore,
+            hasMore: activeState.hasMore,
+            currentPage: activeState.currentPage,
+            itemCount: activeState.people.length,
         })) return;
 
         /* Run fetch flow and update store state. */
@@ -60,7 +82,7 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
                 set({ loadingMore: true, error: null, lastFailedRequestMode: null });
 
                 /* Resolve the next page from cache first, then API if needed. */
-                const pageToLoad = state.currentPage + 1;
+                const pageToLoad = activeState.currentPage + 1;
                 const pageData = await loadPeople(pageToLoad);
 
                 /* Keep "Loading" visible for at least the minimum duration. */
@@ -77,6 +99,7 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
                     hasMore: pageData.hasMore && newPeople.length > 0,
                     loadingMore: false,
                     lastFailedRequestMode: null,
+                    lastSyncedAt: Date.now(),
                 });
                 return;
 
@@ -105,6 +128,7 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
                 currentPage: initialPeopleLoad.currentPage,
                 hasMore: initialPeopleLoad.hasMore,
                 lastFailedRequestMode: null,
+                lastSyncedAt: Date.now(),
             });
 
         } catch (error) {

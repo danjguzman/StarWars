@@ -3,6 +3,7 @@ import {
     getJson,
     isSwapiPagedResponse,
 } from "@services/api";
+import { getPreloadedCollection } from "@services/preloadService";
 import { type Planet, type SwapiPagedResponse } from "@types";
 import { getCachedPage, getCachedValue, setCachedValue } from "@utils/clientCache";
 import {
@@ -21,13 +22,19 @@ export interface PlanetsPage {
 /* Return one page-shaped chunk of planets, preferably from the preloaded full-list cache. */
 export async function fetchPlanetsPage(page: number, pageSize = PLANETS_FALLBACK_PAGE_SIZE) {
     const cachedAllPlanets = getCachedValue<Planet[]>(PLANETS_ALL_CACHE_KEY);
+    const preloadedPlanets = getPreloadedCollection<Planet>("planets");
+    const sourcePlanets = cachedAllPlanets ?? preloadedPlanets;
 
-    if (cachedAllPlanets) {
+    if (!cachedAllPlanets && preloadedPlanets) {
+        setCachedValue(PLANETS_ALL_CACHE_KEY, preloadedPlanets, PLANETS_ALL_CACHE_TTL_MS);
+    }
+
+    if (sourcePlanets) {
         const start = (page - 1) * pageSize;
         const end = start + pageSize;
         return {
-            planets: cachedAllPlanets.slice(start, end),
-            hasMore: end < cachedAllPlanets.length,
+            planets: sourcePlanets.slice(start, end),
+            hasMore: end < sourcePlanets.length,
         } satisfies PlanetsPage;
     }
 

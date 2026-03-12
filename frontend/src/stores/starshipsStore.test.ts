@@ -56,6 +56,7 @@ describe('starshipsStore', () => {
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
+            lastSyncedAt: null,
             currentPage: 0,
             hasMore: true,
         });
@@ -97,6 +98,7 @@ describe('starshipsStore', () => {
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
+            lastSyncedAt: null,
         });
         mockedLoadStarships.mockResolvedValue({
             items: [existingStarship, newStarship],
@@ -138,6 +140,7 @@ describe('starshipsStore', () => {
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
+            lastSyncedAt: null,
         });
         mockedLoadStarships.mockRejectedValue(new Error('boom'));
 

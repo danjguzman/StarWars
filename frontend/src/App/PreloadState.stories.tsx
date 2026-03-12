@@ -62,6 +62,12 @@ const meta = {
     title: 'App/PreloadState',
     component: PreloadState,
     tags: ['autodocs'],
+    globals: {
+        viewport: {
+            value: 'responsive',
+            isRotated: false,
+        },
+    },
     parameters: {
         layout: 'fullscreen',
         docs: {

@@ -143,6 +143,11 @@
     .contentLayer {
         align-items: center;
     }
+
+    .contentMotion {
+        width: min(82vw, 690px);
+        max-width: min(82vw, 690px);
+    }
 }
 
 .contentEnter {

@@ -3,6 +3,7 @@ import {
     getJson,
     isSwapiPagedResponse,
 } from "@services/api";
+import { getPreloadedCollection } from "@services/preloadService";
 import { type Person, type SwapiPagedResponse } from "@types";
 import { getCachedPage, getCachedValue, setCachedValue } from "@utils/clientCache";
 import {
@@ -31,14 +32,20 @@ export interface PeoplePage {
 export async function fetchPeoplePage(page: number, pageSize = PEOPLE_FALLBACK_PAGE_SIZE) {
     /* Read the full cached people list first, because preload usually puts it there. */
     const cachedAllPeople = getCachedValue<Person[]>(PEOPLE_ALL_CACHE_KEY);
+    const preloadedPeople = getPreloadedCollection<Person>("people");
+    const sourcePeople = cachedAllPeople ?? preloadedPeople;
+
+    if (!cachedAllPeople && preloadedPeople) {
+        setCachedValue(PEOPLE_ALL_CACHE_KEY, preloadedPeople, PEOPLE_ALL_CACHE_TTL_MS);
+    }
 
     /* Slice the cached full list into the requested page shape when it is available. */
-    if (cachedAllPeople) {
+    if (sourcePeople) {
         const start = (page - 1) * pageSize;
         const end = start + pageSize;
         return {
-            people: cachedAllPeople.slice(start, end),
-            hasMore: end < cachedAllPeople.length,
+            people: sourcePeople.slice(start, end),
+            hasMore: end < sourcePeople.length,
         } satisfies PeoplePage;
     }
 

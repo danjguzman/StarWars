@@ -1,8 +1,8 @@
 import { create } from "zustand";
 import { loadVehicles } from "@services/vehiclesService";
 import { type Vehicle } from "@types";
-import { getCachedValue } from "@utils/clientCache";
-import { MIN_LOADING_MS, VEHICLES_ALL_CACHE_KEY } from "@utils/consts";
+import { getCachedValue, invalidatePageCache } from "@utils/clientCache";
+import { MIN_LOADING_MS, VEHICLES_ALL_CACHE_KEY, VEHICLES_ALL_CACHE_TTL_MS, VEHICLES_CACHE_NAME } from "@utils/consts";
 import { buildUserFacingError } from "@utils/errors";
 import { waitForMinimumLoading } from "@utils/loading";
 import { collectPagedResourcesUntilTarget, filterUniqueResourcesByUrl, shouldSkipFetch } from "@utils/pagedResource";
@@ -15,6 +15,7 @@ interface VehiclesState {
     loadingMore: boolean;
     error: string | null;
     lastFailedRequestMode: VehiclesRequestMode | null;
+    lastSyncedAt: number | null;
     currentPage: number;
     hasMore: boolean;
     fetchVehicles: (options?: { nextPage?: boolean; targetCount?: number }) => Promise<void>;
@@ -26,6 +27,7 @@ export const useVehiclesStore = create<VehiclesState>((set, get) => ({
     loadingMore: false,
     error: null,
     lastFailedRequestMode: null,
+    lastSyncedAt: null,
     currentPage: 0,
     hasMore: true,
     fetchVehicles: async (options) => {
@@ -35,13 +37,33 @@ export const useVehiclesStore = create<VehiclesState>((set, get) => ({
         const cachedVehiclesCollection = getCachedValue<Vehicle[]>(VEHICLES_ALL_CACHE_KEY);
         const hasCollectionCache = Array.isArray(cachedVehiclesCollection) && cachedVehiclesCollection.length > 0;
 
+        const isStateExpired = !nextPage
+            && state.lastSyncedAt !== null
+            && Date.now() - state.lastSyncedAt >= VEHICLES_ALL_CACHE_TTL_MS;
+
+        if (isStateExpired) {
+            invalidatePageCache(VEHICLES_CACHE_NAME);
+            set({
+                vehicles: [],
+                currentPage: 0,
+                hasMore: true,
+                error: null,
+                lastFailedRequestMode: null,
+                loading: false,
+                loadingMore: false,
+                lastSyncedAt: null,
+            });
+        }
+
+        const activeState = isStateExpired ? get() : state;
+
         if (shouldSkipFetch({
             nextPage,
-            loading: state.loading,
-            loadingMore: state.loadingMore,
-            hasMore: state.hasMore,
-            currentPage: state.currentPage,
-            itemCount: state.vehicles.length,
+            loading: activeState.loading,
+            loadingMore: activeState.loadingMore,
+            hasMore: activeState.hasMore,
+            currentPage: activeState.currentPage,
+            itemCount: activeState.vehicles.length,
         })) return;
 
         try {
@@ -50,7 +72,7 @@ export const useVehiclesStore = create<VehiclesState>((set, get) => ({
             if (nextPage) {
                 set({ loadingMore: true, error: null, lastFailedRequestMode: null });
 
-                const pageToLoad = state.currentPage + 1;
+                const pageToLoad = activeState.currentPage + 1;
                 const pageData = await loadVehicles(pageToLoad);
 
                 await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
@@ -64,6 +86,7 @@ export const useVehiclesStore = create<VehiclesState>((set, get) => ({
                     hasMore: pageData.hasMore && newVehicles.length > 0,
                     loadingMore: false,
                     lastFailedRequestMode: null,
+                    lastSyncedAt: Date.now(),
                 });
                 return;
             }
@@ -85,6 +108,7 @@ export const useVehiclesStore = create<VehiclesState>((set, get) => ({
                 currentPage: initialVehiclesLoad.currentPage,
                 hasMore: initialVehiclesLoad.hasMore,
                 lastFailedRequestMode: null,
+                lastSyncedAt: Date.now(),
             });
         } catch (error) {
             set({

@@ -1,5 +1,6 @@
 import { fetchPeoplePage, loadPeople } from '@services/peopleService';
 import { apiUrl, getJson, isSwapiPagedResponse } from '@services/api';
+import { getPreloadedCollection } from '@services/preloadService';
 import { getCachedPage, getCachedValue, setCachedValue } from '@utils/clientCache';
 import type { Person } from '@types';
 
@@ -7,6 +8,10 @@ jest.mock('@services/api', () => ({
     apiUrl: jest.fn((path: string) => `https://swapi.info/api${path}`),
     getJson: jest.fn(),
     isSwapiPagedResponse: jest.fn(),
+}));
+
+jest.mock('@services/preloadService', () => ({
+    getPreloadedCollection: jest.fn(),
 }));
 
 jest.mock('@utils/clientCache', () => ({
@@ -21,6 +26,7 @@ const mockedIsSwapiPagedResponse = jest.mocked(isSwapiPagedResponse);
 const mockedGetCachedPage = jest.mocked(getCachedPage);
 const mockedGetCachedValue = jest.mocked(getCachedValue);
 const mockedSetCachedValue = jest.mocked(setCachedValue);
+const mockedGetPreloadedCollection = jest.mocked(getPreloadedCollection);
 
 function createPerson(id: number, name = `Person ${id}`): Person {
     return {
@@ -46,6 +52,7 @@ function createPerson(id: number, name = `Person ${id}`): Person {
 describe('peopleService', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        mockedGetPreloadedCollection.mockReturnValue(null);
     });
 
     test('fetchPeoplePage slices the preloaded people cache before falling back to the API', async () => {
@@ -72,6 +79,21 @@ describe('peopleService', () => {
             people: [allPeople[0], allPeople[1]],
             hasMore: true,
         });
+    });
+
+    test('fetchPeoplePage repopulates cache from preloaded data when the TTL cache expired', async () => {
+        const preloadedPeople = [createPerson(1), createPerson(2), createPerson(3)];
+        mockedGetCachedValue.mockReturnValue(null);
+        mockedGetPreloadedCollection.mockReturnValue(preloadedPeople);
+
+        const result = await fetchPeoplePage(1, 2);
+
+        expect(result).toEqual({
+            people: [preloadedPeople[0], preloadedPeople[1]],
+            hasMore: true,
+        });
+        expect(mockedSetCachedValue).toHaveBeenCalledWith('people:all', preloadedPeople, 300000);
+        expect(mockedGetJson).not.toHaveBeenCalled();
     });
 
     test('fetchPeoplePage returns SWAPI paged results when the API responds with a page object', async () => {

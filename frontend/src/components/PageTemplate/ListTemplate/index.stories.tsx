@@ -18,6 +18,12 @@ const meta = {
     title: 'Collections/ListTemplate',
     component: ListTemplate<StoryItem>,
     tags: ['autodocs'],
+    globals: {
+        viewport: {
+            value: 'responsive',
+            isRotated: false,
+        },
+    },
     parameters: {
         docs: {
             description: {

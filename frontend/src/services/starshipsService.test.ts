@@ -1,5 +1,6 @@
 import { fetchStarshipsPage, loadStarships } from '@services/starshipsService';
 import { apiUrl, getJson, isSwapiPagedResponse } from '@services/api';
+import { getPreloadedCollection } from '@services/preloadService';
 import { getCachedPage, getCachedValue, setCachedValue } from '@utils/clientCache';
 import type { Starship } from '@types';
 
@@ -7,6 +8,10 @@ jest.mock('@services/api', () => ({
     apiUrl: jest.fn((path: string) => `https://swapi.info/api${path}`),
     getJson: jest.fn(),
     isSwapiPagedResponse: jest.fn(),
+}));
+
+jest.mock('@services/preloadService', () => ({
+    getPreloadedCollection: jest.fn(),
 }));
 
 jest.mock('@utils/clientCache', () => ({
@@ -21,6 +26,7 @@ const mockedIsSwapiPagedResponse = jest.mocked(isSwapiPagedResponse);
 const mockedGetCachedPage = jest.mocked(getCachedPage);
 const mockedGetCachedValue = jest.mocked(getCachedValue);
 const mockedSetCachedValue = jest.mocked(setCachedValue);
+const mockedGetPreloadedCollection = jest.mocked(getPreloadedCollection);
 
 function createStarship(id: number, name = `Starship ${id}`): Starship {
     return {
@@ -48,6 +54,7 @@ function createStarship(id: number, name = `Starship ${id}`): Starship {
 describe('starshipsService', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        mockedGetPreloadedCollection.mockReturnValue(null);
     });
 
     test('fetchStarshipsPage slices the preloaded starships cache before falling back to the API', async () => {
@@ -74,6 +81,21 @@ describe('starshipsService', () => {
             starships: [allStarships[0], allStarships[1]],
             hasMore: true,
         });
+    });
+
+    test('fetchStarshipsPage repopulates cache from preloaded data when the TTL cache expired', async () => {
+        const preloadedStarships = [createStarship(1), createStarship(2), createStarship(3)];
+        mockedGetCachedValue.mockReturnValue(null);
+        mockedGetPreloadedCollection.mockReturnValue(preloadedStarships);
+
+        const result = await fetchStarshipsPage(1, 2);
+
+        expect(result).toEqual({
+            starships: [preloadedStarships[0], preloadedStarships[1]],
+            hasMore: true,
+        });
+        expect(mockedSetCachedValue).toHaveBeenCalledWith('starships:all', preloadedStarships, 300000);
+        expect(mockedGetJson).not.toHaveBeenCalled();
     });
 
     test('fetchStarshipsPage returns SWAPI paged results when the API responds with a page object', async () => {

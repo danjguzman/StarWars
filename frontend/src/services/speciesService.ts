@@ -3,6 +3,7 @@ import {
     getJson,
     isSwapiPagedResponse,
 } from "@services/api";
+import { getPreloadedCollection } from "@services/preloadService";
 import { type Species, type SwapiPagedResponse } from "@types";
 import { getCachedPage, getCachedValue, setCachedValue } from "@utils/clientCache";
 import {
@@ -21,13 +22,19 @@ export interface SpeciesPage {
 /* Return one page-shaped chunk of species, preferably from the preloaded full-list cache. */
 export async function fetchSpeciesPage(page: number, pageSize = SPECIES_FALLBACK_PAGE_SIZE) {
     const cachedAllSpecies = getCachedValue<Species[]>(SPECIES_ALL_CACHE_KEY);
+    const preloadedSpecies = getPreloadedCollection<Species>("species");
+    const sourceSpecies = cachedAllSpecies ?? preloadedSpecies;
 
-    if (cachedAllSpecies) {
+    if (!cachedAllSpecies && preloadedSpecies) {
+        setCachedValue(SPECIES_ALL_CACHE_KEY, preloadedSpecies, SPECIES_ALL_CACHE_TTL_MS);
+    }
+
+    if (sourceSpecies) {
         const start = (page - 1) * pageSize;
         const end = start + pageSize;
         return {
-            species: cachedAllSpecies.slice(start, end),
-            hasMore: end < cachedAllSpecies.length,
+            species: sourceSpecies.slice(start, end),
+            hasMore: end < sourceSpecies.length,
         } satisfies SpeciesPage;
     }
 
