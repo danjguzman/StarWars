@@ -35,3 +35,14 @@ export const homeRoutes = (
         <Route path="*" element={<NotFound />} />
     </Route>
 );
+
+export const modalRoutes = (
+    <>
+        <Route path="/films/:filmId" element={<FilmsPage modalOnly />} />
+        <Route path="/people/:personId" element={<PeoplePage modalOnly />} />
+        <Route path="/planets/:planetId" element={<PlanetsPage modalOnly />} />
+        <Route path="/species/:speciesId" element={<SpeciesPage modalOnly />} />
+        <Route path="/vehicles/:vehicleId" element={<VehiclesPage modalOnly />} />
+        <Route path="/starships/:starshipId" element={<StarshipsPage modalOnly />} />
+    </>
+);

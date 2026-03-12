@@ -14,13 +14,13 @@ jest.mock('@utils/loading', () => ({
     waitForMinimumLoading: jest.fn(() => Promise.resolve()),
 }));
 
-jest.mock('@routes/routes', () => ({
-    homeRoutes: <div data-testid="home-routes">Home routes</div>,
+jest.mock('@routes/AppRouter', () => ({
+    __esModule: true,
+    default: () => <div data-testid="home-routes">Home routes</div>,
 }));
 
 jest.mock('react-router-dom', () => ({
     BrowserRouter: ({ children }: { children: ReactNode }) => <div data-testid="browser-router">{children}</div>,
-    Routes: ({ children }: { children: ReactNode }) => <div data-testid="routes">{children}</div>,
 }));
 
 const mockedPreloadSwapiData = jest.mocked(preloadSwapiData);

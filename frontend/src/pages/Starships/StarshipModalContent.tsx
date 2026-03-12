@@ -2,13 +2,13 @@ import { useCallback, useMemo } from "react";
 import { FilmReelIcon } from "@phosphor-icons/react";
 import { FlyingSaucer as FlyingSaucerIcon, Users as UsersIcon } from "phosphor-react";
 import ContentTemplate from "@components/Modal/ContentTemplate";
+import useModalRouteNavigation from "@pages/_shared/useModalRouteNavigation";
 import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Starship } from "@types";
 import { getEntityImageSources } from "@utils/assets";
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
 import { useResolvedResourceNames } from "@utils/useResolvedResourceNames";
 import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
-import { useNavigate } from "react-router-dom";
 
 interface StarshipModalContentProps {
     starship: Starship;
@@ -25,15 +25,15 @@ export default function StarshipModalContent({
     onPrev,
     onNext,
 }: StarshipModalContentProps) {
-    const navigate = useNavigate();
+    const { openModalRoute } = useModalRouteNavigation("/starships");
     const starshipId = resourceIdFromUrl(starship.url);
     const artworkSources = useMemo(() => getEntityImageSources("starships", starshipId), [starshipId]);
 
     const openRelatedItem = useCallback((item: { url: string }) => {
         const routePath = resourceRoutePathFromUrl(item.url);
         if (!routePath) return;
-        navigate(routePath);
-    }, [navigate]);
+        openModalRoute(routePath);
+    }, [openModalRoute]);
 
     const relatedResourceUrls = useMemo(() => {
         return collectRelatedResourceUrls([

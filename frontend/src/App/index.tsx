@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BrowserRouter, Routes } from "react-router-dom";
-import { homeRoutes } from "@routes/routes";
+import { BrowserRouter } from "react-router-dom";
+import AppRouter from "@routes/AppRouter";
 import { preloadSwapiData } from "@services/preloadService";
 import { buildUserFacingError } from "@utils/errors";
 import { waitForMinimumLoading } from "@utils/loading";
@@ -66,7 +66,7 @@ export default function App() {
     return (
         <div className={styles.appReveal}>
             <BrowserRouter>
-                <Routes>{homeRoutes}</Routes>
+                <AppRouter />
             </BrowserRouter>
         </div>
     );

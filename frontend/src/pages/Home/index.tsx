@@ -18,9 +18,13 @@ import {
     Users as UsersIcon,
 } from "phosphor-react";
 import { FilmReelIcon } from "@phosphor-icons/react";
-import { NavLink, useLocation, useOutlet } from "react-router-dom";
+import { NavLink, useLocation, useOutlet, type Location } from "react-router-dom";
 import { HEADER_HEIGHT_CSS, NAV_ITEMS } from "@utils/consts";
 import styles from "./index.module.css";
+
+interface ModalRouteState {
+    backgroundLocation?: Location;
+}
 
 function pageTransitionKeyFromPath(pathname: string) {
     const [firstSegment] = pathname.split("/").filter(Boolean);
@@ -36,10 +40,16 @@ function scrollPageToTop() {
     }
 }
 
+function getDisplayedLocation(location: Location) {
+    const state = location.state as ModalRouteState | null;
+    return state?.backgroundLocation ?? location;
+}
+
 function RouteTransitionOutlet() {
     const location = useLocation();
     const outlet = useOutlet();
-    const transitionKey = pageTransitionKeyFromPath(location.pathname);
+    const displayedLocation = getDisplayedLocation(location);
+    const transitionKey = pageTransitionKeyFromPath(displayedLocation.pathname);
     const previousTransitionKeyRef = useRef(transitionKey);
 
     useLayoutEffect(() => {
@@ -97,6 +107,7 @@ export default function HomeLayout() {
     const [opened, { open, close, toggle }] = useDisclosure(false);
     const useCompactNav = useMediaQuery("(max-width: 906px)");
     const location = useLocation();
+    const displayedLocation = getDisplayedLocation(location);
 
     return (
         <AppShell header={{ height: HEADER_HEIGHT_CSS }} padding="md">
@@ -130,13 +141,15 @@ export default function HomeLayout() {
                         {/* Nav Links. */}
                         {!useCompactNav && (
                             <Group gap="lg" justify="flex-end">
-                                {NAV_ITEMS.map((item) => (
+                                {NAV_ITEMS.map((item) => {
+                                    const isActive = displayedLocation.pathname === `/${item.path}`
+                                        || displayedLocation.pathname.startsWith(`/${item.path}/`);
+
+                                    return (
                                     <NavLink
                                         key={item.path}
                                         to={`/${item.path}`}
-                                        className={({ isActive }) =>
-                                            `${styles.headerNavItem}${isActive ? ` ${styles.headerNavItemActive}` : ""}`
-                                        }
+                                        className={`${styles.headerNavItem}${isActive ? ` ${styles.headerNavItemActive}` : ""}`}
                                     >
                                         {() => (
                                             <Text component="span" fw={500} className={`${styles.menuLink} ${styles.headerNavLink}`}>
@@ -144,7 +157,8 @@ export default function HomeLayout() {
                                             </Text>
                                         )}
                                     </NavLink>
-                                ))}
+                                    );
+                                })}
                             </Group>
                         )}
 
@@ -178,7 +192,8 @@ export default function HomeLayout() {
                 {/* Mobile Dropdown Menu Display. */}
                                     <Menu.Dropdown className={styles.mobileMenuDropdown}>
                                         {NAV_ITEMS.map((item) => {
-                                            const isActive = location.pathname === `/${item.path}`;
+                                            const isActive = displayedLocation.pathname === `/${item.path}`
+                                                || displayedLocation.pathname.startsWith(`/${item.path}/`);
                                             const iconColor = isActive
                                                 ? "var(--mantine-color-yellow-4)"
                                                 : "var(--mantine-color-white)";

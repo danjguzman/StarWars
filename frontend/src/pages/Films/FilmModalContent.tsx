@@ -8,13 +8,13 @@ import {
 } from "phosphor-react";
 import { FilmReelIcon } from "@phosphor-icons/react";
 import ContentTemplate from "@components/Modal/ContentTemplate";
+import useModalRouteNavigation from "@pages/_shared/useModalRouteNavigation";
 import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Film } from "@types";
 import { getEntityImageSources } from "@utils/assets";
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
 import { useResolvedResourceNames } from "@utils/useResolvedResourceNames";
 import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
-import { useNavigate } from "react-router-dom";
 
 interface FilmModalContentProps {
     film: Film;
@@ -31,15 +31,15 @@ export default function FilmModalContent({
     onPrev,
     onNext,
 }: FilmModalContentProps) {
-    const navigate = useNavigate();
+    const { openModalRoute } = useModalRouteNavigation("/films");
     const filmId = resourceIdFromUrl(film.url);
     const artworkSources = useMemo(() => getEntityImageSources("films", filmId), [filmId]);
 
     const openRelatedItem = useCallback((item: { url: string }) => {
         const routePath = resourceRoutePathFromUrl(item.url);
         if (!routePath) return;
-        navigate(routePath);
-    }, [navigate]);
+        openModalRoute(routePath);
+    }, [openModalRoute]);
 
     const relatedResourceUrls = useMemo(() => {
         return collectRelatedResourceUrls([

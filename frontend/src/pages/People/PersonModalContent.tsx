@@ -7,13 +7,13 @@ import {
 } from "phosphor-react";
 import { FilmReelIcon } from "@phosphor-icons/react";
 import ContentTemplate from "@components/Modal/ContentTemplate";
+import useModalRouteNavigation from "@pages/_shared/useModalRouteNavigation";
 import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Person } from "@types";
 import { getEntityImageSources } from "@utils/assets";
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
 import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
 import { useResolvedResourceNames } from "@utils/useResolvedResourceNames";
-import { useNavigate } from "react-router-dom";
 
 interface PersonModalContentProps {
     person: Person;
@@ -30,15 +30,15 @@ export default function PersonModalContent({
     onPrev,
     onNext,
 }: PersonModalContentProps) {
-    const navigate = useNavigate();
+    const { openModalRoute } = useModalRouteNavigation("/people");
     const personId = resourceIdFromUrl(person.url);
     const portraitSources = useMemo(() => getEntityImageSources("people", personId), [personId]);
 
     const openRelatedItem = useCallback((item: { url: string }) => {
         const routePath = resourceRoutePathFromUrl(item.url);
         if (!routePath) return;
-        navigate(routePath);
-    }, [navigate]);
+        openModalRoute(routePath);
+    }, [openModalRoute]);
 
     /* Combine all related resource URLs into one list so they can be resolved once. */
     const relatedResourceUrls = useMemo(() => {

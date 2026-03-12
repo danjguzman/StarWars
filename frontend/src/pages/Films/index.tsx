@@ -1,18 +1,19 @@
 import { useCallback, useMemo } from "react";
 import { Box } from "@mantine/core";
 import { FilmReelIcon } from "@phosphor-icons/react";
-import FilmModalContent from "@pages/Films/FilmModalContent";
 import ResourceBrowseRoute from "@pages/_shared/ResourceBrowseRoute";
+import ResourceModalRoute from "@pages/_shared/ResourceModalRoute";
+import useModalRouteNavigation from "@pages/_shared/useModalRouteNavigation";
+import FilmModalContent from "@pages/Films/FilmModalContent";
 import { type Film } from "@types";
 import { useFilmsStore } from "@stores/filmsStore";
 import { estimateInitialTargetCount } from "@utils/layout";
 import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
-import { useNavigate, useParams } from "react-router-dom";
+import { useParams } from "react-router-dom";
 import styles from "./index.module.css";
 
 /* Films page wrapper that passes film-specific data into the shared browse page layout. */
-export default function Films() {
-    const navigate = useNavigate();
+export default function Films({ modalOnly = false }: { modalOnly?: boolean }) {
     const { filmId } = useParams<{ filmId?: string }>();
     const {
         films,
@@ -24,57 +25,67 @@ export default function Films() {
         fetchFilms,
     } = useFilmsStore();
     const initialTargetCount = useMemo(() => estimateInitialTargetCount(), []);
+    const { openModalRoute, closeModalRoute } = useModalRouteNavigation("/films");
 
     /* Open a film modal by moving the route to that film's detail path. */
     const openFilmModal = useCallback((film: Film) => {
         const routePath = resourceRoutePathFromUrl(film.url);
         if (!routePath) return;
-        navigate(routePath);
-    }, [navigate]);
+        openModalRoute(routePath);
+    }, [openModalRoute]);
 
-    /* Close the modal by going back to the main films page route. */
-    const closeFilmModal = useCallback(() => {
-        navigate("/films");
-    }, [navigate]);
+    const sharedProps = {
+        title: "Films",
+        entityKey: "films",
+        routeItemId: filmId,
+        resources: films,
+        loading,
+        loadingMore,
+        hasMore,
+        error,
+        lastFailedRequestMode,
+        initialItemCount: initialTargetCount,
+        labelKey: "title" as const,
+        fetchResources: fetchFilms,
+        getItemId: (film: Film) => resourceIdFromUrl(film.url),
+        onOpenItem: openFilmModal,
+        onCloseModal: closeModalRoute,
+        getModalAriaLabel: (film: Film) => `${film.title} details`,
+        renderModalContent: ({ item, selectedIndex, total, onPrev, onNext }: {
+            item: Film;
+            selectedIndex: number;
+            total: number;
+            onPrev: () => void;
+            onNext: () => void;
+        }) => (
+            <FilmModalContent
+                film={item}
+                selectedIndex={selectedIndex}
+                total={total}
+                onPrev={onPrev}
+                onNext={onNext}
+            />
+        ),
+    };
+
+    if (modalOnly) {
+        return <ResourceModalRoute {...sharedProps} />;
+    }
 
     return (
         <ResourceBrowseRoute
-            title="Films"
+            {...sharedProps}
             headerIcon={
                 <Box className={styles.pageHeaderIcon}>
                     <FilmReelIcon size={30} weight="duotone" color="var(--mantine-color-yellow-4)" />
                 </Box>
             }
-            entityKey="films"
-            routeItemId={filmId}
-            resources={films}
-            loading={loading}
-            loadingMore={loadingMore}
-            hasMore={hasMore}
-            error={error}
-            lastFailedRequestMode={lastFailedRequestMode}
-            initialItemCount={initialTargetCount}
-            labelKey="title"
-            fetchResources={fetchFilms}
-            getItemId={(film) => resourceIdFromUrl(film.url)}
-            onOpenItem={openFilmModal}
-            onCloseModal={closeFilmModal}
-            getModalAriaLabel={(film) => `${film.title} details`}
             errorUi={{
                 initialTitle: "Couldn't load the Films archive",
                 nextPageTitle: "Couldn't load more films",
                 initialRetryLabel: "Retry loading films",
                 nextPageRetryLabel: "Try loading more again",
             }}
-            renderModalContent={({ item, selectedIndex, total, onPrev, onNext }) => (
-                <FilmModalContent
-                    film={item}
-                    selectedIndex={selectedIndex}
-                    total={total}
-                    onPrev={onPrev}
-                    onNext={onNext}
-                />
-            )}
         />
     );
 }

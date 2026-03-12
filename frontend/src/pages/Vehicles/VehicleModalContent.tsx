@@ -2,13 +2,13 @@ import { useCallback, useMemo } from "react";
 import { FilmReelIcon } from "@phosphor-icons/react";
 import { TrainRegional as TrainRegionalIcon, Users as UsersIcon } from "phosphor-react";
 import ContentTemplate from "@components/Modal/ContentTemplate";
+import useModalRouteNavigation from "@pages/_shared/useModalRouteNavigation";
 import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Vehicle } from "@types";
 import { getEntityImageSources } from "@utils/assets";
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
 import { useResolvedResourceNames } from "@utils/useResolvedResourceNames";
 import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
-import { useNavigate } from "react-router-dom";
 
 interface VehicleModalContentProps {
     vehicle: Vehicle;
@@ -25,15 +25,15 @@ export default function VehicleModalContent({
     onPrev,
     onNext,
 }: VehicleModalContentProps) {
-    const navigate = useNavigate();
+    const { openModalRoute } = useModalRouteNavigation("/vehicles");
     const vehicleId = resourceIdFromUrl(vehicle.url);
     const artworkSources = useMemo(() => getEntityImageSources("vehicles", vehicleId), [vehicleId]);
 
     const openRelatedItem = useCallback((item: { url: string }) => {
         const routePath = resourceRoutePathFromUrl(item.url);
         if (!routePath) return;
-        navigate(routePath);
-    }, [navigate]);
+        openModalRoute(routePath);
+    }, [openModalRoute]);
 
     const relatedResourceUrls = useMemo(() => {
         return collectRelatedResourceUrls([

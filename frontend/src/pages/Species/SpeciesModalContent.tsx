@@ -2,13 +2,13 @@ import { useCallback, useMemo } from "react";
 import { FilmReelIcon } from "@phosphor-icons/react";
 import { Alien as AlienIcon, Planet as PlanetIcon, Users as UsersIcon } from "phosphor-react";
 import ContentTemplate from "@components/Modal/ContentTemplate";
+import useModalRouteNavigation from "@pages/_shared/useModalRouteNavigation";
 import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Species } from "@types";
 import { getEntityImageSources } from "@utils/assets";
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
 import { useResolvedResourceNames } from "@utils/useResolvedResourceNames";
 import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
-import { useNavigate } from "react-router-dom";
 
 interface SpeciesModalContentProps {
     species: Species;
@@ -25,7 +25,7 @@ export default function SpeciesModalContent({
     onPrev,
     onNext,
 }: SpeciesModalContentProps) {
-    const navigate = useNavigate();
+    const { openModalRoute } = useModalRouteNavigation("/species");
     const speciesId = resourceIdFromUrl(species.url);
     const artworkSources = useMemo(() => getEntityImageSources("species", speciesId), [speciesId]);
     const homeworldUrls = species.homeworld ? [species.homeworld] : [];
@@ -33,8 +33,8 @@ export default function SpeciesModalContent({
     const openRelatedItem = useCallback((item: { url: string }) => {
         const routePath = resourceRoutePathFromUrl(item.url);
         if (!routePath) return;
-        navigate(routePath);
-    }, [navigate]);
+        openModalRoute(routePath);
+    }, [openModalRoute]);
 
     const relatedResourceUrls = useMemo(() => {
         return collectRelatedResourceUrls([
