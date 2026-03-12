@@ -1,98 +1,66 @@
-import { useEffect, useMemo, useState } from "react";
-import { getJson } from "@services/api";
+import { useMemo } from "react";
+import { getPreloadedCollection } from "@services/preloadService";
 import {
+    RESOURCE_COLLECTIONS,
     getCachedResolvedResourceNames,
+    normalizeResourcePath,
     resourceDisplayName,
 } from "@utils/resourceResolve";
+import { resourceIdFromUrl, resourceKeyFromUrl } from "@utils/swapi";
 import { type NamedResource } from "@types";
 
 /*
  * This file holds a reusable hook for turning resource URLs into display names.
- * It first checks the client cache for known names, then fetches any missing
- * resources and merges those fetched names back into one lookup object.
+ * It resolves names only from the app's local data sources: the current cache
+ * and the preloaded in-memory collections gathered when the app boots.
  */
+
+function isSupportedResourceCollection(value: string | null): value is (typeof RESOURCE_COLLECTIONS)[number] {
+    return value !== null && RESOURCE_COLLECTIONS.includes(value as (typeof RESOURCE_COLLECTIONS)[number]);
+}
+
+function findPreloadedResourceNameByUrl(url: string) {
+    const targetPath = normalizeResourcePath(url);
+    const targetId = resourceIdFromUrl(url);
+    const resourceKey = resourceKeyFromUrl(targetPath);
+
+    if (!isSupportedResourceCollection(resourceKey)) return null;
+
+    const preloadedResources = getPreloadedCollection<NamedResource>(resourceKey) ?? [];
+
+    const strictPathMatch = preloadedResources.find((resource) => {
+        if (!resource.url) return false;
+        return normalizeResourcePath(resource.url) === targetPath;
+    });
+
+    if (strictPathMatch) return resourceDisplayName(strictPathMatch);
+
+    const idMatch = preloadedResources.find((resource) => {
+        if (!resource.url || !targetId) return false;
+        return resourceIdFromUrl(resource.url) === targetId;
+    });
+
+    return resourceDisplayName(idMatch);
+}
 
 /* Resolve a list of resource URLs into a single map of `url -> display name`. */
 export function useResolvedResourceNames(resourceUrls: string[]) {
+    return useMemo(() => {
+        const cachedResourceNames = getCachedResolvedResourceNames(resourceUrls);
 
-    /* Keep names that were fetched because they were not already in cache. */
-    const [fetchedResourceNames, setFetchedResourceNames] = useState<Record<string, string>>({});
+        return resourceUrls.reduce<Record<string, string>>((resolvedNames, url) => {
+            const cachedName = cachedResourceNames[url];
+            if (cachedName) {
+                resolvedNames[url] = cachedName;
+                return resolvedNames;
+            }
 
-    /* Read any names that can already be resolved from the client cache. */
-    const cachedResourceNames = useMemo(() => {
-        return getCachedResolvedResourceNames(resourceUrls);
+            const preloadedName = findPreloadedResourceNameByUrl(url);
+            if (preloadedName) {
+                resolvedNames[url] = preloadedName;
+            }
+
+            return resolvedNames;
+        }, {});
     }, [resourceUrls]);
-
-    /* Combine cached names with fetched names into one lookup object for the UI. */
-    const resolvedResourceNames = useMemo(
-        () => ({
-            ...cachedResourceNames,
-            ...fetchedResourceNames,
-        }),
-        [cachedResourceNames, fetchedResourceNames]
-    );
-
-    useEffect(() => {
-
-        /* Track whether the hook is still mounted before saving async results. */
-        let isMounted = true;
-
-        /* Only fetch URLs that still do not have a cached name. */
-        const unresolvedUrls = resourceUrls.filter((url) => !cachedResourceNames[url]);
-
-        /* Stop early when every resource name was already resolved from cache. */
-        if (unresolvedUrls.length === 0) {
-            return () => {
-                isMounted = false;
-            };
-        }
-
-        /* Fetch each missing resource so its display name can be read from the response. */
-        Promise.all(
-
-            unresolvedUrls.map(async (url) => {
-                try {
-                    const resource = await getJson<NamedResource>(url);
-                    const displayName = resourceDisplayName(resource);
-
-                    /* Return a URL/name pair only when the resource has a usable label. */
-                    return displayName ? [url, displayName] as const : null;
-                } catch {
-
-                    /* Ignore failed resource fetches and leave them unresolved for now. */
-                    return null;
-                }
-            })
-
-        ).then((entries) => {
-
-            /* Stop if the hook was unmounted before the requests finished. */
-            if (!isMounted) return;
-
-            /* Turn the fetched URL/name pairs into the same lookup-object shape used by the UI. */
-            const fetchedNames = entries.reduce<Record<string, string>>((accumulator, entry) => {
-                if (!entry) return accumulator;
-
-                const [url, displayName] = entry;
-                accumulator[url] = displayName;
-                return accumulator;
-            }, {});
-
-            /* Stop if none of the fetches produced a usable name. */
-            if (Object.keys(fetchedNames).length === 0) return;
-
-            /* Merge the new fetched names into hook state without losing earlier results. */
-            setFetchedResourceNames((current) => ({
-                ...current,
-                ...fetchedNames,
-            }));
-        });
-
-        /* Mark the effect as inactive so async work does not update after unmount. */
-        return () => {
-            isMounted = false;
-        };
-    }, [cachedResourceNames, resourceUrls]);
-
-    return resolvedResourceNames;
 }
