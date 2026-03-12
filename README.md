@@ -145,7 +145,7 @@ Those were probably the biggest issues I ran into. After that, it was mostly smo
 
 I would have liked most of the improvements to come from the SWAPI itself by adding params. If I were part of the team and we were working on a real project, I would be specific about what I needed to match the features the frontend requires, both in the params and in the data shape. In this case though, I could not do that.
 
-On the frontend side, I probably would have liked to push the design further. I am not a designer, so I had to come up with this one in a very pants-er way. The UI took up a pretty good chunk of the time, but normally I would be working from a provided design in the task, which would have made the overall development time quicker.
+On the frontend side, I probably would have liked to push the design further. I am not a designer, so I had to come up with this one in a very pantser way. The UI took up a pretty good chunk of the time, but normally I would be working from a provided design in the task, which would have made the overall development time quicker.
 
 That also rolls into the modals, which I would have liked to improve more as well. They serve their function, and I tried to give them a design that adds a bit of Star Wars theme to the app. While they look good on larger screens, I had to make some more significant changes for smaller screens like mobile devices. But for what it is, and for the time I had, it turned out well.
 
@@ -200,6 +200,6 @@ Instead, this test was genuinely enjoyable. It was fun, and it gave me some insi
 
 Whether or not it was intentional to use `SWAPI.info` because of its limitations, instead of one of the other SWAPI services with more features, I did enjoy figuring out ways to make it work with the design I had in mind. I wanted to push the AI toward building a more complete app and not just a simple demo. I know I probably could have one-shot this app in a day with the right prompts, but I have learned that AI loses focus fast, and then I would have spent the rest of the week trying to hunt down issues. On top of that, the app would not have had the personality it has now.
 
-I took the full week you provided so I could find as many logical landmines, bugs, and UI and UX issues as possible before I `shippit`.
+I took the full week you provided so I could find as many logical landmines, bugs, and UI and UX issues as possible before I "shippit".
 
 Thanks for considering me, and thanks again for the really fun assessment. :)
