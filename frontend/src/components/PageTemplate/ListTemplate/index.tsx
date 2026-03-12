@@ -26,6 +26,7 @@ interface ListTemplateProps<TItem extends { url: string }> {
     items: TItem[];
     entityKey: string;
     onLoadMore: () => void;
+    loading?: boolean;
     hasMore: boolean;
     loadingMore: boolean;
     showCompletionIndicator?: boolean;
@@ -53,6 +54,7 @@ export default function ListTemplate<TItem extends { url: string }>({
     items,
     entityKey,
     onLoadMore,
+    loading = false,
     hasMore,
     loadingMore,
     showCompletionIndicator = true,
@@ -65,7 +67,7 @@ export default function ListTemplate<TItem extends { url: string }>({
     const sentinelRef = useInfiniteScroll({
         hasMore,
         onLoadMore,
-        disabled: loadingMore,
+        disabled: loading || loadingMore,
         contentLength: items.length,
     });
 

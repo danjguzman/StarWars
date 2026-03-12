@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 
 /*
  * This file holds a reusable hook for simple infinite-scroll behavior.
@@ -26,12 +26,26 @@ export function useInfiniteScroll({
 
     /* Store the sentinel element watched by the hook. */
     const sentinelRef = useRef<HTMLDivElement | null>(null);
+    const lastTriggeredLengthRef = useRef<number | null>(null);
+
+    /* Reset the load trigger guard when the list length changes. */
+    useEffect(() => {
+        lastTriggeredLengthRef.current = null;
+    }, [contentLength]);
+
+    /* Trigger one load-more request per rendered content length. */
+    const triggerLoadMore = useCallback(() => {
+        const requestKey = contentLength ?? -1;
+        if (lastTriggeredLengthRef.current === requestKey) return;
+        lastTriggeredLengthRef.current = requestKey;
+        onLoadMore();
+    }, [contentLength, onLoadMore]);
 
     /* Use an IntersectionObserver to load more when the sentinel enters the view area. */
     useEffect(() => {
 
         /* Stop early when infinite scroll is turned off or there is nothing left to load. */
-        if (disabled || !hasMore) return;
+        if (disabled || !hasMore || contentLength === 0) return;
 
         /* Read the current sentinel element that sits at the end of the list || stop. */
         const sentinel = sentinelRef.current;
@@ -44,7 +58,7 @@ export function useInfiniteScroll({
 
                 /* Ask for more items when the sentinel is visible. */
                 if (firstEntry?.isIntersecting) {
-                    onLoadMore();
+                    triggerLoadMore();
                 }
             },
             { rootMargin }
@@ -56,13 +70,13 @@ export function useInfiniteScroll({
         return () => {
             observer.disconnect();
         };
-    }, [disabled, hasMore, onLoadMore, rootMargin, contentLength]);
+    }, [contentLength, disabled, hasMore, rootMargin, triggerLoadMore]);
 
     /* Run one immediate viewport check in case the list is already short on first render. */
     useEffect(() => {
 
         /* Stop early when infinite scroll is turned off or there is nothing left to load. */
-        if (disabled || !hasMore) return;
+        if (disabled || !hasMore || contentLength === 0) return;
 
         /* Read the current sentinel element that sits at the end of the list || stop. */
         const sentinel = sentinelRef.current;
@@ -73,8 +87,8 @@ export function useInfiniteScroll({
         const isNearViewport = rect.top <= window.innerHeight + 300;
 
         /* Load more immediately when the sentinel is already close to the viewport. */
-        if (isNearViewport) onLoadMore();
-    }, [disabled, hasMore, onLoadMore, contentLength]);
+        if (isNearViewport) triggerLoadMore();
+    }, [contentLength, disabled, hasMore, triggerLoadMore]);
 
     return sentinelRef;
 }

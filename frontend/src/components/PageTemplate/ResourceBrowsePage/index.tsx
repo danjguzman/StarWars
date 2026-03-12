@@ -170,6 +170,7 @@ export default function ResourceBrowsePage<TItem extends { url: string }>({
                     items={visibleItems}
                     entityKey={entityKey}
                     labelKey={labelKey}
+                    loading={loading}
                     onLoadMore={() => {
                         void fetchResources({ nextPage: true });
                     }}

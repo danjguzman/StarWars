@@ -38,11 +38,13 @@ class IntersectionObserverMock implements IntersectionObserver {
 function InfiniteScrollHarness({
     hasMore = true,
     disabled = false,
+    contentLength = 4,
     top = 1200,
     onLoadMore,
 }: {
     hasMore?: boolean;
     disabled?: boolean;
+    contentLength?: number;
     top?: number;
     onLoadMore: () => void;
 }) {
@@ -50,7 +52,7 @@ function InfiniteScrollHarness({
         hasMore,
         disabled,
         onLoadMore,
-        contentLength: 4,
+        contentLength,
     });
 
     return (
@@ -133,5 +135,32 @@ describe('useInfiniteScroll', () => {
 
         expect(onLoadMore).not.toHaveBeenCalled();
         expect(IntersectionObserverMock.instances).toHaveLength(0);
+    });
+
+    test('does not load when the list is empty', () => {
+        const onLoadMore = jest.fn();
+
+        render(<InfiniteScrollHarness onLoadMore={onLoadMore} contentLength={0} top={1000} />);
+
+        expect(onLoadMore).not.toHaveBeenCalled();
+        expect(IntersectionObserverMock.instances).toHaveLength(0);
+    });
+
+    test('only triggers one load per content length until new items are rendered', () => {
+        const onLoadMore = jest.fn();
+        const { getByTestId, rerender } = render(<InfiniteScrollHarness onLoadMore={onLoadMore} top={2000} contentLength={4} />);
+
+        const sentinel = getByTestId('sentinel');
+
+        IntersectionObserverMock.instances[0]?.trigger(true, sentinel);
+        IntersectionObserverMock.instances[0]?.trigger(true, sentinel);
+
+        expect(onLoadMore).toHaveBeenCalledTimes(1);
+
+        rerender(<InfiniteScrollHarness onLoadMore={onLoadMore} top={2000} contentLength={8} />);
+
+        IntersectionObserverMock.instances[1]?.trigger(true, sentinel);
+
+        expect(onLoadMore).toHaveBeenCalledTimes(2);
     });
 });

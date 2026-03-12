@@ -1,6 +1,6 @@
 import { create } from "zustand";
-import { loadPlanets } from "@services/planetsService";
 import { type Planet } from "@types";
+import { loadPlanets } from "@services/planetsService";
 import { getCachedValue, invalidatePageCache } from "@utils/clientCache";
 import { MIN_LOADING_MS, PLANETS_ALL_CACHE_KEY, PLANETS_ALL_CACHE_TTL_MS, PLANETS_CACHE_NAME } from "@utils/consts";
 import { buildUserFacingError } from "@utils/errors";
@@ -31,6 +31,8 @@ export const usePlanetsStore = create<PlanetsState>((set, get) => ({
     currentPage: 0,
     hasMore: true,
     fetchPlanets: async (options) => {
+
+        /* Read fetch mode and target count from options. */
         const nextPage = options?.nextPage ?? false;
         const targetCount = options?.targetCount ?? 0;
         const state = get();
@@ -57,6 +59,7 @@ export const usePlanetsStore = create<PlanetsState>((set, get) => ({
 
         const activeState = isStateExpired ? get() : state;
 
+        /* Skip requests when current state cannot fetch. */
         if (shouldSkipFetch({
             nextPage,
             loading: activeState.loading,
@@ -66,20 +69,30 @@ export const usePlanetsStore = create<PlanetsState>((set, get) => ({
             itemCount: activeState.planets.length,
         })) return;
 
+        /* Run fetch flow and update store state. */
         try {
+
+            /* Capture start time for minimum loader duration, to prevent quick "Loading" flash. */
             const loadStartTime = Date.now();
 
+            /* Load and append the next page when requested. */
             if (nextPage) {
+
+                /* Set Loading Flags */
                 set({ loadingMore: true, error: null, lastFailedRequestMode: null });
 
+                /* Resolve the next page from cache first, then API if needed. */
                 const pageToLoad = activeState.currentPage + 1;
                 const pageData = await loadPlanets(pageToLoad);
 
+                /* Keep "Loading" visible for at least the minimum duration. */
                 await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
 
+                /* Deduplicate results by URL before appending. */
                 const latestState = get();
                 const newPlanets = filterUniqueResourcesByUrl(latestState.planets, pageData.items);
 
+                /* Append new results and update pagination state. */
                 set({
                     planets: [...latestState.planets, ...newPlanets],
                     currentPage: pageToLoad,
@@ -89,19 +102,26 @@ export const usePlanetsStore = create<PlanetsState>((set, get) => ({
                     lastSyncedAt: Date.now(),
                 });
                 return;
+
+            } else {
+
+                /* Clear Loading Flags */
+                set({ loading: true, loadingMore: false, error: null, lastFailedRequestMode: null });
+
             }
 
-            set({ loading: true, loadingMore: false, error: null, lastFailedRequestMode: null });
-
+            /* Load initial pages until target count is reached or no more data exists. */
             const initialPlanetsLoad = await collectPagedResourcesUntilTarget<Planet>({
                 targetCount,
                 loadPage: loadPlanets,
             });
 
+            /* Keep loading visible for at least the minimum duration. */
             if (!hasCollectionCache) {
                 await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
             }
 
+            /* Replace list with aggregated results and update pagination state. */
             set({
                 loading: false,
                 planets: initialPlanetsLoad.items,
@@ -110,7 +130,10 @@ export const usePlanetsStore = create<PlanetsState>((set, get) => ({
                 lastFailedRequestMode: null,
                 lastSyncedAt: Date.now(),
             });
+
         } catch (error) {
+
+            /* Set error and clear loading flags on request failure. */
             set({
                 error: nextPage
                     ? buildUserFacingError("We couldn't load more planets", error, "Please try again")
