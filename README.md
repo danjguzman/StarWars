@@ -100,6 +100,8 @@ SWAPI Data.
 
 The SWAPI.info URL provided in the test does not support paging, filtering, or searching. I asked all the AI overlords what params to use for the endpoints for those features, but they all gave me answers for other SWAPI services, not the one used in the Take-Home Assignment. I pushed back, and they all eventually agreed SWAPI.info does not support params.
 
+Also, there is a data "bug" in the SWAPI. Although there are many Human characters, a lot of them are not linked to the Human Species (or any species) and are just blank arrays. Only 4 people show under Humans, and the UI will reflect that.
+
 That kind of wrecked my original idea. But I did come up with a solution.
 
 **Resolution:** 
