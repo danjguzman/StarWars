@@ -111,6 +111,7 @@ export default function ResourceBrowseRoute<TItem extends { url: string }>({
     }, [fetchResources, hasMore, loading, loadingMore, routeItemId, selectedItemIndex]);
 
     const isNextPageError = lastFailedRequestMode === "nextPage";
+    const showCompletionIndicator = !hasMore && resources.length > initialItemCount;
 
     return (
         <ResourceBrowseView
@@ -124,6 +125,7 @@ export default function ResourceBrowseRoute<TItem extends { url: string }>({
             loading={showInitialLoading}
             loadingMore={loadingMore}
             hasMore={hasMore}
+            showCompletionIndicator={showCompletionIndicator}
             error={error}
             errorTitle={isNextPageError ? errorUi.nextPageTitle : errorUi.initialTitle}
             retryLabel={isNextPageError ? errorUi.nextPageRetryLabel : errorUi.initialRetryLabel}

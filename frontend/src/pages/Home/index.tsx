@@ -110,7 +110,7 @@ export default function HomeLayout() {
     const displayedLocation = getDisplayedLocation(location);
 
     return (
-        <AppShell header={{ height: HEADER_HEIGHT_CSS }} padding="md">
+        <AppShell header={{ height: HEADER_HEIGHT_CSS }} padding="md" mode="static">
 
             {/* Sticky Header. */}
             <AppShell.Header
@@ -258,8 +258,8 @@ export default function HomeLayout() {
             </AppShell.Header>
 
             {/* Main Body Display */}
-            <AppShell.Main pt={0}>
-                <Container size="lg" py="xl">
+            <AppShell.Main>
+                <Container size="lg" pt="xl" pb={0}>
                     <RouteTransitionOutlet />
                 </Container>
             </AppShell.Main>

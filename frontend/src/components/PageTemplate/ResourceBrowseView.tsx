@@ -16,6 +16,7 @@ interface ResourceBrowseViewProps<TItem extends { url: string }> {
     loading: boolean;
     loadingMore: boolean;
     hasMore: boolean;
+    showCompletionIndicator?: boolean;
     error: string | null;
     errorTitle: string;
     retryLabel: string;
@@ -48,6 +49,7 @@ export default function ResourceBrowseView<TItem extends { url: string }>({
     loading,
     loadingMore,
     hasMore,
+    showCompletionIndicator = true,
     error,
     errorTitle,
     retryLabel,
@@ -95,6 +97,7 @@ export default function ResourceBrowseView<TItem extends { url: string }>({
                     onLoadMore={onLoadMore}
                     hasMore={hasMore}
                     loadingMore={loadingMore}
+                    showCompletionIndicator={showCompletionIndicator}
                     onItemClick={({ item }) => {
                         onOpenItem(item);
                     }}
