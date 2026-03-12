@@ -89,7 +89,7 @@ export default function Modal({
 }: ModalProps) {
     const isVisible = opened || closing;
     const shouldLockScroll = lockScroll ?? isVisible;
-    const blocksPointerEvents = allowInteraction || shouldLockScroll;
+    const blocksPointerEvents = allowInteraction;
 
     /* Store touch gesture state so scroll drags are not misread as swipe actions. */
     const touchGestureRef = useRef<{

@@ -197,4 +197,19 @@ describe('Modal', () => {
         expect(onExitComplete).toHaveBeenCalledTimes(1);
         jest.useRealTimers();
     });
+
+    test('releases pointer events as soon as the modal starts closing', () => {
+        render(
+            <MantineProvider>
+                <>
+                    <button type="button">Underlying action</button>
+                    <Modal opened={false} closing ariaLabel="Character details" onClose={jest.fn()}>
+                        <div>Modal body</div>
+                    </Modal>
+                </>
+            </MantineProvider>
+        );
+
+        expect(screen.getByRole('dialog', { name: 'Character details' })).toHaveStyle({ pointerEvents: 'none' });
+    });
 });
