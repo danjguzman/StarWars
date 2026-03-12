@@ -5,6 +5,7 @@ import ResourceBrowseRoute from "@pages/_shared/ResourceBrowseRoute";
 import ResourceModalRoute from "@pages/_shared/ResourceModalRoute";
 import useModalRouteNavigation from "@pages/_shared/useModalRouteNavigation";
 import PersonModalContent from "@pages/People/PersonModalContent";
+import { getPreloadedCollection } from "@services/preloadService";
 import { type Person } from "@types";
 import { usePeopleStore } from "@stores/peopleStore";
 import { estimateInitialTargetCount } from "@utils/layout";
@@ -25,6 +26,7 @@ export default function People({ modalOnly = false }: { modalOnly?: boolean }) {
         fetchPeople,
     } = usePeopleStore();
     const initialTargetCount = useMemo(() => estimateInitialTargetCount(), []);
+    const modalPeople = getPreloadedCollection<Person>("people") ?? people;
     const { openModalRoute, closeModalRoute } = useModalRouteNavigation("/people");
 
     /* Open a person modal by moving the route to that person's detail path. */
@@ -68,7 +70,7 @@ export default function People({ modalOnly = false }: { modalOnly?: boolean }) {
     };
 
     if (modalOnly) {
-        return <ResourceModalRoute {...sharedProps} />;
+        return <ResourceModalRoute {...sharedProps} resources={modalPeople} />;
     }
 
     return (

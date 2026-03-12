@@ -5,6 +5,7 @@ import ResourceBrowseRoute from "@pages/_shared/ResourceBrowseRoute";
 import ResourceModalRoute from "@pages/_shared/ResourceModalRoute";
 import useModalRouteNavigation from "@pages/_shared/useModalRouteNavigation";
 import FilmModalContent from "@pages/Films/FilmModalContent";
+import { getPreloadedCollection } from "@services/preloadService";
 import { type Film } from "@types";
 import { useFilmsStore } from "@stores/filmsStore";
 import { estimateInitialTargetCount } from "@utils/layout";
@@ -25,6 +26,7 @@ export default function Films({ modalOnly = false }: { modalOnly?: boolean }) {
         fetchFilms,
     } = useFilmsStore();
     const initialTargetCount = useMemo(() => estimateInitialTargetCount(), []);
+    const modalFilms = getPreloadedCollection<Film>("films") ?? films;
     const { openModalRoute, closeModalRoute } = useModalRouteNavigation("/films");
 
     /* Open a film modal by moving the route to that film's detail path. */
@@ -69,7 +71,7 @@ export default function Films({ modalOnly = false }: { modalOnly?: boolean }) {
     };
 
     if (modalOnly) {
-        return <ResourceModalRoute {...sharedProps} />;
+        return <ResourceModalRoute {...sharedProps} resources={modalFilms} />;
     }
 
     return (

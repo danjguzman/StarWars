@@ -5,6 +5,7 @@ import ResourceBrowseRoute from "@pages/_shared/ResourceBrowseRoute";
 import ResourceModalRoute from "@pages/_shared/ResourceModalRoute";
 import useModalRouteNavigation from "@pages/_shared/useModalRouteNavigation";
 import StarshipModalContent from "@pages/Starships/StarshipModalContent";
+import { getPreloadedCollection } from "@services/preloadService";
 import { type Starship } from "@types";
 import { useStarshipsStore } from "@stores/starshipsStore";
 import { estimateInitialTargetCount } from "@utils/layout";
@@ -25,6 +26,7 @@ export default function StarshipsPage({ modalOnly = false }: { modalOnly?: boole
         fetchStarships,
     } = useStarshipsStore();
     const initialTargetCount = useMemo(() => estimateInitialTargetCount(), []);
+    const modalStarships = getPreloadedCollection<Starship>("starships") ?? starships;
     const { openModalRoute, closeModalRoute } = useModalRouteNavigation("/starships");
 
     /* Open a starship modal by moving the route to that starship detail path. */
@@ -68,7 +70,7 @@ export default function StarshipsPage({ modalOnly = false }: { modalOnly?: boole
     };
 
     if (modalOnly) {
-        return <ResourceModalRoute {...sharedProps} />;
+        return <ResourceModalRoute {...sharedProps} resources={modalStarships} />;
     }
 
     return (

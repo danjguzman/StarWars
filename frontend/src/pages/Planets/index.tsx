@@ -5,6 +5,7 @@ import ResourceBrowseRoute from "@pages/_shared/ResourceBrowseRoute";
 import ResourceModalRoute from "@pages/_shared/ResourceModalRoute";
 import useModalRouteNavigation from "@pages/_shared/useModalRouteNavigation";
 import PlanetModalContent from "@pages/Planets/PlanetModalContent";
+import { getPreloadedCollection } from "@services/preloadService";
 import { type Planet } from "@types";
 import { usePlanetsStore } from "@stores/planetsStore";
 import { estimateInitialTargetCount } from "@utils/layout";
@@ -25,6 +26,7 @@ export default function Planets({ modalOnly = false }: { modalOnly?: boolean }) 
         fetchPlanets,
     } = usePlanetsStore();
     const initialTargetCount = useMemo(() => estimateInitialTargetCount(), []);
+    const modalPlanets = getPreloadedCollection<Planet>("planets") ?? planets;
     const { openModalRoute, closeModalRoute } = useModalRouteNavigation("/planets");
 
     /* Open a planet modal by moving the route to that planet's detail path. */
@@ -68,7 +70,7 @@ export default function Planets({ modalOnly = false }: { modalOnly?: boolean }) 
     };
 
     if (modalOnly) {
-        return <ResourceModalRoute {...sharedProps} />;
+        return <ResourceModalRoute {...sharedProps} resources={modalPlanets} />;
     }
 
     return (

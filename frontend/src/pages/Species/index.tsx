@@ -5,6 +5,7 @@ import ResourceBrowseRoute from "@pages/_shared/ResourceBrowseRoute";
 import ResourceModalRoute from "@pages/_shared/ResourceModalRoute";
 import useModalRouteNavigation from "@pages/_shared/useModalRouteNavigation";
 import SpeciesModalContent from "@pages/Species/SpeciesModalContent";
+import { getPreloadedCollection } from "@services/preloadService";
 import { type Species } from "@types";
 import { useSpeciesStore } from "@stores/speciesStore";
 import { estimateInitialTargetCount } from "@utils/layout";
@@ -25,6 +26,7 @@ export default function SpeciesPage({ modalOnly = false }: { modalOnly?: boolean
         fetchSpecies,
     } = useSpeciesStore();
     const initialTargetCount = useMemo(() => estimateInitialTargetCount(), []);
+    const modalSpecies = getPreloadedCollection<Species>("species") ?? species;
     const { openModalRoute, closeModalRoute } = useModalRouteNavigation("/species");
 
     /* Open a species modal by moving the route to that species detail path. */
@@ -68,7 +70,7 @@ export default function SpeciesPage({ modalOnly = false }: { modalOnly?: boolean
     };
 
     if (modalOnly) {
-        return <ResourceModalRoute {...sharedProps} />;
+        return <ResourceModalRoute {...sharedProps} resources={modalSpecies} />;
     }
 
     return (

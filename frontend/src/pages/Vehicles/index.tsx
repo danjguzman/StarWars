@@ -5,6 +5,7 @@ import ResourceBrowseRoute from "@pages/_shared/ResourceBrowseRoute";
 import ResourceModalRoute from "@pages/_shared/ResourceModalRoute";
 import useModalRouteNavigation from "@pages/_shared/useModalRouteNavigation";
 import VehicleModalContent from "@pages/Vehicles/VehicleModalContent";
+import { getPreloadedCollection } from "@services/preloadService";
 import { type Vehicle } from "@types";
 import { useVehiclesStore } from "@stores/vehiclesStore";
 import { estimateInitialTargetCount } from "@utils/layout";
@@ -25,6 +26,7 @@ export default function VehiclesPage({ modalOnly = false }: { modalOnly?: boolea
         fetchVehicles,
     } = useVehiclesStore();
     const initialTargetCount = useMemo(() => estimateInitialTargetCount(), []);
+    const modalVehicles = getPreloadedCollection<Vehicle>("vehicles") ?? vehicles;
     const { openModalRoute, closeModalRoute } = useModalRouteNavigation("/vehicles");
 
     /* Open a vehicle modal by moving the route to that vehicle detail path. */
@@ -68,7 +70,7 @@ export default function VehiclesPage({ modalOnly = false }: { modalOnly?: boolea
     };
 
     if (modalOnly) {
-        return <ResourceModalRoute {...sharedProps} />;
+        return <ResourceModalRoute {...sharedProps} resources={modalVehicles} />;
     }
 
     return (

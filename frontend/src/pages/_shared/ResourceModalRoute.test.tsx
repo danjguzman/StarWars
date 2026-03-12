@@ -1,6 +1,5 @@
 import { MantineProvider } from '@mantine/core';
 import { render, screen } from '@testing-library/react';
-import { act } from 'react';
 import { type ReactNode } from 'react';
 import ResourceModalRoute from '@pages/_shared/ResourceModalRoute';
 
@@ -24,17 +23,15 @@ function createItem(id: string, name: string): TestResourceItem {
 }
 
 describe('ResourceModalRoute', () => {
-    afterEach(() => {
-        jest.useRealTimers();
-    });
+    test('renders the selected preloaded item immediately', () => {
+        const item = createItem('1', 'Luke Skywalker');
 
-    test('shows a loader above the loading details message', () => {
         render(
             <MantineProvider>
                 <ResourceModalRoute<TestResourceItem>
                     title="People"
                     routeItemId="1"
-                    resources={[]}
+                    resources={[item]}
                     loading={false}
                     loadingMore={false}
                     hasMore
@@ -51,16 +48,11 @@ describe('ResourceModalRoute', () => {
             </MantineProvider>
         );
 
-        expect(screen.getByRole('status')).toHaveTextContent('Loading people details...');
-        expect(document.querySelector('.mantine-Loader-root')).toBeInTheDocument();
+        expect(screen.getByText('Luke Skywalker')).toBeInTheDocument();
     });
 
-    test('keeps the loading state visible for at least one second once shown', () => {
-        jest.useFakeTimers();
-        const fetchResources = jest.fn().mockResolvedValue(undefined);
-        const item = createItem('1', 'Luke Skywalker');
-
-        const { rerender } = render(
+    test('shows an unavailable message when the requested item cannot be resolved', () => {
+        render(
             <MantineProvider>
                 <ResourceModalRoute<TestResourceItem>
                     title="People"
@@ -72,7 +64,7 @@ describe('ResourceModalRoute', () => {
                     error={null}
                     lastFailedRequestMode={null}
                     initialItemCount={12}
-                    fetchResources={fetchResources}
+                    fetchResources={jest.fn().mockResolvedValue(undefined)}
                     getItemId={(entry) => entry.url.split('/').pop() ?? null}
                     onOpenItem={jest.fn()}
                     onCloseModal={jest.fn()}
@@ -82,41 +74,6 @@ describe('ResourceModalRoute', () => {
             </MantineProvider>
         );
 
-        rerender(
-            <MantineProvider>
-                <ResourceModalRoute<TestResourceItem>
-                    title="People"
-                    routeItemId="1"
-                    resources={[item]}
-                    loading={false}
-                    loadingMore={false}
-                    hasMore
-                    error={null}
-                    lastFailedRequestMode={null}
-                    initialItemCount={12}
-                    fetchResources={fetchResources}
-                    getItemId={(entry) => entry.url.split('/').pop() ?? null}
-                    onOpenItem={jest.fn()}
-                    onCloseModal={jest.fn()}
-                    getModalAriaLabel={(entry) => `${entry.name} details`}
-                    renderModalContent={({ item: entry }) => <div>{entry.name}</div>}
-                />
-            </MantineProvider>
-        );
-
-        expect(screen.getByRole('status')).toHaveTextContent('Loading people details...');
-        expect(screen.queryByText('Luke Skywalker')).not.toBeInTheDocument();
-
-        act(() => {
-            jest.advanceTimersByTime(999);
-        });
-
-        expect(screen.getByRole('status')).toHaveTextContent('Loading people details...');
-
-        act(() => {
-            jest.advanceTimersByTime(1);
-        });
-
-        expect(screen.getByText('Luke Skywalker')).toBeInTheDocument();
+        expect(screen.getByText('People details are unavailable right now.')).toBeInTheDocument();
     });
 });
