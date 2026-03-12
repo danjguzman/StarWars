@@ -1,3 +1,18 @@
+.shell[data-mode="static"] {
+    height: 100dvh;
+    overflow: hidden;
+}
+
+.shell[data-mode="static"] .mainScroll {
+    min-height: 0;
+    height: 100%;
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-gutter: stable;
+}
+
 .headerBrandLink {
     text-decoration: none;
 }

@@ -32,6 +32,12 @@ function pageTransitionKeyFromPath(pathname: string) {
 }
 
 function scrollPageToTop() {
+    const scrollRoot = document.getElementById("app-main-scroll");
+
+    if (scrollRoot && typeof scrollRoot.scrollTo === "function") {
+        scrollRoot.scrollTo({ top: 0, left: 0, behavior: "auto" });
+    }
+
     window.scrollTo({ top: 0, left: 0, behavior: "auto" });
 
     if (document.scrollingElement) {
@@ -110,7 +116,7 @@ export default function HomeLayout() {
     const displayedLocation = getDisplayedLocation(location);
 
     return (
-        <AppShell header={{ height: HEADER_HEIGHT_CSS }} padding="md" mode="static">
+        <AppShell header={{ height: HEADER_HEIGHT_CSS }} padding="md" mode="static" className={styles.shell}>
 
             {/* Sticky Header. */}
             <AppShell.Header
@@ -258,7 +264,7 @@ export default function HomeLayout() {
             </AppShell.Header>
 
             {/* Main Body Display */}
-            <AppShell.Main>
+            <AppShell.Main id="app-main-scroll" className={styles.mainScroll}>
                 <Container size="lg" pt="xl" pb={0}>
                     <RouteTransitionOutlet />
                 </Container>

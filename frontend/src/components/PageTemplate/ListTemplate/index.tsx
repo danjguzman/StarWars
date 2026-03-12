@@ -61,6 +61,17 @@ export default function ListTemplate<TItem extends { url: string }>({
     labelKey = "name" as keyof TItem & string,
     onItemClick,
 }: ListTemplateProps<TItem>) {
+    const scrollMainContentToTop = () => {
+        const scrollRoot = document.getElementById("app-main-scroll");
+
+        if (scrollRoot && typeof scrollRoot.scrollTo === "function") {
+            scrollRoot.scrollTo({ top: 0, left: 0, behavior: "smooth" });
+            return;
+        }
+
+        window.scrollTo({ top: 0, behavior: "smooth" });
+    };
+
     const [missingImageByUrl, setMissingImageByUrl] = useState<Record<string, boolean>>({});
     const [loadedImageByUrl, setLoadedImageByUrl] = useState<Record<string, boolean>>({});
     const [imageSourceIndexByUrl, setImageSourceIndexByUrl] = useState<Record<string, number>>({});
@@ -279,9 +290,7 @@ export default function ListTemplate<TItem extends { url: string }>({
                     </Box>
                 }
                 doneClassName={styles.doneEnter}
-                onDoneClick={() => {
-                    window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
+                onDoneClick={scrollMainContentToTop}
                 doneAriaLabel="Scroll to top"
             />
         </>
