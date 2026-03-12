@@ -146,6 +146,12 @@
     object-fit: cover;
     object-position: center top;
     display: block;
+    color: transparent;
+    font-size: 0;
+    user-select: none;
+    -webkit-user-drag: none;
+    transform: translateZ(0);
+    backface-visibility: hidden;
 }
 
 .heroFallback {

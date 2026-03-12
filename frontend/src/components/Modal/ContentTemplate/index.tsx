@@ -121,7 +121,14 @@ export default function ContentTemplate({
                         <Box className={styles.heroColumn}>
                             <Box className={`${styles.heroFrame} ${styles.heroFrameCompact}`}>
                                 {activeImageSrc ? (
-                                    <img src={activeImageSrc} alt={imageAlt} className={styles.heroImage} onError={handleImageError} />
+                                    <img
+                                        src={activeImageSrc}
+                                        alt={imageAlt}
+                                        className={styles.heroImage}
+                                        loading="eager"
+                                        decoding="sync"
+                                        onError={handleImageError}
+                                    />
                                 ) : (
                                     <Box className={styles.heroFallback}>
                                         {fallbackMarkup}
@@ -154,7 +161,14 @@ export default function ContentTemplate({
                             <Box className={styles.heroColumn}>
                                 <Box className={styles.heroFrame}>
                                     {activeImageSrc ? (
-                                        <img src={activeImageSrc} alt={imageAlt} className={styles.heroImage} onError={handleImageError} />
+                                        <img
+                                            src={activeImageSrc}
+                                            alt={imageAlt}
+                                            className={styles.heroImage}
+                                            loading="eager"
+                                            decoding="sync"
+                                            onError={handleImageError}
+                                        />
                                     ) : (
                                         <Box className={styles.heroFallback}>
                                             {fallbackMarkup}
