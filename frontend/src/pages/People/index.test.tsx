@@ -21,8 +21,9 @@ jest.mock('@utils/layout', () => ({
 
 jest.mock('@components/PageTemplate/ListTemplate', () => ({
     __esModule: true,
-    default: ({ items, onItemClick }: { items: Array<{ url: string; name: string }>; onItemClick?: (selection: { item: { url: string; name: string }; label: string }) => void }) => (
+    default: ({ items, loading, onItemClick }: { items: Array<{ url: string; name: string }>; loading?: boolean; onItemClick?: (selection: { item: { url: string; name: string }; label: string }) => void }) => (
         <div>
+            {loading ? <div data-testid="list-loading">Loading</div> : null}
             {items.map((item) => (
                 <button
                     key={item.url}
@@ -168,6 +169,26 @@ describe('People page modal behavior', () => {
         expect(screen.getByRole('alert', { name: "Couldn't load the People archive" })).toBeInTheDocument();
         await user.click(screen.getByRole('button', { name: 'Retry loading people' }));
 
+        expect(fetchPeople).toHaveBeenCalledWith({ targetCount: 12 });
+    });
+
+    test('shows loading UI immediately before the first uncached fetch resolves', () => {
+        const fetchPeople = jest.fn();
+
+        mockedUsePeopleStore.mockReturnValue({
+            people: [],
+            loading: false,
+            loadingMore: false,
+            error: null,
+            lastFailedRequestMode: null,
+            hasMore: true,
+            fetchPeople,
+        } as ReturnType<typeof usePeopleStore>);
+        mockedGetCachedValue.mockReturnValue(null);
+
+        renderPeoplePage('/people');
+
+        expect(screen.getByTestId('list-loading')).toBeInTheDocument();
         expect(fetchPeople).toHaveBeenCalledWith({ targetCount: 12 });
     });
 

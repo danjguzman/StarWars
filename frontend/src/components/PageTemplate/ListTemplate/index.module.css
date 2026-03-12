@@ -5,6 +5,10 @@
     align-items: stretch;
 }
 
+.initialLoadingShell {
+    min-height: 240px;
+}
+
 .card {
     background-color: #101010;
     transition: background-color 180ms ease;

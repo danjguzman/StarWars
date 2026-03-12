@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Box, Paper, Stack, Text } from "@mantine/core";
+import { Box, Center, Paper, Stack, Text } from "@mantine/core";
 import {
     Alien as AlienIcon,
     CircleNotch as CircleNotchIcon,
@@ -64,6 +64,7 @@ export default function ListTemplate<TItem extends { url: string }>({
     const [missingImageByUrl, setMissingImageByUrl] = useState<Record<string, boolean>>({});
     const [loadedImageByUrl, setLoadedImageByUrl] = useState<Record<string, boolean>>({});
     const fallbackIcon = fallbackIconByEntityKey(entityKey);
+    const showInitialLoading = loading && items.length === 0;
     const sentinelRef = useInfiniteScroll({
         hasMore,
         onLoadMore,
@@ -92,6 +93,14 @@ export default function ListTemplate<TItem extends { url: string }>({
 
     return (
         <>
+            {showInitialLoading ? (
+                <Center className={styles.initialLoadingShell} role="status" aria-live="polite">
+                    <Box className={styles.loadingIcon}>
+                        <CircleNotchIcon size={40} weight="duotone" color="currentColor" />
+                    </Box>
+                </Center>
+            ) : null}
+
             <Box
                 className={styles.grid}
                 style={{

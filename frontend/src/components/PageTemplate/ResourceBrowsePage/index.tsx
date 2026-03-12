@@ -82,6 +82,9 @@ export default function ResourceBrowsePage<TItem extends { url: string }>({
         return modalItems.slice(0, initialItemCount);
     }, [initialItemCount, modalItems, resources]);
 
+    /* Show loading UI immediately on first paint when the page still has no data. */
+    const showInitialLoading = loading || (resources.length === 0 && !error && lastFailedRequestMode !== "initial");
+
     /* Find which item in the modal list matches the id in the current route. */
     const selectedItemIndex = useMemo(() => {
         if (!routeItemId) return null;
@@ -171,7 +174,7 @@ export default function ResourceBrowsePage<TItem extends { url: string }>({
                     items={visibleItems}
                     entityKey={entityKey}
                     labelKey={labelKey}
-                    loading={loading}
+                    loading={showInitialLoading}
                     onLoadMore={() => {
                         void fetchResources({ nextPage: true });
                     }}
