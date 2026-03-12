@@ -2,12 +2,14 @@ import { MantineProvider } from '@mantine/core';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { type ComponentProps } from 'react';
+import { createPortal } from 'react-dom';
 import Modal from './index';
 
 function renderModal(props?: Partial<ComponentProps<typeof Modal>>) {
     const onClose = jest.fn();
     const onNavigatePrev = jest.fn();
     const onNavigateNext = jest.fn();
+    const children = props?.children ?? <div>Modal body</div>;
 
     const view = render(
         <MantineProvider>
@@ -19,7 +21,7 @@ function renderModal(props?: Partial<ComponentProps<typeof Modal>>) {
                 onNavigateNext={onNavigateNext}
                 {...props}
             >
-                <div>Modal body</div>
+                {children}
             </Modal>
         </MantineProvider>
     );
@@ -30,6 +32,15 @@ function renderModal(props?: Partial<ComponentProps<typeof Modal>>) {
         onNavigatePrev,
         onNavigateNext,
     };
+}
+
+function PortalledScrollableChild() {
+    return createPortal(
+        <div data-testid="portal-scroll-area" style={{ overflowY: 'auto' }}>
+            Portal scroll area
+        </div>,
+        document.body
+    );
 }
 
 describe('Modal', () => {
@@ -93,6 +104,54 @@ describe('Modal', () => {
         expect(onNavigatePrev).toHaveBeenCalledTimes(1);
         expect(onNavigateNext).toHaveBeenCalledTimes(1);
         expect(onClose).toHaveBeenCalledTimes(1);
+    });
+
+    test('does not close after dragging inside a scrollable portal descendant', () => {
+        const { onClose } = renderModal({
+            children: <PortalledScrollableChild />,
+        });
+
+        const portalScrollArea = screen.getByTestId('portal-scroll-area');
+
+        Object.defineProperty(portalScrollArea, 'clientHeight', {
+            value: 100,
+            configurable: true,
+        });
+        Object.defineProperty(portalScrollArea, 'scrollHeight', {
+            value: 400,
+            configurable: true,
+        });
+        Object.defineProperty(portalScrollArea, 'scrollTop', {
+            value: 120,
+            configurable: true,
+            writable: true,
+        });
+
+        fireEvent.touchStart(portalScrollArea, {
+            touches: [{ clientX: 120, clientY: 180 }],
+        });
+        fireEvent.touchMove(portalScrollArea, {
+            touches: [{ clientX: 118, clientY: 80 }],
+        });
+        fireEvent.touchEnd(portalScrollArea, {
+            changedTouches: [{ clientX: 118, clientY: 80 }],
+        });
+
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    test('does not close from an overlay click when the press started inside portal content', () => {
+        const { onClose } = renderModal({
+            children: <PortalledScrollableChild />,
+        });
+
+        const dialog = screen.getByRole('dialog', { name: 'Character details' });
+        const portalScrollArea = screen.getByTestId('portal-scroll-area');
+
+        fireEvent.pointerDown(portalScrollArea);
+        fireEvent.click(dialog);
+
+        expect(onClose).not.toHaveBeenCalled();
     });
 
     test('locks page overscroll while open and restores it on close', () => {

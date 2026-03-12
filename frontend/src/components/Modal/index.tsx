@@ -10,19 +10,36 @@ import styles from "./index.module.css";
  * touch gestures, and scroll blocking while the modal is open.
  */
 
-/* Check whether the current wheel or touch movement can scroll inside a nested element. */
-function canScrollWithin(target: EventTarget | null, deltaY: number) {
-    let element = target instanceof HTMLElement
+function getEventElement(target: EventTarget | null) {
+    return target instanceof HTMLElement
         ? target
         : target instanceof Node
             ? target.parentElement
             : null;
+}
+
+function isScrollableElement(element: HTMLElement) {
+    const { overflowY } = window.getComputedStyle(element);
+    return /(auto|scroll|overlay)/.test(overflowY) && element.scrollHeight > element.clientHeight;
+}
+
+function isWithinScrollableArea(target: EventTarget | null) {
+    let element = getEventElement(target);
 
     while (element && element !== document.body) {
-        const { overflowY } = window.getComputedStyle(element);
-        const isScrollable = /(auto|scroll|overlay)/.test(overflowY) && element.scrollHeight > element.clientHeight;
+        if (isScrollableElement(element)) return true;
+        element = element.parentElement;
+    }
 
-        if (isScrollable) {
+    return false;
+}
+
+/* Check whether the current wheel or touch movement can scroll inside a nested element. */
+function canScrollWithin(target: EventTarget | null, deltaY: number) {
+    let element = getEventElement(target);
+
+    while (element && element !== document.body) {
+        if (isScrollableElement(element)) {
             if (deltaY < 0 && element.scrollTop > 0) return true;
             if (deltaY > 0 && element.scrollTop + element.clientHeight < element.scrollHeight) return true;
         }
@@ -58,8 +75,14 @@ export default function Modal({
     onNavigatePrev,
     onNavigateNext,
 }: ModalProps) {
-    /* Store the first touch position so swipe gestures can be measured later. */
-    const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+    /* Store touch gesture state so scroll drags are not misread as swipe actions. */
+    const touchGestureRef = useRef<{
+        x: number;
+        y: number;
+        startedInScrollableArea: boolean;
+        scrollGestureDetected: boolean;
+    } | null>(null);
+    const shouldCloseFromOverlayClickRef = useRef(false);
 
     /* Handle keyboard close and previous/next navigation while the modal is open. */
     useEffect(() => {
@@ -132,16 +155,21 @@ export default function Modal({
         /* Block touch scrolling unless the gesture can scroll inside a modal child. */
         const handleTouchMove = (event: TouchEvent) => {
             const touch = event.touches[0];
-            const start = touchStartRef.current;
+            const gesture = touchGestureRef.current;
 
             /* Block touch scrolling when there is not enough touch data to measure movement. */
-            if (!touch || !start) {
+            if (!touch || !gesture) {
                 event.preventDefault();
                 return;
             }
 
             /* Measure the vertical touch movement so we know which way the user is dragging. */
-            const deltaY = start.y - touch.clientY;
+            const deltaX = gesture.x - touch.clientX;
+            const deltaY = gesture.y - touch.clientY;
+
+            if (Math.abs(deltaY) > Math.abs(deltaX) && (gesture.startedInScrollableArea || canScrollWithin(event.target, deltaY))) {
+                gesture.scrollGestureDetected = true;
+            }
 
             /* Only allow the gesture when a nested modal area can scroll in that direction. */
             if (!canScrollWithin(event.target, deltaY)) {
@@ -174,34 +202,48 @@ export default function Modal({
     const handleTouchStart = (event: React.TouchEvent<HTMLDivElement>) => {
         const touch = event.touches[0];
         if (!touch) return;
-        touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+        touchGestureRef.current = {
+            x: touch.clientX,
+            y: touch.clientY,
+            startedInScrollableArea: isWithinScrollableArea(event.target),
+            scrollGestureDetected: false,
+        };
+    };
+
+    const clearTouchGesture = () => {
+        touchGestureRef.current = null;
     };
 
     /* Turn touch gestures into modal close, previous, or next actions. */
     const handleTouchEnd = (event: React.TouchEvent<HTMLDivElement>) => {
-        const start = touchStartRef.current;
+        const gesture = touchGestureRef.current;
         const touch = event.changedTouches[0];
 
         /* Clear the saved touch point because this gesture is now finished. */
-        touchStartRef.current = null;
+        clearTouchGesture();
 
         /* Stop if the gesture did not have both a start and an end point. */
-        if (!start || !touch) return;
+        if (!gesture || !touch) return;
 
         /* Measure how far the swipe moved horizontally and vertically. */
-        const deltaX = touch.clientX - start.x;
-        const deltaY = touch.clientY - start.y;
+        const deltaX = touch.clientX - gesture.x;
+        const deltaY = touch.clientY - gesture.y;
         const absDeltaX = Math.abs(deltaX);
         const absDeltaY = Math.abs(deltaY);
 
-        /* Close the modal when the user swipes upward far enough. */
-        if (deltaY <= -72 && absDeltaY > absDeltaX) {
-            onClose();
-            return;
-        }
+        if (absDeltaY > absDeltaX && (gesture.scrollGestureDetected || gesture.startedInScrollableArea)) return;
+
+        shouldCloseFromOverlayClickRef.current = false;
 
         /* Ignore short swipes and gestures that are more vertical than horizontal. */
-        if (absDeltaX < 56 || absDeltaX <= absDeltaY) return;
+        if (absDeltaX < 56 || absDeltaX <= absDeltaY) {
+            /* Close the modal when the user swipes upward far enough. */
+            if (deltaY <= -72 && absDeltaY > absDeltaX) {
+                onClose();
+            }
+
+            return;
+        }
 
         /* Swipe right goes to the previous item. */
         if (deltaX > 0) {
@@ -221,7 +263,18 @@ export default function Modal({
                 role="dialog"
                 aria-modal="true"
                 aria-label={ariaLabel}
-                onClick={onClose}
+                onPointerDown={(event) => {
+                    shouldCloseFromOverlayClickRef.current = event.target === event.currentTarget;
+                }}
+                onClick={(event) => {
+                    if (event.target !== event.currentTarget || !shouldCloseFromOverlayClickRef.current) {
+                        shouldCloseFromOverlayClickRef.current = false;
+                        return;
+                    }
+
+                    shouldCloseFromOverlayClickRef.current = false;
+                    onClose();
+                }}
             >
 
                 {/* Blur and soften the page behind the modal. */}
@@ -261,6 +314,7 @@ export default function Modal({
                         style={{ pointerEvents: "auto" }}
                         onTouchStart={handleTouchStart}
                         onTouchEnd={handleTouchEnd}
+                        onTouchCancel={clearTouchGesture}
                         onClick={(event) => event.stopPropagation()}
                     >
                         {children}
