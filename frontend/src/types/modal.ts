@@ -11,4 +11,5 @@ export interface ContentTemplateRelatedGroup {
     count: number;
     items: ResolvedResourceItem[];
     icon: ReactNode;
+    onSelectItem?: (item: ResolvedResourceItem) => void;
 }

@@ -1,8 +1,6 @@
 import { type ReactNode } from "react";
 import { Box, Menu, Text } from "@mantine/core";
-import { useNavigate } from "react-router-dom";
 import { type ResolvedResourceItem } from "@types";
-import { resourceRoutePathFromUrl } from "@utils/swapi";
 import styles from "./index.module.css";
 
 /*
@@ -16,19 +14,17 @@ interface RelatedItemsProps {
     count: number;
     icon: ReactNode;
     items: ResolvedResourceItem[];
+    onSelectItem?: (item: ResolvedResourceItem) => void;
 }
 
 /* Render one related-resource control for the modal footer. */
-export default function RelatedItems({ label, count, icon, items }: RelatedItemsProps) {
-    
-    /* Use router navigation so related items stay inside the app. */
-    const navigate = useNavigate();
+export default function RelatedItems({ label, count, icon, items, onSelectItem }: RelatedItemsProps) {
 
     /* Work out how this related-item button should behave. */
     const isEmpty = count === 0;
-    const directNavigationPath = count === 1 ? resourceRoutePathFromUrl(items[0]?.url ?? "") : null;
-    const hasMenu = count > 1;
-    const canNavigateDirectly = directNavigationPath !== null;
+    const directItem = count === 1 ? items[0] ?? null : null;
+    const hasMenu = count > 1 && items.length > 0 && Boolean(onSelectItem);
+    const canNavigateDirectly = directItem !== null && Boolean(onSelectItem);
     const isInteractive = hasMenu || canNavigateDirectly;
 
     /* Build the final class list for the outer wrapper. */
@@ -71,19 +67,15 @@ export default function RelatedItems({ label, count, icon, items }: RelatedItems
                     {/* Render one menu row for each related item. */}
                     <Menu.Dropdown className={styles.menuDropdown}>
                         {items.map((item, index) => (
-                            <Menu.Item
-                                key={`${label}-${item.url}-${index}`}
-                                component="button"
-                                onClick={() => {
-                                    /* Convert the resource URL into an internal app route. */
-                                    const routePath = resourceRoutePathFromUrl(item.url);
-                                    if (!routePath) return;
-
-                                    /* Navigate to the selected related item. */
-                                    navigate(routePath);
-                                }}
-                                className={styles.menuItem}
-                            >
+                             <Menu.Item
+                                 key={`${label}-${item.url}-${index}`}
+                                 component="button"
+                                 onClick={() => {
+                                     /* Hand the selected related item back to the page layer. */
+                                     onSelectItem?.(item);
+                                 }}
+                                 className={styles.menuItem}
+                             >
                                 <Text component="span" className={styles.menuLabel}>
                                     {item.name}
                                 </Text>
@@ -95,15 +87,16 @@ export default function RelatedItems({ label, count, icon, items }: RelatedItems
             ) : canNavigateDirectly ? (
 
                 /* Go straight to the item when this group only has one related resource. */
-                <button
-                    type="button"
-                    className={styles.triggerButton}
-                    onClick={() => {
-                        /* Navigate directly to the one related item. */
-                        navigate(directNavigationPath);
-                    }}
-                    aria-label={`Open ${label}`}
-                >
+                 <button
+                     type="button"
+                     className={styles.triggerButton}
+                     onClick={() => {
+                         /* Hand the selected related item back to the page layer. */
+                         if (!directItem) return;
+                         onSelectItem?.(directItem);
+                     }}
+                     aria-label={`Open ${label}`}
+                 >
                     {bubbleMarkup}
                 </button>
 

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import {
     Alien as AlienIcon,
     FlyingSaucer as FlyingSaucerIcon,
@@ -11,8 +11,9 @@ import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Perso
 import { ASSET_IMAGE_BASE_PATH } from "@utils/consts";
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
-import { resourceIdFromUrl } from "@utils/swapi";
+import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
 import { useResolvedResourceNames } from "@utils/useResolvedResourceNames";
+import { useNavigate } from "react-router-dom";
 
 interface PersonModalContentProps {
     person: Person;
@@ -29,7 +30,14 @@ export default function PersonModalContent({
     onPrev,
     onNext,
 }: PersonModalContentProps) {
+    const navigate = useNavigate();
     const personId = resourceIdFromUrl(person.url);
+
+    const openRelatedItem = useCallback((item: { url: string }) => {
+        const routePath = resourceRoutePathFromUrl(item.url);
+        if (!routePath) return;
+        navigate(routePath);
+    }, [navigate]);
     const portraitSrc = personId ? `${ASSET_IMAGE_BASE_PATH}/people/${personId}.jpg` : null;
 
     /* Combine all related resource URLs into one list so they can be resolved once. */
@@ -65,30 +73,35 @@ export default function PersonModalContent({
             count: person.homeworld ? 1 : 0,
             items: resolveResourceItems(person.homeworld ? [person.homeworld] : [], resolvedResourceNames),
             icon: <PlanetIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
         {
             label: "Species",
             count: person.species.length,
             items: resolveResourceItems(person.species, resolvedResourceNames),
             icon: <AlienIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
         {
             label: "Starships",
             count: person.starships.length,
             items: resolveResourceItems(person.starships, resolvedResourceNames),
             icon: <FlyingSaucerIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
         {
             label: "Vehicles",
             count: person.vehicles.length,
             items: resolveResourceItems(person.vehicles, resolvedResourceNames),
             icon: <TrainRegionalIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
         {
             label: "Films",
             count: person.films.length,
             items: resolveResourceItems(person.films, resolvedResourceNames),
             icon: <FilmReelIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
     ];
 

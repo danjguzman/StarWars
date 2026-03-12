@@ -1,12 +1,10 @@
 import { useCallback, useMemo } from "react";
 import { Box } from "@mantine/core";
 import { Alien as AlienIcon } from "phosphor-react";
-import ResourceBrowsePage from "@components/PageTemplate/ResourceBrowsePage";
 import SpeciesModalContent from "@pages/Species/SpeciesModalContent";
+import ResourceBrowseRoute from "@pages/_shared/ResourceBrowseRoute";
 import { type Species } from "@types";
 import { useSpeciesStore } from "@stores/speciesStore";
-import { SPECIES_ALL_CACHE_KEY } from "@utils/consts";
-import { getCachedValue } from "@utils/clientCache";
 import { estimateInitialTargetCount } from "@utils/layout";
 import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
 import { useNavigate, useParams } from "react-router-dom";
@@ -26,7 +24,6 @@ export default function SpeciesPage() {
         fetchSpecies,
     } = useSpeciesStore();
     const initialTargetCount = useMemo(() => estimateInitialTargetCount(), []);
-    const cachedSpecies = getCachedValue<Species[]>(SPECIES_ALL_CACHE_KEY);
 
     /* Open a species modal by moving the route to that species detail path. */
     const openSpeciesModal = useCallback((item: Species) => {
@@ -41,7 +38,7 @@ export default function SpeciesPage() {
     }, [navigate]);
 
     return (
-        <ResourceBrowsePage
+        <ResourceBrowseRoute
             title="Species"
             headerIcon={
                 <Box className={styles.pageHeaderIcon}>
@@ -51,7 +48,6 @@ export default function SpeciesPage() {
             entityKey="species"
             routeItemId={speciesId}
             resources={species}
-            cachedResources={cachedSpecies}
             loading={loading}
             loadingMore={loadingMore}
             hasMore={hasMore}

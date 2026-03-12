@@ -52,6 +52,7 @@ export default function ContentTemplate({
                     count={group.count}
                     items={group.items}
                     icon={group.icon}
+                    onSelectItem={group.onSelectItem}
                 />
             ))}
         </Box>

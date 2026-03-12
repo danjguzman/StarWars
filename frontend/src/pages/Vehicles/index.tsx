@@ -1,12 +1,10 @@
 import { useCallback, useMemo } from "react";
 import { Box } from "@mantine/core";
 import { TrainRegional as TrainRegionalIcon } from "phosphor-react";
-import ResourceBrowsePage from "@components/PageTemplate/ResourceBrowsePage";
 import VehicleModalContent from "@pages/Vehicles/VehicleModalContent";
+import ResourceBrowseRoute from "@pages/_shared/ResourceBrowseRoute";
 import { type Vehicle } from "@types";
 import { useVehiclesStore } from "@stores/vehiclesStore";
-import { VEHICLES_ALL_CACHE_KEY } from "@utils/consts";
-import { getCachedValue } from "@utils/clientCache";
 import { estimateInitialTargetCount } from "@utils/layout";
 import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
 import { useNavigate, useParams } from "react-router-dom";
@@ -26,7 +24,6 @@ export default function VehiclesPage() {
         fetchVehicles,
     } = useVehiclesStore();
     const initialTargetCount = useMemo(() => estimateInitialTargetCount(), []);
-    const cachedVehicles = getCachedValue<Vehicle[]>(VEHICLES_ALL_CACHE_KEY);
 
     /* Open a vehicle modal by moving the route to that vehicle detail path. */
     const openVehicleModal = useCallback((item: Vehicle) => {
@@ -41,7 +38,7 @@ export default function VehiclesPage() {
     }, [navigate]);
 
     return (
-        <ResourceBrowsePage
+        <ResourceBrowseRoute
             title="Vehicles"
             headerIcon={
                 <Box className={styles.pageHeaderIcon}>
@@ -51,7 +48,6 @@ export default function VehiclesPage() {
             entityKey="vehicles"
             routeItemId={vehicleId}
             resources={vehicles}
-            cachedResources={cachedVehicles}
             loading={loading}
             loadingMore={loadingMore}
             hasMore={hasMore}

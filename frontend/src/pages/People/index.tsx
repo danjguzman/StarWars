@@ -1,11 +1,10 @@
 import { useCallback, useMemo } from "react";
 import { Box } from "@mantine/core";
 import { Users } from "phosphor-react";
-import ResourceBrowsePage from "@components/PageTemplate/ResourceBrowsePage";
 import PersonModalContent from "@pages/People/PersonModalContent";
+import ResourceBrowseRoute from "@pages/_shared/ResourceBrowseRoute";
 import { type Person } from "@types";
 import { usePeopleStore } from "@stores/peopleStore";
-import { getCachedValue } from "@utils/clientCache";
 import { estimateInitialTargetCount } from "@utils/layout";
 import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
 import { useNavigate, useParams } from "react-router-dom";
@@ -25,7 +24,6 @@ export default function People() {
         fetchPeople,
     } = usePeopleStore();
     const initialTargetCount = useMemo(() => estimateInitialTargetCount(), []);
-    const cachedPeople = getCachedValue<Person[]>("people:all");
 
     /* Open a person modal by moving the route to that person's detail path. */
     const openPersonModal = useCallback((person: Person) => {
@@ -40,7 +38,7 @@ export default function People() {
     }, [navigate]);
 
     return (
-        <ResourceBrowsePage
+        <ResourceBrowseRoute
             title="People"
             headerIcon={
                 <Box className={styles.pageHeaderIcon}>
@@ -50,7 +48,6 @@ export default function People() {
             entityKey="people"
             routeItemId={personId}
             resources={people}
-            cachedResources={cachedPeople}
             loading={loading}
             loadingMore={loadingMore}
             hasMore={hasMore}

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { FilmReelIcon } from "@phosphor-icons/react";
 import { Alien as AlienIcon, Planet as PlanetIcon, Users as UsersIcon } from "phosphor-react";
 import ContentTemplate from "@components/Modal/ContentTemplate";
@@ -6,6 +6,8 @@ import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Speci
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
 import { useResolvedResourceNames } from "@utils/useResolvedResourceNames";
+import { resourceRoutePathFromUrl } from "@utils/swapi";
+import { useNavigate } from "react-router-dom";
 
 interface SpeciesModalContentProps {
     species: Species;
@@ -22,7 +24,14 @@ export default function SpeciesModalContent({
     onPrev,
     onNext,
 }: SpeciesModalContentProps) {
+    const navigate = useNavigate();
     const homeworldUrls = species.homeworld ? [species.homeworld] : [];
+
+    const openRelatedItem = useCallback((item: { url: string }) => {
+        const routePath = resourceRoutePathFromUrl(item.url);
+        if (!routePath) return;
+        navigate(routePath);
+    }, [navigate]);
 
     const relatedResourceUrls = useMemo(() => {
         return collectRelatedResourceUrls([
@@ -53,18 +62,21 @@ export default function SpeciesModalContent({
             count: homeworldItems.length,
             items: homeworldItems,
             icon: <PlanetIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
         {
             label: "People",
             count: species.people.length,
             items: resolveResourceItems(species.people, resolvedResourceNames),
             icon: <UsersIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
         {
             label: "Films",
             count: species.films.length,
             items: resolveResourceItems(species.films, resolvedResourceNames),
             icon: <FilmReelIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
     ];
 

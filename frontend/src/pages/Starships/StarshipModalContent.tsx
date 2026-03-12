@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { FilmReelIcon } from "@phosphor-icons/react";
 import { FlyingSaucer as FlyingSaucerIcon, Users as UsersIcon } from "phosphor-react";
 import ContentTemplate from "@components/Modal/ContentTemplate";
@@ -6,6 +6,8 @@ import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Stars
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
 import { useResolvedResourceNames } from "@utils/useResolvedResourceNames";
+import { resourceRoutePathFromUrl } from "@utils/swapi";
+import { useNavigate } from "react-router-dom";
 
 interface StarshipModalContentProps {
     starship: Starship;
@@ -22,6 +24,14 @@ export default function StarshipModalContent({
     onPrev,
     onNext,
 }: StarshipModalContentProps) {
+    const navigate = useNavigate();
+
+    const openRelatedItem = useCallback((item: { url: string }) => {
+        const routePath = resourceRoutePathFromUrl(item.url);
+        if (!routePath) return;
+        navigate(routePath);
+    }, [navigate]);
+
     const relatedResourceUrls = useMemo(() => {
         return collectRelatedResourceUrls([
             starship.pilots,
@@ -48,12 +58,14 @@ export default function StarshipModalContent({
             count: starship.pilots.length,
             items: resolveResourceItems(starship.pilots, resolvedResourceNames),
             icon: <UsersIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
         {
             label: "Films",
             count: starship.films.length,
             items: resolveResourceItems(starship.films, resolvedResourceNames),
             icon: <FilmReelIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
     ];
 

@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { FilmReelIcon } from "@phosphor-icons/react";
 import { Planet as PlanetIcon, Users as UsersIcon } from "phosphor-react";
 import ContentTemplate from "@components/Modal/ContentTemplate";
@@ -6,6 +6,8 @@ import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Plane
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
 import { useResolvedResourceNames } from "@utils/useResolvedResourceNames";
+import { resourceRoutePathFromUrl } from "@utils/swapi";
+import { useNavigate } from "react-router-dom";
 
 interface PlanetModalContentProps {
     planet: Planet;
@@ -22,6 +24,14 @@ export default function PlanetModalContent({
     onPrev,
     onNext,
 }: PlanetModalContentProps) {
+    const navigate = useNavigate();
+
+    const openRelatedItem = useCallback((item: { url: string }) => {
+        const routePath = resourceRoutePathFromUrl(item.url);
+        if (!routePath) return;
+        navigate(routePath);
+    }, [navigate]);
+
     const relatedResourceUrls = useMemo(() => {
         return collectRelatedResourceUrls([
             planet.residents,
@@ -48,12 +58,14 @@ export default function PlanetModalContent({
             count: planet.residents.length,
             items: resolveResourceItems(planet.residents, resolvedResourceNames),
             icon: <UsersIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
         {
             label: "Films",
             count: planet.films.length,
             items: resolveResourceItems(planet.films, resolvedResourceNames),
             icon: <FilmReelIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
     ];
 

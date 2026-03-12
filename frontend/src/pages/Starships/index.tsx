@@ -1,12 +1,10 @@
 import { useCallback, useMemo } from "react";
 import { Box } from "@mantine/core";
 import { FlyingSaucer as FlyingSaucerIcon } from "phosphor-react";
-import ResourceBrowsePage from "@components/PageTemplate/ResourceBrowsePage";
 import StarshipModalContent from "@pages/Starships/StarshipModalContent";
+import ResourceBrowseRoute from "@pages/_shared/ResourceBrowseRoute";
 import { type Starship } from "@types";
 import { useStarshipsStore } from "@stores/starshipsStore";
-import { STARSHIPS_ALL_CACHE_KEY } from "@utils/consts";
-import { getCachedValue } from "@utils/clientCache";
 import { estimateInitialTargetCount } from "@utils/layout";
 import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
 import { useNavigate, useParams } from "react-router-dom";
@@ -26,7 +24,6 @@ export default function StarshipsPage() {
         fetchStarships,
     } = useStarshipsStore();
     const initialTargetCount = useMemo(() => estimateInitialTargetCount(), []);
-    const cachedStarships = getCachedValue<Starship[]>(STARSHIPS_ALL_CACHE_KEY);
 
     /* Open a starship modal by moving the route to that starship detail path. */
     const openStarshipModal = useCallback((item: Starship) => {
@@ -41,7 +38,7 @@ export default function StarshipsPage() {
     }, [navigate]);
 
     return (
-        <ResourceBrowsePage
+        <ResourceBrowseRoute
             title="Starships"
             headerIcon={
                 <Box className={styles.pageHeaderIcon}>
@@ -51,7 +48,6 @@ export default function StarshipsPage() {
             entityKey="starships"
             routeItemId={starshipId}
             resources={starships}
-            cachedResources={cachedStarships}
             loading={loading}
             loadingMore={loadingMore}
             hasMore={hasMore}

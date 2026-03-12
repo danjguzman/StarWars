@@ -1,12 +1,10 @@
 import { useCallback, useMemo } from "react";
 import { Box } from "@mantine/core";
 import { Planet as PlanetIcon } from "phosphor-react";
-import ResourceBrowsePage from "@components/PageTemplate/ResourceBrowsePage";
 import PlanetModalContent from "@pages/Planets/PlanetModalContent";
+import ResourceBrowseRoute from "@pages/_shared/ResourceBrowseRoute";
 import { type Planet } from "@types";
 import { usePlanetsStore } from "@stores/planetsStore";
-import { PLANETS_ALL_CACHE_KEY } from "@utils/consts";
-import { getCachedValue } from "@utils/clientCache";
 import { estimateInitialTargetCount } from "@utils/layout";
 import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
 import { useNavigate, useParams } from "react-router-dom";
@@ -26,7 +24,6 @@ export default function Planets() {
         fetchPlanets,
     } = usePlanetsStore();
     const initialTargetCount = useMemo(() => estimateInitialTargetCount(), []);
-    const cachedPlanets = getCachedValue<Planet[]>(PLANETS_ALL_CACHE_KEY);
 
     /* Open a planet modal by moving the route to that planet's detail path. */
     const openPlanetModal = useCallback((planet: Planet) => {
@@ -41,7 +38,7 @@ export default function Planets() {
     }, [navigate]);
 
     return (
-        <ResourceBrowsePage
+        <ResourceBrowseRoute
             title="Planets"
             headerIcon={
                 <Box className={styles.pageHeaderIcon}>
@@ -51,7 +48,6 @@ export default function Planets() {
             entityKey="planets"
             routeItemId={planetId}
             resources={planets}
-            cachedResources={cachedPlanets}
             loading={loading}
             loadingMore={loadingMore}
             hasMore={hasMore}

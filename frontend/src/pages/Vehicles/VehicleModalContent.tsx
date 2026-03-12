@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import { FilmReelIcon } from "@phosphor-icons/react";
 import { TrainRegional as TrainRegionalIcon, Users as UsersIcon } from "phosphor-react";
 import ContentTemplate from "@components/Modal/ContentTemplate";
@@ -6,6 +6,8 @@ import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Vehic
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
 import { useResolvedResourceNames } from "@utils/useResolvedResourceNames";
+import { resourceRoutePathFromUrl } from "@utils/swapi";
+import { useNavigate } from "react-router-dom";
 
 interface VehicleModalContentProps {
     vehicle: Vehicle;
@@ -22,6 +24,14 @@ export default function VehicleModalContent({
     onPrev,
     onNext,
 }: VehicleModalContentProps) {
+    const navigate = useNavigate();
+
+    const openRelatedItem = useCallback((item: { url: string }) => {
+        const routePath = resourceRoutePathFromUrl(item.url);
+        if (!routePath) return;
+        navigate(routePath);
+    }, [navigate]);
+
     const relatedResourceUrls = useMemo(() => {
         return collectRelatedResourceUrls([
             vehicle.pilots,
@@ -48,12 +58,14 @@ export default function VehicleModalContent({
             count: vehicle.pilots.length,
             items: resolveResourceItems(vehicle.pilots, resolvedResourceNames),
             icon: <UsersIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
         {
             label: "Films",
             count: vehicle.films.length,
             items: resolveResourceItems(vehicle.films, resolvedResourceNames),
             icon: <FilmReelIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
     ];
 

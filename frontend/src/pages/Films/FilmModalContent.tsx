@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback, useMemo } from "react";
 import {
     Alien as AlienIcon,
     FlyingSaucer as FlyingSaucerIcon,
@@ -12,6 +12,8 @@ import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Film 
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
 import { useResolvedResourceNames } from "@utils/useResolvedResourceNames";
+import { resourceRoutePathFromUrl } from "@utils/swapi";
+import { useNavigate } from "react-router-dom";
 
 interface FilmModalContentProps {
     film: Film;
@@ -28,6 +30,14 @@ export default function FilmModalContent({
     onPrev,
     onNext,
 }: FilmModalContentProps) {
+    const navigate = useNavigate();
+
+    const openRelatedItem = useCallback((item: { url: string }) => {
+        const routePath = resourceRoutePathFromUrl(item.url);
+        if (!routePath) return;
+        navigate(routePath);
+    }, [navigate]);
+
     const relatedResourceUrls = useMemo(() => {
         return collectRelatedResourceUrls([
             film.characters,
@@ -57,30 +67,35 @@ export default function FilmModalContent({
             count: film.characters.length,
             items: resolveResourceItems(film.characters, resolvedResourceNames),
             icon: <UsersIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
         {
             label: "Planets",
             count: film.planets.length,
             items: resolveResourceItems(film.planets, resolvedResourceNames),
             icon: <PlanetIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
         {
             label: "Starships",
             count: film.starships.length,
             items: resolveResourceItems(film.starships, resolvedResourceNames),
             icon: <FlyingSaucerIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
         {
             label: "Vehicles",
             count: film.vehicles.length,
             items: resolveResourceItems(film.vehicles, resolvedResourceNames),
             icon: <TrainRegionalIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
         {
             label: "Species",
             count: film.species.length,
             items: resolveResourceItems(film.species, resolvedResourceNames),
             icon: <AlienIcon weight="duotone" aria-hidden="true" />,
+            onSelectItem: openRelatedItem,
         },
     ];
 

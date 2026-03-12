@@ -1,12 +1,10 @@
 import { useCallback, useMemo } from "react";
 import { Box } from "@mantine/core";
 import { FilmReelIcon } from "@phosphor-icons/react";
-import ResourceBrowsePage from "@components/PageTemplate/ResourceBrowsePage";
 import FilmModalContent from "@pages/Films/FilmModalContent";
+import ResourceBrowseRoute from "@pages/_shared/ResourceBrowseRoute";
 import { type Film } from "@types";
 import { useFilmsStore } from "@stores/filmsStore";
-import { FILMS_ALL_CACHE_KEY } from "@utils/consts";
-import { getCachedValue } from "@utils/clientCache";
 import { estimateInitialTargetCount } from "@utils/layout";
 import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
 import { useNavigate, useParams } from "react-router-dom";
@@ -26,7 +24,6 @@ export default function Films() {
         fetchFilms,
     } = useFilmsStore();
     const initialTargetCount = useMemo(() => estimateInitialTargetCount(), []);
-    const cachedFilms = getCachedValue<Film[]>(FILMS_ALL_CACHE_KEY);
 
     /* Open a film modal by moving the route to that film's detail path. */
     const openFilmModal = useCallback((film: Film) => {
@@ -41,7 +38,7 @@ export default function Films() {
     }, [navigate]);
 
     return (
-        <ResourceBrowsePage
+        <ResourceBrowseRoute
             title="Films"
             headerIcon={
                 <Box className={styles.pageHeaderIcon}>
@@ -51,7 +48,6 @@ export default function Films() {
             entityKey="films"
             routeItemId={filmId}
             resources={films}
-            cachedResources={cachedFilms}
             loading={loading}
             loadingMore={loadingMore}
             hasMore={hasMore}
