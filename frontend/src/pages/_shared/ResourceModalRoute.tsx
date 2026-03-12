@@ -1,8 +1,9 @@
-import { type ReactNode, useCallback, useEffect, useMemo } from "react";
-import { Button, Group, Stack, Text } from "@mantine/core";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Button, Group, Loader, Stack, Text } from "@mantine/core";
 import Modal from "@components/Modal";
 
 type ResourceLoadMode = "initial" | "nextPage" | null;
+const MODAL_LOADING_MIN_MS = 1000;
 
 interface ResourceModalRouteProps<TItem extends { url: string }> {
     title: string;
@@ -46,6 +47,9 @@ export default function ResourceModalRoute<TItem extends { url: string }>({
     renderModalContent,
     getModalAriaLabel,
 }: ResourceModalRouteProps<TItem>) {
+    const loadingFallbackStartRef = useRef<number | null>(null);
+    const loadingFallbackTimeoutRef = useRef<number | null>(null);
+    const [showLoadingFallback, setShowLoadingFallback] = useState(false);
     const selectedItemIndex = useMemo(() => {
         if (!routeItemId) return null;
         return resources.findIndex((item) => getItemId(item) === routeItemId);
@@ -54,6 +58,7 @@ export default function ResourceModalRoute<TItem extends { url: string }>({
     const selectedItem = selectedItemIndex !== null && selectedItemIndex >= 0 && selectedItemIndex < resources.length
         ? resources[selectedItemIndex]
         : null;
+    const shouldShowLoadingFallback = Boolean(routeItemId) && !selectedItem && !error;
 
     const openItemByIndex = useCallback((index: number) => {
         const targetItem = resources[index];
@@ -81,6 +86,65 @@ export default function ResourceModalRoute<TItem extends { url: string }>({
     }, [fetchResources, initialItemCount, lastFailedRequestMode, resources.length]);
 
     useEffect(() => {
+        return () => {
+            if (loadingFallbackTimeoutRef.current !== null) {
+                window.clearTimeout(loadingFallbackTimeoutRef.current);
+            }
+        };
+    }, []);
+
+    useEffect(() => {
+        if (!routeItemId) {
+            if (loadingFallbackTimeoutRef.current !== null) {
+                window.clearTimeout(loadingFallbackTimeoutRef.current);
+                loadingFallbackTimeoutRef.current = null;
+            }
+            loadingFallbackStartRef.current = null;
+            setShowLoadingFallback(false);
+            return;
+        }
+
+        if (shouldShowLoadingFallback) {
+            if (loadingFallbackTimeoutRef.current !== null) {
+                window.clearTimeout(loadingFallbackTimeoutRef.current);
+                loadingFallbackTimeoutRef.current = null;
+            }
+
+            if (!showLoadingFallback) {
+                loadingFallbackStartRef.current = Date.now();
+                setShowLoadingFallback(true);
+            }
+
+            return;
+        }
+
+        if (!showLoadingFallback) return;
+
+        const loadingStartedAt = loadingFallbackStartRef.current;
+        const elapsed = loadingStartedAt ? Date.now() - loadingStartedAt : MODAL_LOADING_MIN_MS;
+        const remaining = MODAL_LOADING_MIN_MS - elapsed;
+
+        if (remaining <= 0) {
+            loadingFallbackStartRef.current = null;
+            setShowLoadingFallback(false);
+            return;
+        }
+
+        loadingFallbackTimeoutRef.current = window.setTimeout(() => {
+            loadingFallbackTimeoutRef.current = null;
+            loadingFallbackStartRef.current = null;
+            setShowLoadingFallback(false);
+        }, remaining);
+
+        return () => {
+            if (loadingFallbackTimeoutRef.current !== null) {
+                window.clearTimeout(loadingFallbackTimeoutRef.current);
+                loadingFallbackTimeoutRef.current = null;
+            }
+        };
+    }, [routeItemId, shouldShowLoadingFallback, showLoadingFallback]);
+
+    useEffect(() => {
         if (!routeItemId) return;
         void fetchResources({ targetCount: initialItemCount });
     }, [fetchResources, initialItemCount, routeItemId]);
@@ -92,7 +156,7 @@ export default function ResourceModalRoute<TItem extends { url: string }>({
         void fetchResources({ nextPage: true });
     }, [fetchResources, hasMore, loading, loadingMore, routeItemId, selectedItemIndex]);
 
-    const modalBody = selectedItem ? renderModalContent({
+    const modalBody = selectedItem && !showLoadingFallback ? renderModalContent({
         item: selectedItem,
         selectedIndex: selectedItemIndex ?? 0,
         total: resources.length,
@@ -100,10 +164,13 @@ export default function ResourceModalRoute<TItem extends { url: string }>({
         onNext: showNextItem,
     }) : (
         <Stack align="center" gap="sm" py="lg">
-            <Text c={error ? "red.4" : undefined} ta="center">
-                {error ?? `Loading ${title.toLowerCase()} details...`}
+            {showLoadingFallback ? (
+                <Loader color="yellow" size="md" type="oval" />
+            ) : null}
+            <Text c={showLoadingFallback ? undefined : error ? "red.4" : undefined} ta="center" role={showLoadingFallback ? "status" : undefined}>
+                {showLoadingFallback ? `Loading ${title.toLowerCase()} details...` : error}
             </Text>
-            {error ? (
+            {!showLoadingFallback && error ? (
                 <Group>
                     <Button variant="light" color="red" onClick={retryResourceLoad}>
                         Retry
