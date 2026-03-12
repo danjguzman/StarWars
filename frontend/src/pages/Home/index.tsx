@@ -243,7 +243,7 @@ export default function HomeLayout() {
             </AppShell.Header>
 
             {/* Main Body Display */}
-            <AppShell.Main>
+            <AppShell.Main pt={0}>
                 <Container size="lg" py="xl">
                     <RouteTransitionOutlet />
                 </Container>

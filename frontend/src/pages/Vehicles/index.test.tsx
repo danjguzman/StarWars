@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import VehiclesPage from '@pages/Vehicles';
 import { useVehiclesStore } from '@stores/vehiclesStore';
 import { getCachedValue } from '@utils/clientCache';
+import { act } from 'react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 
 jest.mock('@stores/vehiclesStore', () => ({
@@ -112,6 +113,7 @@ describe('Vehicles page modal behavior', () => {
 
     afterEach(() => {
         jest.clearAllMocks();
+        jest.useRealTimers();
     });
 
     test('opens the modal from the list and closes back to the list route', async () => {
@@ -159,5 +161,39 @@ describe('Vehicles page modal behavior', () => {
         await user.click(screen.getByRole('button', { name: 'Retry loading vehicles' }));
 
         expect(fetchVehicles).toHaveBeenCalledWith({ targetCount: 12 });
+    });
+
+    test('debounces local vehicle search results and opens the selected result', async () => {
+        jest.useFakeTimers();
+        const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+        mockedUseVehiclesStore.mockReturnValue({
+            vehicles: vehicles.slice(0, 2),
+            loading: false,
+            loadingMore: false,
+            error: null,
+            lastFailedRequestMode: null,
+            hasMore: true,
+            fetchVehicles: jest.fn(),
+        } as ReturnType<typeof useVehiclesStore>);
+        mockedGetCachedValue.mockReturnValue(null);
+
+        renderVehiclesPage('/vehicles');
+
+        await user.type(screen.getByRole('textbox', { name: 'Search vehicles' }), 'snow');
+
+        expect(screen.getByRole('listbox', { name: 'Search vehicles results' })).toBeInTheDocument();
+        expect(screen.getByText('Updating results...')).toBeInTheDocument();
+
+        await act(async () => {
+            jest.advanceTimersByTime(250);
+        });
+
+        expect(await screen.findByRole('button', { name: 'Snowspeeder' })).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', { name: 'Snowspeeder' }));
+
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/vehicles/1');
+        expect(screen.getByRole('dialog', { name: 'Snowspeeder details' })).toBeInTheDocument();
     });
 });

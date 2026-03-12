@@ -1,5 +1,6 @@
 import { type ReactNode, useCallback, useEffect, useMemo } from "react";
 import { Alert, Button, Stack, Text } from "@mantine/core";
+import HeaderSearch from "@components/PageTemplate/HeaderSearch";
 import Modal from "@components/Modal";
 import ListTemplate from "@components/PageTemplate/ListTemplate";
 import PageTemplate from "@components/PageTemplate";
@@ -134,7 +135,19 @@ export default function ResourceBrowsePage<TItem extends { url: string }>({
     }, [fetchResources, hasMore, loading, loadingMore, routeItemId, selectedItemIndex]);
 
     return (
-        <PageTemplate title={title} headerIcon={headerIcon}>
+        <PageTemplate
+            title={title}
+            headerIcon={headerIcon}
+            headerAside={
+                <HeaderSearch
+                    items={resources}
+                    labelKey={labelKey}
+                    placeholder={`Search ${title.toLowerCase()}`}
+                    emptyLabel={`No matching ${title.toLowerCase()} loaded on this page yet.`}
+                    onSelect={onOpenItem}
+                />
+            }
+        >
             <Stack gap="md">
                 {/* Show a clear error message and retry action when loading fails. */}
                 {error ? (

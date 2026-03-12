@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event';
 import People from '@pages/People';
 import { usePeopleStore } from '@stores/peopleStore';
 import { getCachedValue } from '@utils/clientCache';
+import { act } from 'react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 
 jest.mock('@stores/peopleStore', () => ({
@@ -112,6 +113,7 @@ describe('People page modal behavior', () => {
 
     afterEach(() => {
         jest.clearAllMocks();
+        jest.useRealTimers();
     });
 
     test('opens the modal from the list and closes back to the list route', async () => {
@@ -153,5 +155,51 @@ describe('People page modal behavior', () => {
         await user.click(screen.getByRole('button', { name: 'Retry loading people' }));
 
         expect(fetchPeople).toHaveBeenCalledWith({ targetCount: 12 });
+    });
+
+    test('debounces local search results and opens the selected person modal', async () => {
+        jest.useFakeTimers();
+        const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+        mockedUsePeopleStore.mockReturnValue({
+            people: people.slice(0, 2),
+            loading: false,
+            loadingMore: false,
+            error: null,
+            lastFailedRequestMode: null,
+            hasMore: true,
+            fetchPeople: jest.fn(),
+        } as ReturnType<typeof usePeopleStore>);
+        mockedGetCachedValue.mockReturnValue(null);
+
+        renderPeoplePage('/people');
+
+        await user.type(screen.getByRole('textbox', { name: 'Search people' }), 'han');
+
+        expect(screen.getByRole('listbox', { name: 'Search people results' })).toBeInTheDocument();
+        expect(screen.getByText('Updating results...')).toBeInTheDocument();
+
+        await act(async () => {
+            jest.advanceTimersByTime(250);
+        });
+
+        expect(await screen.findByRole('listbox', { name: 'Search people results' })).toBeInTheDocument();
+        expect(screen.getByText('No matching people loaded on this page yet.')).toBeInTheDocument();
+
+        await user.clear(screen.getByRole('textbox', { name: 'Search people' }));
+        await user.type(screen.getByRole('textbox', { name: 'Search people' }), 'lei');
+
+        expect(screen.getByRole('listbox', { name: 'Search people results' })).toBeInTheDocument();
+        expect(screen.getByText('Updating results...')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Leia Organa' })).not.toBeInTheDocument();
+
+        await act(async () => {
+            jest.advanceTimersByTime(250);
+        });
+
+        await user.click(await screen.findByRole('button', { name: 'Leia Organa' }));
+
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/people/2');
+        expect(screen.getByRole('dialog', { name: 'Leia Organa details' })).toBeInTheDocument();
     });
 });

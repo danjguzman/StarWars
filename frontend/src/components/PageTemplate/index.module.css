@@ -1,5 +1,31 @@
+.headerRow {
+    width: 100%;
+    gap: 12px;
+}
+
+.headerTitleRow {
+    min-width: 0;
+}
+
+.headerAside {
+    flex: 0 1 360px;
+    width: min(100%, 360px);
+    margin-left: auto;
+}
+
 .pageTitle {
     font-family: "Oxanium", sans-serif;
     letter-spacing: 0.05em;
     text-shadow: 0 0 9px currentColor;
+}
+
+@media (max-width: 720px) {
+    .headerRow {
+        align-items: stretch;
+    }
+
+    .headerAside {
+        flex-basis: 100%;
+        width: 100%;
+    }
 }
