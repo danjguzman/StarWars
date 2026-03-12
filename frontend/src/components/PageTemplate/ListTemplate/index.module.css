@@ -19,9 +19,11 @@
     position: relative;
     --avatar-ring-width: 3;
     border: 0;
+    border-radius: 50%;
+    overflow: visible;
     transform: none;
-    filter: drop-shadow(0 0 0 rgba(255, 183, 0, 0));
-    transition: filter 220ms cubic-bezier(0.22, 1, 0.36, 1);
+    box-shadow: 0 0 0 rgba(255, 183, 0, 0);
+    transition: box-shadow 220ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .avatarClip {
@@ -104,7 +106,9 @@
 
     .card:hover .avatarFrame {
         --avatar-ring-width: 6;
-        filter: drop-shadow(0 0 10px rgba(255, 183, 0, 0.75));
+        box-shadow:
+            0 0 10px rgba(255, 183, 0, 0.72),
+            0 0 28px rgba(255, 183, 0, 0.4);
     }
 
     .card:hover .avatarRingBase {
@@ -133,7 +137,9 @@
 
     .card:active .avatarFrame {
         --avatar-ring-width: 6;
-        filter: drop-shadow(0 0 10px rgba(255, 183, 0, 0.75));
+        box-shadow:
+            0 0 10px rgba(255, 183, 0, 0.72),
+            0 0 28px rgba(255, 183, 0, 0.4);
     }
 
     .card:active .avatarRingBase {
