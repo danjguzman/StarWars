@@ -3,10 +3,11 @@ import { FilmReelIcon } from "@phosphor-icons/react";
 import { TrainRegional as TrainRegionalIcon, Users as UsersIcon } from "phosphor-react";
 import ContentTemplate from "@components/Modal/ContentTemplate";
 import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Vehicle } from "@types";
+import { getEntityImageSources } from "@utils/assets";
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
 import { useResolvedResourceNames } from "@utils/useResolvedResourceNames";
-import { resourceRoutePathFromUrl } from "@utils/swapi";
+import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
 import { useNavigate } from "react-router-dom";
 
 interface VehicleModalContentProps {
@@ -25,6 +26,8 @@ export default function VehicleModalContent({
     onNext,
 }: VehicleModalContentProps) {
     const navigate = useNavigate();
+    const vehicleId = resourceIdFromUrl(vehicle.url);
+    const artworkSources = useMemo(() => getEntityImageSources("vehicles", vehicleId), [vehicleId]);
 
     const openRelatedItem = useCallback((item: { url: string }) => {
         const routePath = resourceRoutePathFromUrl(item.url);
@@ -72,7 +75,7 @@ export default function VehicleModalContent({
     return (
         <ContentTemplate
             title={vehicle.name}
-            imageSrc={null}
+            imageSources={artworkSources}
             imageAlt={`${vehicle.name} artwork`}
             imageFallback={<TrainRegionalIcon size={148} weight="duotone" color="var(--mantine-color-gray-4)" />}
             traits={traits}

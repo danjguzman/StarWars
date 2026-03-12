@@ -67,7 +67,7 @@ describe('App preload flow', () => {
 
         expect(await screen.findByText('Loading Galactic Archives')).toBeInTheDocument();
         expect(screen.getByRole('status')).toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: 'Retry preload' })).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Retry' })).not.toBeInTheDocument();
 
         await act(async () => {
             jest.advanceTimersByTime(10000);
@@ -84,12 +84,12 @@ describe('App preload flow', () => {
 
         renderApp();
 
-        expect(await screen.findByText(/We couldn't prepare the Star Wars archive/i)).toBeInTheDocument();
+        expect(await screen.findByText(/We couldn't prepare/i)).toBeInTheDocument();
 
         const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-        await user.click(screen.getByRole('button', { name: 'Retry preload' }));
+        await user.click(screen.getByRole('button', { name: 'Retry' }));
 
-        expect(screen.queryByText(/We couldn't prepare the Star Wars archive/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/We couldn't prepare/i)).not.toBeInTheDocument();
         expect(screen.getByText('Loading Galactic Archives')).toBeInTheDocument();
 
         await waitFor(() => expect(mockedPreloadSwapiData).toHaveBeenCalledTimes(2));
@@ -114,7 +114,7 @@ describe('App preload flow', () => {
             jest.advanceTimersByTime(15000);
         });
 
-        expect(await screen.findByText(/The Star Wars API timed out after 15 seconds/i)).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: 'Retry preload' })).toBeInTheDocument();
+        expect(await screen.findByText(/timed out/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
     });
 });

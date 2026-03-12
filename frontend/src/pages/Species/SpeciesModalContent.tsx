@@ -3,10 +3,11 @@ import { FilmReelIcon } from "@phosphor-icons/react";
 import { Alien as AlienIcon, Planet as PlanetIcon, Users as UsersIcon } from "phosphor-react";
 import ContentTemplate from "@components/Modal/ContentTemplate";
 import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Species } from "@types";
+import { getEntityImageSources } from "@utils/assets";
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
 import { useResolvedResourceNames } from "@utils/useResolvedResourceNames";
-import { resourceRoutePathFromUrl } from "@utils/swapi";
+import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
 import { useNavigate } from "react-router-dom";
 
 interface SpeciesModalContentProps {
@@ -25,6 +26,8 @@ export default function SpeciesModalContent({
     onNext,
 }: SpeciesModalContentProps) {
     const navigate = useNavigate();
+    const speciesId = resourceIdFromUrl(species.url);
+    const artworkSources = useMemo(() => getEntityImageSources("species", speciesId), [speciesId]);
     const homeworldUrls = species.homeworld ? [species.homeworld] : [];
 
     const openRelatedItem = useCallback((item: { url: string }) => {
@@ -83,7 +86,7 @@ export default function SpeciesModalContent({
     return (
         <ContentTemplate
             title={species.name}
-            imageSrc={null}
+            imageSources={artworkSources}
             imageAlt={`${species.name} artwork`}
             imageFallback={<AlienIcon size={148} weight="duotone" color="var(--mantine-color-gray-4)" />}
             traits={traits}

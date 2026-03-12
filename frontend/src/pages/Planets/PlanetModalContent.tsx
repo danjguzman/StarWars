@@ -3,10 +3,11 @@ import { FilmReelIcon } from "@phosphor-icons/react";
 import { Planet as PlanetIcon, Users as UsersIcon } from "phosphor-react";
 import ContentTemplate from "@components/Modal/ContentTemplate";
 import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Planet } from "@types";
+import { getEntityImageSources } from "@utils/assets";
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
 import { useResolvedResourceNames } from "@utils/useResolvedResourceNames";
-import { resourceRoutePathFromUrl } from "@utils/swapi";
+import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
 import { useNavigate } from "react-router-dom";
 
 interface PlanetModalContentProps {
@@ -25,6 +26,8 @@ export default function PlanetModalContent({
     onNext,
 }: PlanetModalContentProps) {
     const navigate = useNavigate();
+    const planetId = resourceIdFromUrl(planet.url);
+    const artworkSources = useMemo(() => getEntityImageSources("planets", planetId), [planetId]);
 
     const openRelatedItem = useCallback((item: { url: string }) => {
         const routePath = resourceRoutePathFromUrl(item.url);
@@ -72,7 +75,7 @@ export default function PlanetModalContent({
     return (
         <ContentTemplate
             title={planet.name}
-            imageSrc={null}
+            imageSources={artworkSources}
             imageAlt={`${planet.name} artwork`}
             imageFallback={<PlanetIcon size={148} weight="duotone" color="var(--mantine-color-gray-4)" />}
             traits={traits}

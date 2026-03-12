@@ -3,10 +3,11 @@ import { FilmReelIcon } from "@phosphor-icons/react";
 import { FlyingSaucer as FlyingSaucerIcon, Users as UsersIcon } from "phosphor-react";
 import ContentTemplate from "@components/Modal/ContentTemplate";
 import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Starship } from "@types";
+import { getEntityImageSources } from "@utils/assets";
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
 import { useResolvedResourceNames } from "@utils/useResolvedResourceNames";
-import { resourceRoutePathFromUrl } from "@utils/swapi";
+import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
 import { useNavigate } from "react-router-dom";
 
 interface StarshipModalContentProps {
@@ -25,6 +26,8 @@ export default function StarshipModalContent({
     onNext,
 }: StarshipModalContentProps) {
     const navigate = useNavigate();
+    const starshipId = resourceIdFromUrl(starship.url);
+    const artworkSources = useMemo(() => getEntityImageSources("starships", starshipId), [starshipId]);
 
     const openRelatedItem = useCallback((item: { url: string }) => {
         const routePath = resourceRoutePathFromUrl(item.url);
@@ -72,7 +75,7 @@ export default function StarshipModalContent({
     return (
         <ContentTemplate
             title={starship.name}
-            imageSrc={null}
+            imageSources={artworkSources}
             imageAlt={`${starship.name} artwork`}
             imageFallback={<FlyingSaucerIcon size={148} weight="duotone" color="var(--mantine-color-gray-4)" />}
             traits={traits}

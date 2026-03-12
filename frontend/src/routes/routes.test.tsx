@@ -61,9 +61,14 @@ describe('homeRoutes', () => {
         window.scrollTo = originalScrollTo;
     });
 
+    test('redirects the root route to films', async () => {
+        renderHomeRoutes('/');
+        expect(await screen.findByText('Films page')).toBeInTheDocument();
+    });
+
     test('loads the matching section page after clicking a header route', async () => {
         const user = userEvent.setup();
-        renderHomeRoutes('/');
+        renderHomeRoutes('/films');
         await user.click(screen.getByRole('link', { name: 'Films' }));
         expect(await screen.findByText('Films page')).toBeInTheDocument();
     });

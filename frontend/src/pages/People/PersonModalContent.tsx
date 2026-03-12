@@ -8,7 +8,7 @@ import {
 import { FilmReelIcon } from "@phosphor-icons/react";
 import ContentTemplate from "@components/Modal/ContentTemplate";
 import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Person } from "@types";
-import { ASSET_IMAGE_BASE_PATH } from "@utils/consts";
+import { getEntityImageSources } from "@utils/assets";
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
 import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
@@ -32,13 +32,13 @@ export default function PersonModalContent({
 }: PersonModalContentProps) {
     const navigate = useNavigate();
     const personId = resourceIdFromUrl(person.url);
+    const portraitSources = useMemo(() => getEntityImageSources("people", personId), [personId]);
 
     const openRelatedItem = useCallback((item: { url: string }) => {
         const routePath = resourceRoutePathFromUrl(item.url);
         if (!routePath) return;
         navigate(routePath);
     }, [navigate]);
-    const portraitSrc = personId ? `${ASSET_IMAGE_BASE_PATH}/people/${personId}.jpg` : null;
 
     /* Combine all related resource URLs into one list so they can be resolved once. */
     const relatedResourceUrls = useMemo(() => {
@@ -108,7 +108,7 @@ export default function PersonModalContent({
     return (
         <ContentTemplate
             title={person.name}
-            imageSrc={portraitSrc}
+            imageSources={portraitSources}
             imageAlt={`${person.name} portrait`}
             traits={traits}
             relatedGroups={relatedGroups}

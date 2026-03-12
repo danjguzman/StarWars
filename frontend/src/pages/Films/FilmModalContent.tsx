@@ -9,10 +9,11 @@ import {
 import { FilmReelIcon } from "@phosphor-icons/react";
 import ContentTemplate from "@components/Modal/ContentTemplate";
 import { type ContentTemplateRelatedGroup, type ContentTemplateTrait, type Film } from "@types";
+import { getEntityImageSources } from "@utils/assets";
 import { formatDisplayValue } from "@utils/display";
 import { collectRelatedResourceUrls, resolveResourceItems } from "@utils/resourceResolve";
 import { useResolvedResourceNames } from "@utils/useResolvedResourceNames";
-import { resourceRoutePathFromUrl } from "@utils/swapi";
+import { resourceIdFromUrl, resourceRoutePathFromUrl } from "@utils/swapi";
 import { useNavigate } from "react-router-dom";
 
 interface FilmModalContentProps {
@@ -31,6 +32,8 @@ export default function FilmModalContent({
     onNext,
 }: FilmModalContentProps) {
     const navigate = useNavigate();
+    const filmId = resourceIdFromUrl(film.url);
+    const artworkSources = useMemo(() => getEntityImageSources("films", filmId), [filmId]);
 
     const openRelatedItem = useCallback((item: { url: string }) => {
         const routePath = resourceRoutePathFromUrl(item.url);
@@ -102,7 +105,7 @@ export default function FilmModalContent({
     return (
         <ContentTemplate
             title={film.title}
-            imageSrc={null}
+            imageSources={artworkSources}
             imageAlt={`${film.title} artwork`}
             imageFallback={<FilmReelIcon size={148} weight="duotone" color="var(--mantine-color-gray-4)" />}
             traits={traits}

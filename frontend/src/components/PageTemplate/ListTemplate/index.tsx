@@ -12,11 +12,11 @@ import {
 } from "phosphor-react";
 import { FilmReelIcon } from "@phosphor-icons/react";
 import {
-    ASSET_IMAGE_BASE_PATH,
     TILE_AVATAR_SIZE,
     TILE_HEIGHT,
     TILE_MIN_WIDTH,
 } from "@utils/consts";
+import { getEntityImageSources } from "@utils/assets";
 import { resourceIdFromUrl } from "@utils/swapi";
 import InfiniteScrollSentinel from "@components/InfiniteScrollSentinel";
 import { useInfiniteScroll } from "@utils/useInfiniteScroll";
@@ -63,6 +63,7 @@ export default function ListTemplate<TItem extends { url: string }>({
 }: ListTemplateProps<TItem>) {
     const [missingImageByUrl, setMissingImageByUrl] = useState<Record<string, boolean>>({});
     const [loadedImageByUrl, setLoadedImageByUrl] = useState<Record<string, boolean>>({});
+    const [imageSourceIndexByUrl, setImageSourceIndexByUrl] = useState<Record<string, number>>({});
     const fallbackIcon = fallbackIconByEntityKey(entityKey);
     const showInitialLoading = loading && items.length === 0;
     const sentinelRef = useInfiniteScroll({
@@ -77,11 +78,10 @@ export default function ListTemplate<TItem extends { url: string }>({
         return `list-ring-gradient-${item.url.replace(/[^a-zA-Z0-9-_]/g, "-")}`;
     }
 
-    /* Get item avatars. */
-    function getItemImageSrc(item: TItem) {
+    /* Get all supported image variants for this resource card. */
+    function getItemImageSources(item: TItem) {
         const itemId = resourceIdFromUrl(item.url);
-        if (!itemId)return null;
-        return `${ASSET_IMAGE_BASE_PATH}/${entityKey}/${itemId}.jpg`;
+        return getEntityImageSources(entityKey, itemId);
     }
 
     /* Get item label/name, or defauled to "unknown" since SWAPI does have some missing data. */
@@ -110,7 +110,9 @@ export default function ListTemplate<TItem extends { url: string }>({
                 {items.map((item) => {
                     const itemKey = item.url;
                     const itemLabel = getItemLabel(item);
-                    const imageSrc = getItemImageSrc(item);
+                    const imageSources = getItemImageSources(item);
+                    const imageSourceIndex = imageSourceIndexByUrl[item.url] ?? 0;
+                    const imageSrc = imageSources[imageSourceIndex] ?? null;
                     const imageMissing = !imageSrc || Boolean(missingImageByUrl[item.url]);
                     const imageLoaded = Boolean(loadedImageByUrl[item.url]) && !imageMissing;
                     const ringGradientId = getRingGradientId(item);
@@ -193,10 +195,21 @@ export default function ListTemplate<TItem extends { url: string }>({
                                                     }));
                                                 }}
                                                 onError={() => {
+                                                    const nextImageSourceIndex = imageSourceIndex + 1;
+
                                                     setLoadedImageByUrl((prev) => ({
                                                         ...prev,
                                                         [item.url]: false,
                                                     }));
+
+                                                    if (nextImageSourceIndex < imageSources.length) {
+                                                        setImageSourceIndexByUrl((prev) => ({
+                                                            ...prev,
+                                                            [item.url]: nextImageSourceIndex,
+                                                        }));
+                                                        return;
+                                                    }
+
                                                     setMissingImageByUrl((prev) => ({
                                                         ...prev,
                                                         [item.url]: true,

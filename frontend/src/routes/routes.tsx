@@ -1,7 +1,7 @@
-import { Route } from "react-router-dom";
+import { Navigate, Route } from "react-router-dom";
 import NotFound from "@components/NotFound";
 import FilmsPage from "@pages/Films";
-import HomeLayout, { HomePage, HomeSectionPage } from "@pages/Home";
+import HomeLayout, { HomeSectionPage } from "@pages/Home";
 import PlanetsPage from "@pages/Planets";
 import PeoplePage from "@pages/People";
 import SpeciesPage from "@pages/Species";
@@ -13,7 +13,7 @@ const IMPLEMENTED_BROWSE_ROUTES = new Set(["films", "people", "planets", "specie
 
 export const homeRoutes = (
     <Route element={<HomeLayout />}>
-        <Route index element={<HomePage />} />
+        <Route index element={<Navigate to="/films" replace />} />
         <Route path="films" element={<FilmsPage />} />
         <Route path="films/:filmId" element={<FilmsPage />} />
         <Route path="people" element={<PeoplePage />} />

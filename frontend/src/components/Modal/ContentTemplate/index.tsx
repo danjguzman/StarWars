@@ -1,4 +1,4 @@
-import { type ReactNode } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 import { Box, Flex, Group, Text } from "@mantine/core";
 import { useMediaQuery } from "@mantine/hooks";
 import { CaretLeft, CaretRight, UserCircle } from "phosphor-react";
@@ -8,7 +8,8 @@ import styles from "./index.module.css";
 
 interface ContentTemplateProps {
     title: string;
-    imageSrc: string | null;
+    imageSrc?: string | null;
+    imageSources?: string[];
     imageAlt: string;
     traits: ContentTemplateTrait[];
     relatedGroups: ContentTemplateRelatedGroup[];
@@ -20,6 +21,7 @@ interface ContentTemplateProps {
 export default function ContentTemplate({
     title,
     imageSrc,
+    imageSources,
     imageAlt,
     traits,
     relatedGroups,
@@ -30,6 +32,25 @@ export default function ContentTemplate({
     const useCompactHeightLayout = useMediaQuery("(max-height: 939px) and (min-width: 721px)");
     const useUltraCompactLandscapeLayout = useMediaQuery("(max-height: 420px) and (orientation: landscape)");
     const fallbackMarkup = imageFallback ?? <UserCircle size={148} color="var(--mantine-color-gray-4)" />;
+    const resolvedImageSources = useMemo(() => {
+        if (imageSources && imageSources.length > 0) return imageSources;
+        return imageSrc ? [imageSrc] : [];
+    }, [imageSources, imageSrc]);
+    const imageSourcesKey = resolvedImageSources.join("|");
+    const [imageSourceIndex, setImageSourceIndex] = useState(0);
+    const activeImageSrc = resolvedImageSources[imageSourceIndex] ?? null;
+
+    useEffect(() => {
+        setImageSourceIndex(0);
+    }, [imageSourcesKey]);
+
+    const handleImageError = () => {
+        setImageSourceIndex((currentIndex) => {
+            const nextImageSourceIndex = currentIndex + 1;
+            if (nextImageSourceIndex < resolvedImageSources.length) return nextImageSourceIndex;
+            return resolvedImageSources.length;
+        });
+    };
 
     /* Render the trait rows that appear in the details card. */
     const renderTraitsGrid = () => (
@@ -99,8 +120,8 @@ export default function ContentTemplate({
                         {/* Show the main image or the fallback artwork. */}
                         <Box className={styles.heroColumn}>
                             <Box className={`${styles.heroFrame} ${styles.heroFrameCompact}`}>
-                                {imageSrc ? (
-                                    <img src={imageSrc} alt={imageAlt} className={styles.heroImage} />
+                                {activeImageSrc ? (
+                                    <img src={activeImageSrc} alt={imageAlt} className={styles.heroImage} onError={handleImageError} />
                                 ) : (
                                     <Box className={styles.heroFallback}>
                                         {fallbackMarkup}
@@ -132,8 +153,8 @@ export default function ContentTemplate({
                             {/* Show the main image or the fallback artwork. */}
                             <Box className={styles.heroColumn}>
                                 <Box className={styles.heroFrame}>
-                                    {imageSrc ? (
-                                        <img src={imageSrc} alt={imageAlt} className={styles.heroImage} />
+                                    {activeImageSrc ? (
+                                        <img src={activeImageSrc} alt={imageAlt} className={styles.heroImage} onError={handleImageError} />
                                     ) : (
                                         <Box className={styles.heroFallback}>
                                             {fallbackMarkup}

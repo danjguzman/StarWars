@@ -64,7 +64,7 @@ describe('ListTemplate', () => {
         });
     });
 
-    test('replaces broken portraits with the fallback state and wires the done button to scroll to top', async () => {
+    test('tries png assets before falling back and wires the done button to scroll to top', async () => {
         const user = userEvent.setup();
         const items = [{ url: 'https://swapi.info/api/people/1', name: 'Luke Skywalker' }];
 
@@ -82,12 +82,38 @@ describe('ListTemplate', () => {
         expect(portrait).toBeInTheDocument();
         fireEvent.error(portrait);
 
+        expect(screen.getByAltText('Luke Skywalker portrait')).toHaveAttribute('src', '/assets/img/people/1.png');
+
+        fireEvent.error(screen.getByAltText('Luke Skywalker portrait'));
+
         await waitFor(() => {
             expect(screen.queryByAltText('Luke Skywalker portrait')).not.toBeInTheDocument();
         });
 
         await user.click(screen.getByRole('button', { name: 'Scroll to top' }));
         expect(window.scrollTo).toHaveBeenCalledWith({ top: 0, behavior: 'smooth' });
+    });
+
+    test('loads film artwork from png when jpg is unavailable', () => {
+        const items = [{ url: 'https://swapi.info/api/films/1', title: 'A New Hope' }];
+
+        renderWithMantine(
+            <ListTemplate
+                items={items}
+                entityKey="films"
+                labelKey="title"
+                onLoadMore={jest.fn()}
+                hasMore={false}
+                loadingMore={false}
+            />
+        );
+
+        const artwork = screen.getByAltText('A New Hope portrait');
+        expect(artwork).toHaveAttribute('src', '/assets/img/films/1.jpg');
+
+        fireEvent.error(artwork);
+
+        expect(screen.getByAltText('A New Hope portrait')).toHaveAttribute('src', '/assets/img/films/1.png');
     });
 
     test('keeps portraits hidden until they finish loading so missing images never flash alt text', () => {
