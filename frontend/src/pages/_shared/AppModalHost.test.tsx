@@ -1,12 +1,12 @@
 import { MantineProvider } from '@mantine/core';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import AppModalHost from '@pages/_shared/AppModalHost';
+import { getPreloadedCollection } from '@services/preloadService';
 import { useFilmsStore } from '@stores/filmsStore';
 import { useModalStackStore } from '@stores/modalStackStore';
 import { usePeopleStore } from '@stores/peopleStore';
-import { getPreloadedCollection } from '@services/preloadService';
-import { MemoryRouter, Route, Routes, useNavigate } from 'react-router-dom';
+import { MemoryRouter } from 'react-router-dom';
 
 jest.mock('@stores/peopleStore', () => ({
     usePeopleStore: jest.fn(),
@@ -18,16 +18,6 @@ jest.mock('@stores/filmsStore', () => ({
 
 jest.mock('@services/preloadService', () => ({
     getPreloadedCollection: jest.fn(() => null),
-}));
-
-jest.mock('@pages/People/PersonModalContent', () => ({
-    __esModule: true,
-    default: ({ person }: { person: { name: string } }) => <div>{person.name} content</div>,
-}));
-
-jest.mock('@pages/Films/FilmModalContent', () => ({
-    __esModule: true,
-    default: ({ film }: { film: { title: string } }) => <div>{film.title} content</div>,
 }));
 
 const mockedUsePeopleStore = jest.mocked(usePeopleStore);
@@ -44,8 +34,8 @@ function createPerson(id: number, name: string) {
         eye_color: 'blue',
         birth_year: '19BBY',
         gender: 'male',
-        homeworld: 'https://swapi.info/api/planets/1',
-        films: [],
+        homeworld: '',
+        films: ['https://swapi.info/api/films/1'],
         species: [],
         vehicles: [],
         starships: [],
@@ -72,16 +62,6 @@ function createFilm(id: number, title: string) {
         edited: '2026-01-01T00:00:00.000Z',
         url: `https://swapi.info/api/films/${id}`,
     };
-}
-
-function RouteControls() {
-    const navigate = useNavigate();
-
-    return (
-        <button type="button" onClick={() => navigate('/films/1')}>
-            Open related film
-        </button>
-    );
 }
 
 describe('AppModalHost', () => {
@@ -116,19 +96,18 @@ describe('AppModalHost', () => {
         render(
             <MantineProvider>
                 <MemoryRouter initialEntries={['/people/1']}>
-                    <Routes>
-                        <Route path="*" element={<RouteControls />} />
-                    </Routes>
                     <AppModalHost />
                 </MemoryRouter>
             </MantineProvider>
         );
 
-        expect(await screen.findByRole('dialog', { name: 'Luke Skywalker details' })).toBeInTheDocument();
+        const personDialog = await screen.findByRole('dialog', { name: 'Luke Skywalker details' });
+        expect(within(personDialog).getByText('Height')).toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', { name: 'Open related film' }));
+        await user.click(screen.getByRole('button', { name: 'Open Films' }));
 
-        expect(await screen.findByRole('dialog', { name: 'A New Hope details' })).toBeInTheDocument();
+        const filmDialog = await screen.findByRole('dialog', { name: 'A New Hope details' });
+        expect(within(filmDialog).getByText('Episode')).toBeInTheDocument();
         expect(screen.getAllByRole('dialog')).toHaveLength(2);
 
         await act(async () => {

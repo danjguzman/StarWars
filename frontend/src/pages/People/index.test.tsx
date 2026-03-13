@@ -1,57 +1,26 @@
 import { MantineProvider } from '@mantine/core';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import People from '@pages/People';
 import AppModalHost from '@pages/_shared/AppModalHost';
 import { useModalStackStore } from '@stores/modalStackStore';
 import { usePeopleStore } from '@stores/peopleStore';
-import { getCachedValue } from '@utils/clientCache';
-import { act } from 'react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { clearResourceCaches, createHookStore } from '../../test/resourceTestUtils';
 
 jest.mock('@stores/peopleStore', () => ({
     usePeopleStore: jest.fn(),
-}));
-
-jest.mock('@utils/clientCache', () => ({
-    getCachedValue: jest.fn(),
 }));
 
 jest.mock('@utils/layout', () => ({
     estimateInitialTargetCount: jest.fn(() => 12),
 }));
 
-jest.mock('@components/PageTemplate/ListTemplate', () => ({
-    __esModule: true,
-    default: ({ items, loading, onItemClick }: { items: Array<{ url: string; name: string }>; loading?: boolean; onItemClick?: (selection: { item: { url: string; name: string }; label: string }) => void }) => (
-        <div>
-            {loading ? <div data-testid="list-loading">Loading</div> : null}
-            {items.map((item) => (
-                <button
-                    key={item.url}
-                    type="button"
-                    onClick={() => onItemClick?.({ item, label: item.name })}
-                >
-                    Open {item.name}
-                </button>
-            ))}
-        </div>
-    ),
-}));
-
-jest.mock('@pages/People/PersonModalContent', () => ({
-    __esModule: true,
-    default: ({ person, onPrev, onNext }: { person: { name: string }; onPrev: () => void; onNext: () => void }) => (
-        <div>
-            <div>{person.name} content</div>
-            <button type="button" onClick={onPrev}>Prev person</button>
-            <button type="button" onClick={onNext}>Next person</button>
-        </div>
-    ),
+jest.mock('@utils/useInfiniteScroll', () => ({
+    useInfiniteScroll: jest.fn(() => ({ current: null })),
 }));
 
 const mockedUsePeopleStore = jest.mocked(usePeopleStore);
-const mockedGetCachedValue = jest.mocked(getCachedValue);
 
 function createPerson(id: number, name: string) {
     return {
@@ -63,7 +32,7 @@ function createPerson(id: number, name: string) {
         eye_color: 'blue',
         birth_year: '19BBY',
         gender: 'male',
-        homeworld: 'https://swapi.info/api/planets/1',
+        homeworld: '',
         films: [],
         species: [],
         vehicles: [],
@@ -94,71 +63,75 @@ function renderPeoplePage(initialEntry: string) {
     );
 }
 
-describe('People page modal behavior', () => {
+describe('People page behavior', () => {
     const people = [
         createPerson(1, 'Luke Skywalker'),
         createPerson(2, 'Leia Organa'),
         createPerson(3, 'Han Solo'),
     ];
 
-    beforeEach(() => {
-        const fetchPeople = jest.fn();
-        mockedUsePeopleStore.mockReturnValue({
+    afterEach(() => {
+        act(() => {
+            useModalStackStore.getState().resetStack();
+        });
+        clearResourceCaches();
+        jest.clearAllMocks();
+        jest.useRealTimers();
+    });
+
+    test('opens the real person modal from the grid and cycles through loaded people', async () => {
+        const peopleStore = createHookStore({
             people,
             loading: false,
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
-            hasMore: true,
-            fetchPeople,
+            hasMore: false,
+            fetchPeople: jest.fn(async () => undefined),
         } as ReturnType<typeof usePeopleStore>);
-        mockedGetCachedValue.mockImplementation((key) => (key === 'people:all' ? people : null));
-    });
+        mockedUsePeopleStore.mockImplementation(() => peopleStore.useStore());
 
-    afterEach(() => {
-        act(() => {
-            useModalStackStore.getState().resetStack();
-        });
-        jest.clearAllMocks();
-        jest.useRealTimers();
-    });
-
-    test('opens the modal from the list and closes back to the list route', async () => {
         const user = userEvent.setup();
         renderPeoplePage('/people');
+
         await user.click(screen.getByRole('button', { name: 'Open Luke Skywalker' }));
+
+        const personDialog = await screen.findByRole('dialog', { name: 'Luke Skywalker details' });
+        expect(within(personDialog).getByText('Height')).toBeInTheDocument();
+        expect(within(personDialog).getByText('Luke Skywalker')).toBeInTheDocument();
+        expect(within(personDialog).getByText('1 / 3')).toBeInTheDocument();
         expect(screen.getByTestId('location-display')).toHaveTextContent('/people/1');
-        expect(screen.getByRole('dialog', { name: 'Luke Skywalker details' })).toBeInTheDocument();
-        await user.click(screen.getByRole('button', { name: 'Close modal' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/people');
+
+        await user.click(screen.getByRole('button', { name: 'Previous item' }));
+
+        expect(await screen.findByRole('dialog', { name: 'Han Solo details' })).toBeInTheDocument();
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/people/3');
+
+        await user.click(screen.getByRole('button', { name: 'Next item' }));
+
+        expect(await screen.findByRole('dialog', { name: 'Luke Skywalker details' })).toBeInTheDocument();
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/people/1');
     });
 
-    test('uses only the loaded people store list for previous and next modal navigation', async () => {
-        const user = userEvent.setup();
-        const fetchPeople = jest.fn();
+    test('shows an error alert and recovers back to the real people grid after retry', async () => {
+        let skipInitialRequest = true;
+        let peopleStore: any;
+        const fetchPeople = jest.fn(async () => {
+            if (skipInitialRequest) {
+                skipInitialRequest = false;
+                return;
+            }
 
-        mockedUsePeopleStore.mockReturnValue({
-            people: people.slice(0, 2),
-            loading: false,
-            loadingMore: false,
-            error: null,
-            lastFailedRequestMode: null,
-            hasMore: true,
-            fetchPeople,
-        } as ReturnType<typeof usePeopleStore>);
-        mockedGetCachedValue.mockImplementation((key) => (key === 'people:all' ? people : null));
+            peopleStore.setState((currentState: ReturnType<typeof usePeopleStore>) => ({
+                ...currentState,
+                people,
+                error: null,
+                lastFailedRequestMode: null,
+                hasMore: false,
+            }));
+        });
 
-        renderPeoplePage('/people/1');
-        await user.click(screen.getByRole('button', { name: 'Prev person' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/people/2');
-        await user.click(screen.getByRole('button', { name: 'Next person' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/people/1');
-        expect(fetchPeople).not.toHaveBeenCalledWith({ nextPage: true });
-    });
-
-    test('shows a retry action when the initial people load fails', async () => {
-        const fetchPeople = jest.fn();
-        mockedUsePeopleStore.mockReturnValue({
+        peopleStore = createHookStore({
             people: [],
             loading: false,
             loadingMore: false,
@@ -167,32 +140,35 @@ describe('People page modal behavior', () => {
             hasMore: true,
             fetchPeople,
         } as ReturnType<typeof usePeopleStore>);
-        mockedGetCachedValue.mockReturnValue(null);
+        mockedUsePeopleStore.mockImplementation(() => peopleStore.useStore());
 
         const user = userEvent.setup();
         renderPeoplePage('/people');
 
-        expect(screen.getByRole('alert', { name: "Couldn't load the People archive" })).toBeInTheDocument();
+        expect(await screen.findByRole('alert', { name: "Couldn't load the People archive" })).toBeInTheDocument();
+
         await user.click(screen.getByRole('button', { name: 'Retry loading people' }));
 
-        expect(fetchPeople).toHaveBeenCalledWith({ targetCount: 12 });
+        await waitFor(() => {
+            expect(screen.queryByRole('alert', { name: "Couldn't load the People archive" })).not.toBeInTheDocument();
+        });
+        expect(screen.getByRole('button', { name: 'Open Luke Skywalker' })).toBeInTheDocument();
     });
 
-    test('debounces local search results and opens the selected person modal', async () => {
+    test('debounces search results, shows the empty state, and opens the selected person', async () => {
         jest.useFakeTimers();
-        const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-
-        mockedUsePeopleStore.mockReturnValue({
+        const peopleStore = createHookStore({
             people: people.slice(0, 2),
             loading: false,
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
-            hasMore: true,
-            fetchPeople: jest.fn(),
+            hasMore: false,
+            fetchPeople: jest.fn(async () => undefined),
         } as ReturnType<typeof usePeopleStore>);
-        mockedGetCachedValue.mockReturnValue(null);
+        mockedUsePeopleStore.mockImplementation(() => peopleStore.useStore());
 
+        const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
         renderPeoplePage('/people');
 
         await user.type(screen.getByRole('textbox', { name: 'Search people' }), 'han');
@@ -210,7 +186,6 @@ describe('People page modal behavior', () => {
         await user.clear(screen.getByRole('textbox', { name: 'Search people' }));
         await user.type(screen.getByRole('textbox', { name: 'Search people' }), 'lei');
 
-        expect(screen.getByRole('listbox', { name: 'Search people results' })).toBeInTheDocument();
         expect(screen.getByText('Updating results...')).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'Leia Organa' })).not.toBeInTheDocument();
 
@@ -220,7 +195,8 @@ describe('People page modal behavior', () => {
 
         await user.click(await screen.findByRole('button', { name: 'Leia Organa' }));
 
+        expect(screen.queryByRole('listbox', { name: 'Search people results' })).not.toBeInTheDocument();
         expect(screen.getByTestId('location-display')).toHaveTextContent('/people/2');
-        expect(screen.getByRole('dialog', { name: 'Leia Organa details' })).toBeInTheDocument();
+        expect(await screen.findByRole('dialog', { name: 'Leia Organa details' })).toBeInTheDocument();
     });
 });

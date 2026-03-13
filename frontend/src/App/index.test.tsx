@@ -1,30 +1,49 @@
 import { MantineProvider } from '@mantine/core';
 import { act, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { type ReactNode } from 'react';
 import App from './index';
 import { preloadSwapiData } from '@services/preloadService';
+import { useFilmsStore } from '@stores/filmsStore';
 import { waitForMinimumLoading } from '@utils/loading';
 
 jest.mock('@services/preloadService', () => ({
     preloadSwapiData: jest.fn(),
 }));
 
+jest.mock('@stores/filmsStore', () => ({
+    useFilmsStore: jest.fn(),
+}));
+
 jest.mock('@utils/loading', () => ({
     waitForMinimumLoading: jest.fn(() => Promise.resolve()),
 }));
 
-jest.mock('@routes/AppRouter', () => ({
-    __esModule: true,
-    default: () => <div data-testid="home-routes">Home routes</div>,
-}));
-
-jest.mock('react-router-dom', () => ({
-    BrowserRouter: ({ children }: { children: ReactNode }) => <div data-testid="browser-router">{children}</div>,
+jest.mock('@utils/useInfiniteScroll', () => ({
+    useInfiniteScroll: jest.fn(() => ({ current: null })),
 }));
 
 const mockedPreloadSwapiData = jest.mocked(preloadSwapiData);
+const mockedUseFilmsStore = jest.mocked(useFilmsStore);
 const mockedWaitForMinimumLoading = jest.mocked(waitForMinimumLoading);
+
+function createFilm(id: number, title: string) {
+    return {
+        title,
+        episode_id: id,
+        opening_crawl: 'Opening crawl',
+        director: 'George Lucas',
+        producer: 'Gary Kurtz',
+        release_date: '1977-05-25',
+        characters: [],
+        planets: [],
+        starships: [],
+        vehicles: [],
+        species: [],
+        created: '2026-01-01T00:00:00.000Z',
+        edited: '2026-01-01T00:00:00.000Z',
+        url: `https://swapi.info/api/films/${id}`,
+    };
+}
 
 function renderApp() {
     return render(
@@ -38,15 +57,27 @@ describe('App preload flow', () => {
     beforeEach(() => {
         jest.useFakeTimers();
         jest.clearAllMocks();
+        window.history.pushState({}, '', '/');
         mockedWaitForMinimumLoading.mockResolvedValue(undefined);
+        mockedUseFilmsStore.mockReturnValue({
+            films: [createFilm(1, 'A New Hope')],
+            loading: false,
+            loadingMore: false,
+            error: null,
+            lastFailedRequestMode: null,
+            hasMore: false,
+            fetchFilms: jest.fn(async () => undefined),
+        } as ReturnType<typeof useFilmsStore>);
     });
 
-    afterEach(() => {
-        jest.runOnlyPendingTimers();
+    afterEach(async () => {
+        await act(async () => {
+            jest.runOnlyPendingTimers();
+        });
         jest.useRealTimers();
     });
 
-    test('reveals the app after preload succeeds', async () => {
+    test('reveals the real films route after preload succeeds', async () => {
         mockedPreloadSwapiData.mockResolvedValue(undefined);
 
         renderApp();
@@ -57,7 +88,10 @@ describe('App preload flow', () => {
             jest.advanceTimersByTime(320);
         });
 
-        expect(await screen.findByTestId('home-routes')).toBeInTheDocument();
+        expect(await screen.findByRole('heading', { name: 'Films' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Open A New Hope' })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'Go to Films' })).toBeInTheDocument();
+        expect(screen.queryByText('Loading Galactic Archives')).not.toBeInTheDocument();
     });
 
     test('keeps the preloader visible while preload is still waiting on the network', async () => {
@@ -74,10 +108,10 @@ describe('App preload flow', () => {
         });
 
         expect(screen.getByText('Loading Galactic Archives')).toBeInTheDocument();
-        expect(screen.queryByTestId('home-routes')).not.toBeInTheDocument();
+        expect(screen.queryByRole('heading', { name: 'Films' })).not.toBeInTheDocument();
     });
 
-    test('shows a retry action when preload fails and recovers on retry', async () => {
+    test('shows a retry action when preload fails and recovers back into the real app shell', async () => {
         mockedPreloadSwapiData
             .mockRejectedValueOnce(new Error('The network timed out'))
             .mockResolvedValueOnce(undefined);
@@ -98,7 +132,8 @@ describe('App preload flow', () => {
             jest.advanceTimersByTime(320);
         });
 
-        expect(await screen.findByTestId('home-routes')).toBeInTheDocument();
+        expect(await screen.findByRole('heading', { name: 'Films' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Open A New Hope' })).toBeInTheDocument();
     });
 
     test('shows a retryable error after a delayed preload timeout', async () => {
@@ -116,5 +151,6 @@ describe('App preload flow', () => {
 
         expect(await screen.findByText(/timed out/i)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Retry' })).toBeInTheDocument();
+        expect(screen.queryByRole('heading', { name: 'Films' })).not.toBeInTheDocument();
     });
 });

@@ -1,55 +1,26 @@
 import { MantineProvider } from '@mantine/core';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Planets from '@pages/Planets';
 import AppModalHost from '@pages/_shared/AppModalHost';
 import { useModalStackStore } from '@stores/modalStackStore';
 import { usePlanetsStore } from '@stores/planetsStore';
-import { getCachedValue } from '@utils/clientCache';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { clearResourceCaches, createHookStore } from '../../test/resourceTestUtils';
 
 jest.mock('@stores/planetsStore', () => ({
     usePlanetsStore: jest.fn(),
-}));
-
-jest.mock('@utils/clientCache', () => ({
-    getCachedValue: jest.fn(),
 }));
 
 jest.mock('@utils/layout', () => ({
     estimateInitialTargetCount: jest.fn(() => 12),
 }));
 
-jest.mock('@components/PageTemplate/ListTemplate', () => ({
-    __esModule: true,
-    default: ({ items, onItemClick }: { items: Array<{ url: string; name: string }>; onItemClick?: (selection: { item: { url: string; name: string }; label: string }) => void }) => (
-        <div>
-            {items.map((item) => (
-                <button
-                    key={item.url}
-                    type="button"
-                    onClick={() => onItemClick?.({ item, label: item.name })}
-                >
-                    Open {item.name}
-                </button>
-            ))}
-        </div>
-    ),
-}));
-
-jest.mock('@pages/Planets/PlanetModalContent', () => ({
-    __esModule: true,
-    default: ({ planet, onPrev, onNext }: { planet: { name: string }; onPrev: () => void; onNext: () => void }) => (
-        <div>
-            <div>{planet.name} content</div>
-            <button type="button" onClick={onPrev}>Prev planet</button>
-            <button type="button" onClick={onNext}>Next planet</button>
-        </div>
-    ),
+jest.mock('@utils/useInfiniteScroll', () => ({
+    useInfiniteScroll: jest.fn(() => ({ current: null })),
 }));
 
 const mockedUsePlanetsStore = jest.mocked(usePlanetsStore);
-const mockedGetCachedValue = jest.mocked(getCachedValue);
 
 function createPlanet(id: number, name: string) {
     return {
@@ -90,76 +61,74 @@ function renderPlanetsPage(initialEntry: string) {
     );
 }
 
-describe('Planets page modal behavior', () => {
+describe('Planets page behavior', () => {
     const planets = [
         createPlanet(1, 'Tatooine'),
         createPlanet(2, 'Alderaan'),
         createPlanet(3, 'Yavin IV'),
     ];
 
-    beforeEach(() => {
-        const fetchPlanets = jest.fn();
-        mockedUsePlanetsStore.mockReturnValue({
+    afterEach(() => {
+        act(() => {
+            useModalStackStore.getState().resetStack();
+        });
+        clearResourceCaches();
+        jest.clearAllMocks();
+    });
+
+    test('opens the real planet modal from the grid and cycles through loaded planets', async () => {
+        const planetsStore = createHookStore({
             planets,
             loading: false,
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
-            hasMore: true,
-            fetchPlanets,
+            hasMore: false,
+            fetchPlanets: jest.fn(async () => undefined),
         } as ReturnType<typeof usePlanetsStore>);
-        mockedGetCachedValue.mockImplementation((key) => (key === 'planets:all' ? planets : null));
-    });
+        mockedUsePlanetsStore.mockImplementation(() => planetsStore.useStore());
 
-    afterEach(() => {
-        act(() => {
-            useModalStackStore.getState().resetStack();
-        });
-        jest.clearAllMocks();
-    });
-
-    test('opens the modal from the list and closes back to the list route', async () => {
         const user = userEvent.setup();
         renderPlanetsPage('/planets');
 
         await user.click(screen.getByRole('button', { name: 'Open Tatooine' }));
 
+        const planetDialog = await screen.findByRole('dialog', { name: 'Tatooine details' });
+        expect(within(planetDialog).getByText('Climate')).toBeInTheDocument();
+        expect(within(planetDialog).getByText('temperate')).toBeInTheDocument();
+        expect(within(planetDialog).getByText('1 / 3')).toBeInTheDocument();
         expect(screen.getByTestId('location-display')).toHaveTextContent('/planets/1');
-        expect(screen.getByRole('dialog', { name: 'Tatooine details' })).toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', { name: 'Close modal' }));
+        await user.click(screen.getByRole('button', { name: 'Previous item' }));
 
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/planets');
+        expect(await screen.findByRole('dialog', { name: 'Yavin IV details' })).toBeInTheDocument();
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/planets/3');
+
+        await user.click(screen.getByRole('button', { name: 'Next item' }));
+
+        expect(await screen.findByRole('dialog', { name: 'Tatooine details' })).toBeInTheDocument();
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/planets/1');
     });
 
-    test('uses only the loaded planets store list for previous and next modal navigation', async () => {
-        const user = userEvent.setup();
-        const fetchPlanets = jest.fn();
+    test('shows an error alert and recovers back to the real planets grid after retry', async () => {
+        let skipInitialRequest = true;
+        let planetsStore: any;
+        const fetchPlanets = jest.fn(async () => {
+            if (skipInitialRequest) {
+                skipInitialRequest = false;
+                return;
+            }
 
-        mockedUsePlanetsStore.mockReturnValue({
-            planets: planets.slice(0, 2),
-            loading: false,
-            loadingMore: false,
-            error: null,
-            lastFailedRequestMode: null,
-            hasMore: true,
-            fetchPlanets,
-        } as ReturnType<typeof usePlanetsStore>);
-        mockedGetCachedValue.mockImplementation((key) => (key === 'planets:all' ? planets : null));
+            planetsStore.setState((currentState: ReturnType<typeof usePlanetsStore>) => ({
+                ...currentState,
+                planets,
+                error: null,
+                lastFailedRequestMode: null,
+                hasMore: false,
+            }));
+        });
 
-        renderPlanetsPage('/planets/1');
-
-        await user.click(screen.getByRole('button', { name: 'Prev planet' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/planets/2');
-
-        await user.click(screen.getByRole('button', { name: 'Next planet' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/planets/1');
-        expect(fetchPlanets).not.toHaveBeenCalledWith({ nextPage: true });
-    });
-
-    test('shows a retry action when the initial planets load fails', async () => {
-        const fetchPlanets = jest.fn();
-        mockedUsePlanetsStore.mockReturnValue({
+        planetsStore = createHookStore({
             planets: [],
             loading: false,
             loadingMore: false,
@@ -168,14 +137,18 @@ describe('Planets page modal behavior', () => {
             hasMore: true,
             fetchPlanets,
         } as ReturnType<typeof usePlanetsStore>);
-        mockedGetCachedValue.mockReturnValue(null);
+        mockedUsePlanetsStore.mockImplementation(() => planetsStore.useStore());
 
         const user = userEvent.setup();
         renderPlanetsPage('/planets');
 
-        expect(screen.getByRole('alert', { name: "Couldn't load the Planets archive" })).toBeInTheDocument();
+        expect(await screen.findByRole('alert', { name: "Couldn't load the Planets archive" })).toBeInTheDocument();
+
         await user.click(screen.getByRole('button', { name: 'Retry loading planets' }));
 
-        expect(fetchPlanets).toHaveBeenCalledWith({ targetCount: 12 });
+        await waitFor(() => {
+            expect(screen.queryByRole('alert', { name: "Couldn't load the Planets archive" })).not.toBeInTheDocument();
+        });
+        expect(screen.getByRole('button', { name: 'Open Tatooine' })).toBeInTheDocument();
     });
 });

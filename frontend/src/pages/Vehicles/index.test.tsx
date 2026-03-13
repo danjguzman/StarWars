@@ -1,56 +1,26 @@
 import { MantineProvider } from '@mantine/core';
-import { render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import VehiclesPage from '@pages/Vehicles';
 import AppModalHost from '@pages/_shared/AppModalHost';
 import { useModalStackStore } from '@stores/modalStackStore';
 import { useVehiclesStore } from '@stores/vehiclesStore';
-import { getCachedValue } from '@utils/clientCache';
-import { act } from 'react';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { clearResourceCaches, createHookStore } from '../../test/resourceTestUtils';
 
 jest.mock('@stores/vehiclesStore', () => ({
     useVehiclesStore: jest.fn(),
-}));
-
-jest.mock('@utils/clientCache', () => ({
-    getCachedValue: jest.fn(),
 }));
 
 jest.mock('@utils/layout', () => ({
     estimateInitialTargetCount: jest.fn(() => 12),
 }));
 
-jest.mock('@components/PageTemplate/ListTemplate', () => ({
-    __esModule: true,
-    default: ({ items, onItemClick }: { items: Array<{ url: string; name: string }>; onItemClick?: (selection: { item: { url: string; name: string }; label: string }) => void }) => (
-        <div>
-            {items.map((item) => (
-                <button
-                    key={item.url}
-                    type="button"
-                    onClick={() => onItemClick?.({ item, label: item.name })}
-                >
-                    Open {item.name}
-                </button>
-            ))}
-        </div>
-    ),
-}));
-
-jest.mock('@pages/Vehicles/VehicleModalContent', () => ({
-    __esModule: true,
-    default: ({ vehicle, onPrev, onNext }: { vehicle: { name: string }; onPrev: () => void; onNext: () => void }) => (
-        <div>
-            <div>{vehicle.name} content</div>
-            <button type="button" onClick={onPrev}>Prev vehicle</button>
-            <button type="button" onClick={onNext}>Next vehicle</button>
-        </div>
-    ),
+jest.mock('@utils/useInfiniteScroll', () => ({
+    useInfiniteScroll: jest.fn(() => ({ current: null })),
 }));
 
 const mockedUseVehiclesStore = jest.mocked(useVehiclesStore);
-const mockedGetCachedValue = jest.mocked(getCachedValue);
 
 function createVehicle(id: number, name: string) {
     return {
@@ -93,77 +63,75 @@ function renderVehiclesPage(initialEntry: string) {
     );
 }
 
-describe('Vehicles page modal behavior', () => {
+describe('Vehicles page behavior', () => {
     const vehicles = [
         createVehicle(1, 'Snowspeeder'),
         createVehicle(2, 'Sand Crawler'),
         createVehicle(3, 'AT-ST'),
     ];
 
-    beforeEach(() => {
-        const fetchVehicles = jest.fn();
-        mockedUseVehiclesStore.mockReturnValue({
+    afterEach(() => {
+        act(() => {
+            useModalStackStore.getState().resetStack();
+        });
+        clearResourceCaches();
+        jest.clearAllMocks();
+        jest.useRealTimers();
+    });
+
+    test('opens the real vehicle modal from the grid and cycles through loaded vehicles', async () => {
+        const vehiclesStore = createHookStore({
             vehicles,
             loading: false,
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
-            hasMore: true,
-            fetchVehicles,
+            hasMore: false,
+            fetchVehicles: jest.fn(async () => undefined),
         } as ReturnType<typeof useVehiclesStore>);
-        mockedGetCachedValue.mockImplementation((key) => (key === 'vehicles:all' ? vehicles : null));
-    });
+        mockedUseVehiclesStore.mockImplementation(() => vehiclesStore.useStore());
 
-    afterEach(() => {
-        act(() => {
-            useModalStackStore.getState().resetStack();
-        });
-        jest.clearAllMocks();
-        jest.useRealTimers();
-    });
-
-    test('opens the modal from the list and closes back to the list route', async () => {
         const user = userEvent.setup();
         renderVehiclesPage('/vehicles');
 
         await user.click(screen.getByRole('button', { name: 'Open Snowspeeder' }));
 
+        const vehicleDialog = await screen.findByRole('dialog', { name: 'Snowspeeder details' });
+        expect(within(vehicleDialog).getByText('Model')).toBeInTheDocument();
+        expect(within(vehicleDialog).getByText('Snowspeeder')).toBeInTheDocument();
+        expect(within(vehicleDialog).getByText('1 / 3')).toBeInTheDocument();
         expect(screen.getByTestId('location-display')).toHaveTextContent('/vehicles/1');
-        expect(screen.getByRole('dialog', { name: 'Snowspeeder details' })).toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', { name: 'Close modal' }));
+        await user.click(screen.getByRole('button', { name: 'Previous item' }));
 
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/vehicles');
+        expect(await screen.findByRole('dialog', { name: 'AT-ST details' })).toBeInTheDocument();
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/vehicles/3');
+
+        await user.click(screen.getByRole('button', { name: 'Next item' }));
+
+        expect(await screen.findByRole('dialog', { name: 'Snowspeeder details' })).toBeInTheDocument();
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/vehicles/1');
     });
 
-    test('uses only the loaded vehicles store list for previous and next modal navigation', async () => {
-        const user = userEvent.setup();
-        const fetchVehicles = jest.fn();
+    test('shows an error alert and recovers back to the real vehicles grid after retry', async () => {
+        let skipInitialRequest = true;
+        let vehiclesStore: any;
+        const fetchVehicles = jest.fn(async () => {
+            if (skipInitialRequest) {
+                skipInitialRequest = false;
+                return;
+            }
 
-        mockedUseVehiclesStore.mockReturnValue({
-            vehicles: vehicles.slice(0, 2),
-            loading: false,
-            loadingMore: false,
-            error: null,
-            lastFailedRequestMode: null,
-            hasMore: true,
-            fetchVehicles,
-        } as ReturnType<typeof useVehiclesStore>);
-        mockedGetCachedValue.mockImplementation((key) => (key === 'vehicles:all' ? vehicles : null));
+            vehiclesStore.setState((currentState: ReturnType<typeof useVehiclesStore>) => ({
+                ...currentState,
+                vehicles,
+                error: null,
+                lastFailedRequestMode: null,
+                hasMore: false,
+            }));
+        });
 
-        renderVehiclesPage('/vehicles/1');
-
-        await user.click(screen.getByRole('button', { name: 'Prev vehicle' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/vehicles/2');
-
-        await user.click(screen.getByRole('button', { name: 'Next vehicle' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/vehicles/1');
-        expect(fetchVehicles).not.toHaveBeenCalledWith({ nextPage: true });
-    });
-
-    test('shows a retry action when the initial vehicles load fails', async () => {
-        const fetchVehicles = jest.fn();
-        mockedUseVehiclesStore.mockReturnValue({
+        vehiclesStore = createHookStore({
             vehicles: [],
             loading: false,
             loadingMore: false,
@@ -172,35 +140,38 @@ describe('Vehicles page modal behavior', () => {
             hasMore: true,
             fetchVehicles,
         } as ReturnType<typeof useVehiclesStore>);
-        mockedGetCachedValue.mockReturnValue(null);
+        mockedUseVehiclesStore.mockImplementation(() => vehiclesStore.useStore());
 
         const user = userEvent.setup();
         renderVehiclesPage('/vehicles');
 
-        expect(screen.getByRole('alert', { name: "Couldn't load the Vehicles archive" })).toBeInTheDocument();
+        expect(await screen.findByRole('alert', { name: "Couldn't load the Vehicles archive" })).toBeInTheDocument();
+
         await user.click(screen.getByRole('button', { name: 'Retry loading vehicles' }));
 
-        expect(fetchVehicles).toHaveBeenCalledWith({ targetCount: 12 });
+        await waitFor(() => {
+            expect(screen.queryByRole('alert', { name: "Couldn't load the Vehicles archive" })).not.toBeInTheDocument();
+        });
+        expect(screen.getByRole('button', { name: 'Open Snowspeeder' })).toBeInTheDocument();
     });
 
-    test('debounces local vehicle search results and opens the selected result', async () => {
+    test('debounces search results, shows the empty state, and opens the selected vehicle', async () => {
         jest.useFakeTimers();
-        const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
-
-        mockedUseVehiclesStore.mockReturnValue({
+        const vehiclesStore = createHookStore({
             vehicles: vehicles.slice(0, 2),
             loading: false,
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
-            hasMore: true,
-            fetchVehicles: jest.fn(),
+            hasMore: false,
+            fetchVehicles: jest.fn(async () => undefined),
         } as ReturnType<typeof useVehiclesStore>);
-        mockedGetCachedValue.mockReturnValue(null);
+        mockedUseVehiclesStore.mockImplementation(() => vehiclesStore.useStore());
 
+        const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
         renderVehiclesPage('/vehicles');
 
-        await user.type(screen.getByRole('textbox', { name: 'Search vehicles' }), 'snow');
+        await user.type(screen.getByRole('textbox', { name: 'Search vehicles' }), 'walker');
 
         expect(screen.getByRole('listbox', { name: 'Search vehicles results' })).toBeInTheDocument();
         expect(screen.getByText('Updating results...')).toBeInTheDocument();
@@ -209,11 +180,23 @@ describe('Vehicles page modal behavior', () => {
             jest.advanceTimersByTime(250);
         });
 
-        expect(await screen.findByRole('button', { name: 'Snowspeeder' })).toBeInTheDocument();
+        expect(await screen.findByRole('listbox', { name: 'Search vehicles results' })).toBeInTheDocument();
+        expect(screen.getByText('No matching vehicles loaded on this page yet.')).toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', { name: 'Snowspeeder' }));
+        await user.clear(screen.getByRole('textbox', { name: 'Search vehicles' }));
+        await user.type(screen.getByRole('textbox', { name: 'Search vehicles' }), 'snow');
 
+        expect(screen.getByText('Updating results...')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Snowspeeder' })).not.toBeInTheDocument();
+
+        await act(async () => {
+            jest.advanceTimersByTime(250);
+        });
+
+        await user.click(await screen.findByRole('button', { name: 'Snowspeeder' }));
+
+        expect(screen.queryByRole('listbox', { name: 'Search vehicles results' })).not.toBeInTheDocument();
         expect(screen.getByTestId('location-display')).toHaveTextContent('/vehicles/1');
-        expect(screen.getByRole('dialog', { name: 'Snowspeeder details' })).toBeInTheDocument();
+        expect(await screen.findByRole('dialog', { name: 'Snowspeeder details' })).toBeInTheDocument();
     });
 });

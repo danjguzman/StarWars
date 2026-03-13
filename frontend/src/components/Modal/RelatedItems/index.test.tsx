@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { MantineProvider } from '@mantine/core';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import RelatedItems from '@components/Modal/RelatedItems';
 
@@ -13,11 +13,12 @@ describe('RelatedItems', () => {
         renderWithMantine(
             <RelatedItems label="Species" count={0} items={[]} icon={<span>icon</span>} />
         );
+
         expect(screen.getByText('Species')).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /species/i })).not.toBeInTheDocument();
     });
 
-    test('navigates directly when there is exactly one related item', async () => {
+    test('navigates directly when there is exactly one related item without opening a menu', async () => {
         const user = userEvent.setup();
         const onSelectItem = jest.fn();
 
@@ -32,10 +33,12 @@ describe('RelatedItems', () => {
         );
 
         await user.click(screen.getByRole('button', { name: 'Open Homeworld' }));
+
         expect(onSelectItem).toHaveBeenCalledWith({ url: 'https://swapi.info/api/planets/1', name: 'Tatooine' });
+        expect(screen.queryByText('Tatooine')).not.toBeInTheDocument();
     });
 
-    test('opens a menu for multiple related items and navigates to the selected resource', async () => {
+    test('shows related choices in a menu and closes the menu after one is selected', async () => {
         const user = userEvent.setup();
         const onSelectItem = jest.fn();
 
@@ -52,11 +55,22 @@ describe('RelatedItems', () => {
             />
         );
 
+        expect(screen.queryByText('The Empire Strikes Back')).not.toBeInTheDocument();
+
         await user.click(screen.getByRole('button', { name: 'Show Films' }));
-        await user.click(await screen.findByText('The Empire Strikes Back'));
+
+        expect(await screen.findByText('A New Hope')).toBeInTheDocument();
+        expect(screen.getByText('The Empire Strikes Back')).toBeInTheDocument();
+
+        await user.click(screen.getByText('The Empire Strikes Back'));
+
         expect(onSelectItem).toHaveBeenCalledWith({
             url: 'https://swapi.info/api/films/2',
             name: 'The Empire Strikes Back',
+        });
+
+        await waitFor(() => {
+            expect(screen.queryByText('The Empire Strikes Back')).not.toBeInTheDocument();
         });
     });
 });

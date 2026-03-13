@@ -1,55 +1,26 @@
 import { MantineProvider } from '@mantine/core';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import Films from '@pages/Films';
 import AppModalHost from '@pages/_shared/AppModalHost';
-import { useModalStackStore } from '@stores/modalStackStore';
 import { useFilmsStore } from '@stores/filmsStore';
-import { getCachedValue } from '@utils/clientCache';
+import { useModalStackStore } from '@stores/modalStackStore';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { clearResourceCaches, createHookStore } from '../../test/resourceTestUtils';
 
 jest.mock('@stores/filmsStore', () => ({
     useFilmsStore: jest.fn(),
-}));
-
-jest.mock('@utils/clientCache', () => ({
-    getCachedValue: jest.fn(),
 }));
 
 jest.mock('@utils/layout', () => ({
     estimateInitialTargetCount: jest.fn(() => 12),
 }));
 
-jest.mock('@components/PageTemplate/ListTemplate', () => ({
-    __esModule: true,
-    default: ({ items, onItemClick }: { items: Array<{ url: string; title: string }>; onItemClick?: (selection: { item: { url: string; title: string }; label: string }) => void }) => (
-        <div>
-            {items.map((item) => (
-                <button
-                    key={item.url}
-                    type="button"
-                    onClick={() => onItemClick?.({ item, label: item.title })}
-                >
-                    Open {item.title}
-                </button>
-            ))}
-        </div>
-    ),
-}));
-
-jest.mock('@pages/Films/FilmModalContent', () => ({
-    __esModule: true,
-    default: ({ film, onPrev, onNext }: { film: { title: string }; onPrev: () => void; onNext: () => void }) => (
-        <div>
-            <div>{film.title} content</div>
-            <button type="button" onClick={onPrev}>Prev film</button>
-            <button type="button" onClick={onNext}>Next film</button>
-        </div>
-    ),
+jest.mock('@utils/useInfiniteScroll', () => ({
+    useInfiniteScroll: jest.fn(() => ({ current: null })),
 }));
 
 const mockedUseFilmsStore = jest.mocked(useFilmsStore);
-const mockedGetCachedValue = jest.mocked(getCachedValue);
 
 function createFilm(id: number, title: string) {
     return {
@@ -90,76 +61,106 @@ function renderFilmsPage(initialEntry: string) {
     );
 }
 
-describe('Films page modal behavior', () => {
+describe('Films page behavior', () => {
     const films = [
         createFilm(1, 'A New Hope'),
         createFilm(2, 'The Empire Strikes Back'),
         createFilm(3, 'Return of the Jedi'),
     ];
 
-    beforeEach(() => {
-        const fetchFilms = jest.fn();
-        mockedUseFilmsStore.mockReturnValue({
+    afterEach(() => {
+        act(() => {
+            useModalStackStore.getState().resetStack();
+        });
+        clearResourceCaches();
+        jest.clearAllMocks();
+    });
+
+    test('opens the real film modal from the grid and cycles through loaded films', async () => {
+        const filmsStore = createHookStore({
             films,
             loading: false,
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
-            hasMore: true,
-            fetchFilms,
+            hasMore: false,
+            fetchFilms: jest.fn(async () => undefined),
         } as ReturnType<typeof useFilmsStore>);
-        mockedGetCachedValue.mockImplementation((key) => (key === 'films:all' ? films : null));
-    });
+        mockedUseFilmsStore.mockImplementation(() => filmsStore.useStore());
 
-    afterEach(() => {
-        act(() => {
-            useModalStackStore.getState().resetStack();
-        });
-        jest.clearAllMocks();
-    });
-
-    test('opens the modal from the list and closes back to the list route', async () => {
         const user = userEvent.setup();
         renderFilmsPage('/films');
 
         await user.click(screen.getByRole('button', { name: 'Open A New Hope' }));
 
+        const filmDialog = await screen.findByRole('dialog', { name: 'A New Hope details' });
+        expect(within(filmDialog).getByText('Episode')).toBeInTheDocument();
+        expect(within(filmDialog).getByText('Episode 1')).toBeInTheDocument();
+        expect(within(filmDialog).getByText('1 / 3')).toBeInTheDocument();
         expect(screen.getByTestId('location-display')).toHaveTextContent('/films/1');
-        expect(screen.getByRole('dialog', { name: 'A New Hope details' })).toBeInTheDocument();
+
+        await user.click(screen.getByRole('button', { name: 'Previous item' }));
+
+        const previousFilmDialog = await screen.findByRole('dialog', { name: 'Return of the Jedi details' });
+        expect(within(previousFilmDialog).getByText('Episode 3')).toBeInTheDocument();
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/films/3');
+
+        await user.click(screen.getByRole('button', { name: 'Next item' }));
+
+        expect(await screen.findByRole('dialog', { name: 'A New Hope details' })).toBeInTheDocument();
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/films/1');
 
         await user.click(screen.getByRole('button', { name: 'Close modal' }));
-
         expect(screen.getByTestId('location-display')).toHaveTextContent('/films');
     });
 
-    test('uses only the loaded films store list for previous and next modal navigation', async () => {
-        const user = userEvent.setup();
-        const fetchFilms = jest.fn();
-
-        mockedUseFilmsStore.mockReturnValue({
-            films: films.slice(0, 2),
-            loading: false,
+    test('shows loading feedback for missing detail routes and then the unavailable empty state', async () => {
+        const filmsStore = createHookStore({
+            films: [],
+            loading: true,
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
             hasMore: true,
-            fetchFilms,
+            fetchFilms: jest.fn(async () => undefined),
         } as ReturnType<typeof useFilmsStore>);
-        mockedGetCachedValue.mockImplementation((key) => (key === 'films:all' ? films : null));
+        mockedUseFilmsStore.mockImplementation(() => filmsStore.useStore());
 
-        renderFilmsPage('/films/1');
+        renderFilmsPage('/films/99');
 
-        await user.click(screen.getByRole('button', { name: 'Prev film' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/films/2');
+        expect(await screen.findByRole('dialog', { name: 'Loading Films details' })).toBeInTheDocument();
+        expect(screen.getByText('Loading films details...')).toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', { name: 'Next film' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/films/1');
-        expect(fetchFilms).not.toHaveBeenCalledWith({ nextPage: true });
+        act(() => {
+            filmsStore.setState((currentState) => ({
+                ...currentState,
+                loading: false,
+                hasMore: false,
+            }));
+        });
+
+        expect(await screen.findByText('Films details are unavailable right now.')).toBeInTheDocument();
     });
 
-    test('shows a retry action when the initial films load fails', async () => {
-        const fetchFilms = jest.fn();
-        mockedUseFilmsStore.mockReturnValue({
+    test('shows an error alert and recovers back to real browse results after retry', async () => {
+        let skipInitialRequest = true;
+        let filmsStore: any;
+        const fetchFilms = jest.fn(async () => {
+            if (skipInitialRequest) {
+                skipInitialRequest = false;
+                return;
+            }
+
+            filmsStore.setState((currentState) => ({
+                ...currentState,
+                films,
+                error: null,
+                lastFailedRequestMode: null,
+                hasMore: false,
+            }));
+        });
+
+        filmsStore = createHookStore({
             films: [],
             loading: false,
             loadingMore: false,
@@ -168,14 +169,18 @@ describe('Films page modal behavior', () => {
             hasMore: true,
             fetchFilms,
         } as ReturnType<typeof useFilmsStore>);
-        mockedGetCachedValue.mockReturnValue(null);
+        mockedUseFilmsStore.mockImplementation(() => filmsStore.useStore());
 
         const user = userEvent.setup();
         renderFilmsPage('/films');
 
-        expect(screen.getByRole('alert', { name: "Couldn't load the Films archive" })).toBeInTheDocument();
+        expect(await screen.findByRole('alert', { name: "Couldn't load the Films archive" })).toBeInTheDocument();
+
         await user.click(screen.getByRole('button', { name: 'Retry loading films' }));
 
-        expect(fetchFilms).toHaveBeenCalledWith({ targetCount: 12 });
+        await waitFor(() => {
+            expect(screen.queryByRole('alert', { name: "Couldn't load the Films archive" })).not.toBeInTheDocument();
+        });
+        expect(screen.getByRole('button', { name: 'Open A New Hope' })).toBeInTheDocument();
     });
 });

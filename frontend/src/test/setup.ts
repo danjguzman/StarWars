@@ -51,9 +51,14 @@ if (!Element.prototype.scrollIntoView) {
     Element.prototype.scrollIntoView = jest.fn();
 }
 
-if (!window.scrollTo) {
-    Object.defineProperty(window, 'scrollTo', {
-        writable: true,
-        value: jest.fn(),
-    });
-}
+Object.defineProperty(window, 'scrollTo', {
+    writable: true,
+    configurable: true,
+    value: jest.fn(),
+});
+
+Object.defineProperty(Element.prototype, 'scrollTo', {
+    writable: true,
+    configurable: true,
+    value: jest.fn(),
+});

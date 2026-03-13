@@ -1,55 +1,26 @@
 import { MantineProvider } from '@mantine/core';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import StarshipsPage from '@pages/Starships';
 import AppModalHost from '@pages/_shared/AppModalHost';
 import { useModalStackStore } from '@stores/modalStackStore';
 import { useStarshipsStore } from '@stores/starshipsStore';
-import { getCachedValue } from '@utils/clientCache';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { clearResourceCaches, createHookStore } from '../../test/resourceTestUtils';
 
 jest.mock('@stores/starshipsStore', () => ({
     useStarshipsStore: jest.fn(),
-}));
-
-jest.mock('@utils/clientCache', () => ({
-    getCachedValue: jest.fn(),
 }));
 
 jest.mock('@utils/layout', () => ({
     estimateInitialTargetCount: jest.fn(() => 12),
 }));
 
-jest.mock('@components/PageTemplate/ListTemplate', () => ({
-    __esModule: true,
-    default: ({ items, onItemClick }: { items: Array<{ url: string; name: string }>; onItemClick?: (selection: { item: { url: string; name: string }; label: string }) => void }) => (
-        <div>
-            {items.map((item) => (
-                <button
-                    key={item.url}
-                    type="button"
-                    onClick={() => onItemClick?.({ item, label: item.name })}
-                >
-                    Open {item.name}
-                </button>
-            ))}
-        </div>
-    ),
-}));
-
-jest.mock('@pages/Starships/StarshipModalContent', () => ({
-    __esModule: true,
-    default: ({ starship, onPrev, onNext }: { starship: { name: string }; onPrev: () => void; onNext: () => void }) => (
-        <div>
-            <div>{starship.name} content</div>
-            <button type="button" onClick={onPrev}>Prev starship</button>
-            <button type="button" onClick={onNext}>Next starship</button>
-        </div>
-    ),
+jest.mock('@utils/useInfiniteScroll', () => ({
+    useInfiniteScroll: jest.fn(() => ({ current: null })),
 }));
 
 const mockedUseStarshipsStore = jest.mocked(useStarshipsStore);
-const mockedGetCachedValue = jest.mocked(getCachedValue);
 
 function createStarship(id: number, name: string) {
     return {
@@ -94,76 +65,74 @@ function renderStarshipsPage(initialEntry: string) {
     );
 }
 
-describe('Starships page modal behavior', () => {
+describe('Starships page behavior', () => {
     const starships = [
         createStarship(1, 'CR90 corvette'),
         createStarship(2, 'Star Destroyer'),
         createStarship(3, 'Millennium Falcon'),
     ];
 
-    beforeEach(() => {
-        const fetchStarships = jest.fn();
-        mockedUseStarshipsStore.mockReturnValue({
+    afterEach(() => {
+        act(() => {
+            useModalStackStore.getState().resetStack();
+        });
+        clearResourceCaches();
+        jest.clearAllMocks();
+    });
+
+    test('opens the real starship modal from the grid and cycles through loaded starships', async () => {
+        const starshipsStore = createHookStore({
             starships,
             loading: false,
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
-            hasMore: true,
-            fetchStarships,
+            hasMore: false,
+            fetchStarships: jest.fn(async () => undefined),
         } as ReturnType<typeof useStarshipsStore>);
-        mockedGetCachedValue.mockImplementation((key) => (key === 'starships:all' ? starships : null));
-    });
+        mockedUseStarshipsStore.mockImplementation(() => starshipsStore.useStore());
 
-    afterEach(() => {
-        act(() => {
-            useModalStackStore.getState().resetStack();
-        });
-        jest.clearAllMocks();
-    });
-
-    test('opens the modal from the list and closes back to the list route', async () => {
         const user = userEvent.setup();
         renderStarshipsPage('/starships');
 
         await user.click(screen.getByRole('button', { name: 'Open CR90 corvette' }));
 
+        const starshipDialog = await screen.findByRole('dialog', { name: 'CR90 corvette details' });
+        expect(within(starshipDialog).getByText('Hyperdrive')).toBeInTheDocument();
+        expect(within(starshipDialog).getByText('2.0')).toBeInTheDocument();
+        expect(within(starshipDialog).getByText('1 / 3')).toBeInTheDocument();
         expect(screen.getByTestId('location-display')).toHaveTextContent('/starships/1');
-        expect(screen.getByRole('dialog', { name: 'CR90 corvette details' })).toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', { name: 'Close modal' }));
+        await user.click(screen.getByRole('button', { name: 'Previous item' }));
 
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/starships');
+        expect(await screen.findByRole('dialog', { name: 'Millennium Falcon details' })).toBeInTheDocument();
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/starships/3');
+
+        await user.click(screen.getByRole('button', { name: 'Next item' }));
+
+        expect(await screen.findByRole('dialog', { name: 'CR90 corvette details' })).toBeInTheDocument();
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/starships/1');
     });
 
-    test('uses only the loaded starships store list for previous and next modal navigation', async () => {
-        const user = userEvent.setup();
-        const fetchStarships = jest.fn();
+    test('shows an error alert and recovers back to the real starships grid after retry', async () => {
+        let skipInitialRequest = true;
+        let starshipsStore: any;
+        const fetchStarships = jest.fn(async () => {
+            if (skipInitialRequest) {
+                skipInitialRequest = false;
+                return;
+            }
 
-        mockedUseStarshipsStore.mockReturnValue({
-            starships: starships.slice(0, 2),
-            loading: false,
-            loadingMore: false,
-            error: null,
-            lastFailedRequestMode: null,
-            hasMore: true,
-            fetchStarships,
-        } as ReturnType<typeof useStarshipsStore>);
-        mockedGetCachedValue.mockImplementation((key) => (key === 'starships:all' ? starships : null));
+            starshipsStore.setState((currentState: ReturnType<typeof useStarshipsStore>) => ({
+                ...currentState,
+                starships,
+                error: null,
+                lastFailedRequestMode: null,
+                hasMore: false,
+            }));
+        });
 
-        renderStarshipsPage('/starships/1');
-
-        await user.click(screen.getByRole('button', { name: 'Prev starship' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/starships/2');
-
-        await user.click(screen.getByRole('button', { name: 'Next starship' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/starships/1');
-        expect(fetchStarships).not.toHaveBeenCalledWith({ nextPage: true });
-    });
-
-    test('shows a retry action when the initial starships load fails', async () => {
-        const fetchStarships = jest.fn();
-        mockedUseStarshipsStore.mockReturnValue({
+        starshipsStore = createHookStore({
             starships: [],
             loading: false,
             loadingMore: false,
@@ -172,14 +141,18 @@ describe('Starships page modal behavior', () => {
             hasMore: true,
             fetchStarships,
         } as ReturnType<typeof useStarshipsStore>);
-        mockedGetCachedValue.mockReturnValue(null);
+        mockedUseStarshipsStore.mockImplementation(() => starshipsStore.useStore());
 
         const user = userEvent.setup();
         renderStarshipsPage('/starships');
 
-        expect(screen.getByRole('alert', { name: "Couldn't load the Starships archive" })).toBeInTheDocument();
+        expect(await screen.findByRole('alert', { name: "Couldn't load the Starships archive" })).toBeInTheDocument();
+
         await user.click(screen.getByRole('button', { name: 'Retry loading starships' }));
 
-        expect(fetchStarships).toHaveBeenCalledWith({ targetCount: 12 });
+        await waitFor(() => {
+            expect(screen.queryByRole('alert', { name: "Couldn't load the Starships archive" })).not.toBeInTheDocument();
+        });
+        expect(screen.getByRole('button', { name: 'Open CR90 corvette' })).toBeInTheDocument();
     });
 });

@@ -64,19 +64,37 @@ describe('Modal', () => {
         expect(onClose).toHaveBeenCalledTimes(1);
     });
 
-    test('handles keyboard navigation and escape close while open', () => {
+    test('moves to the previous item with ArrowLeft without closing the modal', () => {
         const { onClose, onNavigatePrev, onNavigateNext } = renderModal();
 
         fireEvent.keyDown(window, { key: 'ArrowLeft' });
-        fireEvent.keyDown(window, { key: 'ArrowRight' });
-        fireEvent.keyDown(window, { key: 'Escape' });
 
         expect(onNavigatePrev).toHaveBeenCalledTimes(1);
-        expect(onNavigateNext).toHaveBeenCalledTimes(1);
-        expect(onClose).toHaveBeenCalledTimes(1);
+        expect(onNavigateNext).not.toHaveBeenCalled();
+        expect(onClose).not.toHaveBeenCalled();
     });
 
-    test('handles swipe gestures for previous, next, and close actions', () => {
+    test('moves to the next item with ArrowRight without closing the modal', () => {
+        const { onClose, onNavigatePrev, onNavigateNext } = renderModal();
+
+        fireEvent.keyDown(window, { key: 'ArrowRight' });
+
+        expect(onNavigateNext).toHaveBeenCalledTimes(1);
+        expect(onNavigatePrev).not.toHaveBeenCalled();
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    test('closes with Escape without navigating between items', () => {
+        const { onClose, onNavigatePrev, onNavigateNext } = renderModal();
+
+        fireEvent.keyDown(window, { key: 'Escape' });
+
+        expect(onClose).toHaveBeenCalledTimes(1);
+        expect(onNavigatePrev).not.toHaveBeenCalled();
+        expect(onNavigateNext).not.toHaveBeenCalled();
+    });
+
+    test('swiping right goes to the previous item only', () => {
         const { onClose, onNavigatePrev, onNavigateNext } = renderModal();
         const body = screen.getByText('Modal body');
 
@@ -87,12 +105,30 @@ describe('Modal', () => {
             changedTouches: [{ clientX: 180, clientY: 102 }],
         });
 
+        expect(onNavigatePrev).toHaveBeenCalledTimes(1);
+        expect(onNavigateNext).not.toHaveBeenCalled();
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    test('swiping left goes to the next item only', () => {
+        const { onClose, onNavigatePrev, onNavigateNext } = renderModal();
+        const body = screen.getByText('Modal body');
+
         fireEvent.touchStart(body, {
             touches: [{ clientX: 180, clientY: 100 }],
         });
         fireEvent.touchEnd(body, {
             changedTouches: [{ clientX: 100, clientY: 102 }],
         });
+
+        expect(onNavigateNext).toHaveBeenCalledTimes(1);
+        expect(onNavigatePrev).not.toHaveBeenCalled();
+        expect(onClose).not.toHaveBeenCalled();
+    });
+
+    test('swiping up closes the modal without triggering next or previous navigation', () => {
+        const { onClose, onNavigatePrev, onNavigateNext } = renderModal();
+        const body = screen.getByText('Modal body');
 
         fireEvent.touchStart(body, {
             touches: [{ clientX: 120, clientY: 160 }],
@@ -101,9 +137,25 @@ describe('Modal', () => {
             changedTouches: [{ clientX: 118, clientY: 60 }],
         });
 
-        expect(onNavigatePrev).toHaveBeenCalledTimes(1);
-        expect(onNavigateNext).toHaveBeenCalledTimes(1);
         expect(onClose).toHaveBeenCalledTimes(1);
+        expect(onNavigatePrev).not.toHaveBeenCalled();
+        expect(onNavigateNext).not.toHaveBeenCalled();
+    });
+
+    test('ignores short swipes that do not meet the action threshold', () => {
+        const { onClose, onNavigatePrev, onNavigateNext } = renderModal();
+        const body = screen.getByText('Modal body');
+
+        fireEvent.touchStart(body, {
+            touches: [{ clientX: 100, clientY: 100 }],
+        });
+        fireEvent.touchEnd(body, {
+            changedTouches: [{ clientX: 130, clientY: 110 }],
+        });
+
+        expect(onClose).not.toHaveBeenCalled();
+        expect(onNavigatePrev).not.toHaveBeenCalled();
+        expect(onNavigateNext).not.toHaveBeenCalled();
     });
 
     test('does not close after dragging inside a scrollable portal descendant', () => {

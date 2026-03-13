@@ -1,55 +1,26 @@
 import { MantineProvider } from '@mantine/core';
-import { act, render, screen } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import SpeciesPage from '@pages/Species';
 import AppModalHost from '@pages/_shared/AppModalHost';
 import { useModalStackStore } from '@stores/modalStackStore';
 import { useSpeciesStore } from '@stores/speciesStore';
-import { getCachedValue } from '@utils/clientCache';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { clearResourceCaches, createHookStore } from '../../test/resourceTestUtils';
 
 jest.mock('@stores/speciesStore', () => ({
     useSpeciesStore: jest.fn(),
-}));
-
-jest.mock('@utils/clientCache', () => ({
-    getCachedValue: jest.fn(),
 }));
 
 jest.mock('@utils/layout', () => ({
     estimateInitialTargetCount: jest.fn(() => 12),
 }));
 
-jest.mock('@components/PageTemplate/ListTemplate', () => ({
-    __esModule: true,
-    default: ({ items, onItemClick }: { items: Array<{ url: string; name: string }>; onItemClick?: (selection: { item: { url: string; name: string }; label: string }) => void }) => (
-        <div>
-            {items.map((item) => (
-                <button
-                    key={item.url}
-                    type="button"
-                    onClick={() => onItemClick?.({ item, label: item.name })}
-                >
-                    Open {item.name}
-                </button>
-            ))}
-        </div>
-    ),
-}));
-
-jest.mock('@pages/Species/SpeciesModalContent', () => ({
-    __esModule: true,
-    default: ({ species, onPrev, onNext }: { species: { name: string }; onPrev: () => void; onNext: () => void }) => (
-        <div>
-            <div>{species.name} content</div>
-            <button type="button" onClick={onPrev}>Prev species</button>
-            <button type="button" onClick={onNext}>Next species</button>
-        </div>
-    ),
+jest.mock('@utils/useInfiniteScroll', () => ({
+    useInfiniteScroll: jest.fn(() => ({ current: null })),
 }));
 
 const mockedUseSpeciesStore = jest.mocked(useSpeciesStore);
-const mockedGetCachedValue = jest.mocked(getCachedValue);
 
 function createSpecies(id: number, name: string) {
     return {
@@ -61,7 +32,7 @@ function createSpecies(id: number, name: string) {
         hair_colors: 'brown',
         eye_colors: 'blue',
         average_lifespan: '120',
-        homeworld: 'https://swapi.info/api/planets/1',
+        homeworld: '',
         language: 'Galactic Basic',
         people: [],
         films: [],
@@ -91,76 +62,74 @@ function renderSpeciesPage(initialEntry: string) {
     );
 }
 
-describe('Species page modal behavior', () => {
+describe('Species page behavior', () => {
     const species = [
         createSpecies(1, 'Human'),
         createSpecies(2, 'Wookiee'),
         createSpecies(3, 'Droid'),
     ];
 
-    beforeEach(() => {
-        const fetchSpecies = jest.fn();
-        mockedUseSpeciesStore.mockReturnValue({
+    afterEach(() => {
+        act(() => {
+            useModalStackStore.getState().resetStack();
+        });
+        clearResourceCaches();
+        jest.clearAllMocks();
+    });
+
+    test('opens the real species modal from the grid and cycles through loaded species', async () => {
+        const speciesStore = createHookStore({
             species,
             loading: false,
             loadingMore: false,
             error: null,
             lastFailedRequestMode: null,
-            hasMore: true,
-            fetchSpecies,
+            hasMore: false,
+            fetchSpecies: jest.fn(async () => undefined),
         } as ReturnType<typeof useSpeciesStore>);
-        mockedGetCachedValue.mockImplementation((key) => (key === 'species:all' ? species : null));
-    });
+        mockedUseSpeciesStore.mockImplementation(() => speciesStore.useStore());
 
-    afterEach(() => {
-        act(() => {
-            useModalStackStore.getState().resetStack();
-        });
-        jest.clearAllMocks();
-    });
-
-    test('opens the modal from the list and closes back to the list route', async () => {
         const user = userEvent.setup();
         renderSpeciesPage('/species');
 
         await user.click(screen.getByRole('button', { name: 'Open Human' }));
 
+        const speciesDialog = await screen.findByRole('dialog', { name: 'Human details' });
+        expect(within(speciesDialog).getByText('Classification')).toBeInTheDocument();
+        expect(within(speciesDialog).getByText('mammal')).toBeInTheDocument();
+        expect(within(speciesDialog).getByText('1 / 3')).toBeInTheDocument();
         expect(screen.getByTestId('location-display')).toHaveTextContent('/species/1');
-        expect(screen.getByRole('dialog', { name: 'Human details' })).toBeInTheDocument();
 
-        await user.click(screen.getByRole('button', { name: 'Close modal' }));
+        await user.click(screen.getByRole('button', { name: 'Previous item' }));
 
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/species');
+        expect(await screen.findByRole('dialog', { name: 'Droid details' })).toBeInTheDocument();
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/species/3');
+
+        await user.click(screen.getByRole('button', { name: 'Next item' }));
+
+        expect(await screen.findByRole('dialog', { name: 'Human details' })).toBeInTheDocument();
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/species/1');
     });
 
-    test('uses only the loaded species store list for previous and next modal navigation', async () => {
-        const user = userEvent.setup();
-        const fetchSpecies = jest.fn();
+    test('shows an error alert and recovers back to the real species grid after retry', async () => {
+        let skipInitialRequest = true;
+        let speciesStore: any;
+        const fetchSpecies = jest.fn(async () => {
+            if (skipInitialRequest) {
+                skipInitialRequest = false;
+                return;
+            }
 
-        mockedUseSpeciesStore.mockReturnValue({
-            species: species.slice(0, 2),
-            loading: false,
-            loadingMore: false,
-            error: null,
-            lastFailedRequestMode: null,
-            hasMore: true,
-            fetchSpecies,
-        } as ReturnType<typeof useSpeciesStore>);
-        mockedGetCachedValue.mockImplementation((key) => (key === 'species:all' ? species : null));
+            speciesStore.setState((currentState: ReturnType<typeof useSpeciesStore>) => ({
+                ...currentState,
+                species,
+                error: null,
+                lastFailedRequestMode: null,
+                hasMore: false,
+            }));
+        });
 
-        renderSpeciesPage('/species/1');
-
-        await user.click(screen.getByRole('button', { name: 'Prev species' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/species/2');
-
-        await user.click(screen.getByRole('button', { name: 'Next species' }));
-        expect(screen.getByTestId('location-display')).toHaveTextContent('/species/1');
-        expect(fetchSpecies).not.toHaveBeenCalledWith({ nextPage: true });
-    });
-
-    test('shows a retry action when the initial species load fails', async () => {
-        const fetchSpecies = jest.fn();
-        mockedUseSpeciesStore.mockReturnValue({
+        speciesStore = createHookStore({
             species: [],
             loading: false,
             loadingMore: false,
@@ -169,14 +138,18 @@ describe('Species page modal behavior', () => {
             hasMore: true,
             fetchSpecies,
         } as ReturnType<typeof useSpeciesStore>);
-        mockedGetCachedValue.mockReturnValue(null);
+        mockedUseSpeciesStore.mockImplementation(() => speciesStore.useStore());
 
         const user = userEvent.setup();
         renderSpeciesPage('/species');
 
-        expect(screen.getByRole('alert', { name: "Couldn't load the Species archive" })).toBeInTheDocument();
+        expect(await screen.findByRole('alert', { name: "Couldn't load the Species archive" })).toBeInTheDocument();
+
         await user.click(screen.getByRole('button', { name: 'Retry loading species' }));
 
-        expect(fetchSpecies).toHaveBeenCalledWith({ targetCount: 12 });
+        await waitFor(() => {
+            expect(screen.queryByRole('alert', { name: "Couldn't load the Species archive" })).not.toBeInTheDocument();
+        });
+        expect(screen.getByRole('button', { name: 'Open Human' })).toBeInTheDocument();
     });
 });
