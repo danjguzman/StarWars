@@ -129,7 +129,7 @@ describe('starshipsService', () => {
             items: [createStarship(3, 'Star Destroyer')],
             hasMore: false,
         });
-        expect(mockedGetCachedPage).toHaveBeenCalledWith('starships', 2, expect.any(Function), 300000);
+        expect(mockedGetCachedPage).toHaveBeenCalledWith('starships', 2, fetchStarshipsPage, 300000);
     });
 
     test('fetchStarshipsPage throws when the API response shape is not supported', async () => {

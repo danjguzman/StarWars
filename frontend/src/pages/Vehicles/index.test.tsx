@@ -6,7 +6,7 @@ import AppModalHost from '@pages/_shared/AppModalHost';
 import { useModalStackStore } from '@stores/modalStackStore';
 import { useVehiclesStore } from '@stores/vehiclesStore';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { clearResourceCaches, createHookStore } from '../../test/resourceTestUtils';
+import { clearResourceCaches, createHookStore, type HookStore } from '../../test/resourceTestUtils';
 
 jest.mock('@stores/vehiclesStore', () => ({
     useVehiclesStore: jest.fn(),
@@ -21,6 +21,16 @@ jest.mock('@utils/useInfiniteScroll', () => ({
 }));
 
 const mockedUseVehiclesStore = jest.mocked(useVehiclesStore);
+
+type VehiclesStoreState = {
+    vehicles: ReturnType<typeof createVehicle>[];
+    loading: boolean;
+    loadingMore: boolean;
+    error: string | null;
+    lastFailedRequestMode: 'initial' | 'nextPage' | null;
+    hasMore: boolean;
+    fetchVehicles: jest.Mock<Promise<void>, [options?: { nextPage?: boolean; targetCount?: number }]>;
+};
 
 function createVehicle(id: number, name: string) {
     return {
@@ -80,7 +90,7 @@ describe('Vehicles page behavior', () => {
     });
 
     test('opens the real vehicle modal from the grid and cycles through loaded vehicles', async () => {
-        const vehiclesStore = createHookStore({
+        const vehiclesStore = createHookStore<VehiclesStoreState>({
             vehicles,
             loading: false,
             loadingMore: false,
@@ -88,7 +98,7 @@ describe('Vehicles page behavior', () => {
             lastFailedRequestMode: null,
             hasMore: false,
             fetchVehicles: jest.fn(async () => undefined),
-        } as ReturnType<typeof useVehiclesStore>);
+        });
         mockedUseVehiclesStore.mockImplementation(() => vehiclesStore.useStore());
 
         const user = userEvent.setup();
@@ -115,14 +125,14 @@ describe('Vehicles page behavior', () => {
 
     test('shows an error alert and recovers back to the real vehicles grid after retry', async () => {
         let skipInitialRequest = true;
-        let vehiclesStore: any;
+        let vehiclesStore: HookStore<VehiclesStoreState>;
         const fetchVehicles = jest.fn(async () => {
             if (skipInitialRequest) {
                 skipInitialRequest = false;
                 return;
             }
 
-            vehiclesStore.setState((currentState: ReturnType<typeof useVehiclesStore>) => ({
+            vehiclesStore.setState((currentState) => ({
                 ...currentState,
                 vehicles,
                 error: null,
@@ -131,7 +141,7 @@ describe('Vehicles page behavior', () => {
             }));
         });
 
-        vehiclesStore = createHookStore({
+        vehiclesStore = createHookStore<VehiclesStoreState>({
             vehicles: [],
             loading: false,
             loadingMore: false,
@@ -139,7 +149,7 @@ describe('Vehicles page behavior', () => {
             lastFailedRequestMode: 'initial',
             hasMore: true,
             fetchVehicles,
-        } as ReturnType<typeof useVehiclesStore>);
+        });
         mockedUseVehiclesStore.mockImplementation(() => vehiclesStore.useStore());
 
         const user = userEvent.setup();
@@ -157,7 +167,7 @@ describe('Vehicles page behavior', () => {
 
     test('debounces search results, shows the empty state, and opens the selected vehicle', async () => {
         jest.useFakeTimers();
-        const vehiclesStore = createHookStore({
+        const vehiclesStore = createHookStore<VehiclesStoreState>({
             vehicles: vehicles.slice(0, 2),
             loading: false,
             loadingMore: false,
@@ -165,7 +175,7 @@ describe('Vehicles page behavior', () => {
             lastFailedRequestMode: null,
             hasMore: false,
             fetchVehicles: jest.fn(async () => undefined),
-        } as ReturnType<typeof useVehiclesStore>);
+        });
         mockedUseVehiclesStore.mockImplementation(() => vehiclesStore.useStore());
 
         const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });

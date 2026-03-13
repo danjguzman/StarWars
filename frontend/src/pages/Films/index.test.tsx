@@ -6,7 +6,7 @@ import AppModalHost from '@pages/_shared/AppModalHost';
 import { useFilmsStore } from '@stores/filmsStore';
 import { useModalStackStore } from '@stores/modalStackStore';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { clearResourceCaches, createHookStore } from '../../test/resourceTestUtils';
+import { clearResourceCaches, createHookStore, type HookStore } from '../../test/resourceTestUtils';
 
 jest.mock('@stores/filmsStore', () => ({
     useFilmsStore: jest.fn(),
@@ -21,6 +21,16 @@ jest.mock('@utils/useInfiniteScroll', () => ({
 }));
 
 const mockedUseFilmsStore = jest.mocked(useFilmsStore);
+
+type FilmsStoreState = {
+    films: ReturnType<typeof createFilm>[];
+    loading: boolean;
+    loadingMore: boolean;
+    error: string | null;
+    lastFailedRequestMode: 'initial' | 'nextPage' | null;
+    hasMore: boolean;
+    fetchFilms: jest.Mock<Promise<void>, [options?: { nextPage?: boolean; targetCount?: number }]>;
+};
 
 function createFilm(id: number, title: string) {
     return {
@@ -77,7 +87,7 @@ describe('Films page behavior', () => {
     });
 
     test('opens the real film modal from the grid and cycles through loaded films', async () => {
-        const filmsStore = createHookStore({
+        const filmsStore = createHookStore<FilmsStoreState>({
             films,
             loading: false,
             loadingMore: false,
@@ -85,7 +95,7 @@ describe('Films page behavior', () => {
             lastFailedRequestMode: null,
             hasMore: false,
             fetchFilms: jest.fn(async () => undefined),
-        } as ReturnType<typeof useFilmsStore>);
+        });
         mockedUseFilmsStore.mockImplementation(() => filmsStore.useStore());
 
         const user = userEvent.setup();
@@ -115,7 +125,7 @@ describe('Films page behavior', () => {
     });
 
     test('shows loading feedback for missing detail routes and then the unavailable empty state', async () => {
-        const filmsStore = createHookStore({
+        const filmsStore = createHookStore<FilmsStoreState>({
             films: [],
             loading: true,
             loadingMore: false,
@@ -123,7 +133,7 @@ describe('Films page behavior', () => {
             lastFailedRequestMode: null,
             hasMore: true,
             fetchFilms: jest.fn(async () => undefined),
-        } as ReturnType<typeof useFilmsStore>);
+        });
         mockedUseFilmsStore.mockImplementation(() => filmsStore.useStore());
 
         renderFilmsPage('/films/99');
@@ -144,7 +154,7 @@ describe('Films page behavior', () => {
 
     test('shows an error alert and recovers back to real browse results after retry', async () => {
         let skipInitialRequest = true;
-        let filmsStore: any;
+        let filmsStore: HookStore<FilmsStoreState>;
         const fetchFilms = jest.fn(async () => {
             if (skipInitialRequest) {
                 skipInitialRequest = false;
@@ -160,7 +170,7 @@ describe('Films page behavior', () => {
             }));
         });
 
-        filmsStore = createHookStore({
+        filmsStore = createHookStore<FilmsStoreState>({
             films: [],
             loading: false,
             loadingMore: false,
@@ -168,7 +178,7 @@ describe('Films page behavior', () => {
             lastFailedRequestMode: 'initial',
             hasMore: true,
             fetchFilms,
-        } as ReturnType<typeof useFilmsStore>);
+        });
         mockedUseFilmsStore.mockImplementation(() => filmsStore.useStore());
 
         const user = userEvent.setup();

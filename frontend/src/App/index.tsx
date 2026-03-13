@@ -7,7 +7,7 @@ import { waitForMinimumLoading } from "@utils/loading";
 import PreloadState from "./PreloadState";
 import styles from "./index.module.css";
 
-const APP_PRELOAD_LOADING_MS = 3000;
+const APP_PRELOAD_LOADING_MS = 2000;
 const LOADING_EXIT_MS = 320;
 
 export default function App() {

@@ -17,7 +17,7 @@ describe('useResolvedResourceNames', () => {
         mockedGetPreloadedCollection.mockReturnValue(null);
     });
 
-    test('returns cached names immediately without any network fetches', () => {
+    test('returns cached names immediately without extra preload calls', () => {
         const urls = [
             'https://swapi.info/api/people/1',
             'https://swapi.info/api/people/2',

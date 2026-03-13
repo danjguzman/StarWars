@@ -22,6 +22,20 @@ import InfiniteScrollSentinel from "@components/InfiniteScrollSentinel";
 import { useInfiniteScroll } from "@utils/useInfiniteScroll";
 import styles from "./index.module.css";
 
+interface CardImageState {
+    loaded: boolean;
+    missing: boolean;
+    imageSourceIndex: number;
+}
+
+/* Remember resolved card image state so revisiting a page does not replay the fallback flash. */
+const persistedCardImageStateByUrl = new Map<string, CardImageState>();
+
+/* Reset persisted card image state between isolated test runs. */
+export function clearPersistedCardImageState() {
+    persistedCardImageStateByUrl.clear();
+}
+
 interface ListTemplateProps<TItem extends { url: string }> {
     items: TItem[];
     entityKey: string;
@@ -48,6 +62,27 @@ function fallbackIconByEntityKey(entityKey: string) {
     if (entityKey === "vehicles") return <TrainRegionalIcon {...commonProps} />;
     if (entityKey === "starships") return <FlyingSaucerIcon {...commonProps} />;
     return <User {...commonProps} />;
+}
+
+/* Read the best known image state for one card from the current render and persisted cache. */
+function getCardImageState(
+    itemUrl: string,
+    loadedImageByUrl: Record<string, boolean>,
+    missingImageByUrl: Record<string, boolean>,
+    imageSourceIndexByUrl: Record<string, number>
+) {
+    const persistedState = persistedCardImageStateByUrl.get(itemUrl);
+
+    return {
+        loaded: loadedImageByUrl[itemUrl] ?? persistedState?.loaded ?? false,
+        missing: missingImageByUrl[itemUrl] ?? persistedState?.missing ?? false,
+        imageSourceIndex: imageSourceIndexByUrl[itemUrl] ?? persistedState?.imageSourceIndex ?? 0,
+    } satisfies CardImageState;
+}
+
+/* Save the latest resolved image state so future mounts can reuse it immediately. */
+function setPersistedCardImageState(itemUrl: string, nextState: CardImageState) {
+    persistedCardImageStateByUrl.set(itemUrl, nextState);
 }
 
 export default function ListTemplate<TItem extends { url: string }>({
@@ -113,10 +148,16 @@ export default function ListTemplate<TItem extends { url: string }>({
                     const itemKey = item.url;
                     const itemLabel = getItemLabel(item);
                     const imageSources = getItemImageSources(item);
-                    const imageSourceIndex = imageSourceIndexByUrl[item.url] ?? 0;
+                    const cardImageState = getCardImageState(
+                        item.url,
+                        loadedImageByUrl,
+                        missingImageByUrl,
+                        imageSourceIndexByUrl
+                    );
+                    const imageSourceIndex = cardImageState.imageSourceIndex;
                     const imageSrc = imageSources[imageSourceIndex] ?? null;
-                    const imageMissing = !imageSrc || Boolean(missingImageByUrl[item.url]);
-                    const imageLoaded = Boolean(loadedImageByUrl[item.url]) && !imageMissing;
+                    const imageMissing = !imageSrc || cardImageState.missing;
+                    const imageLoaded = cardImageState.loaded && !imageMissing;
                     const ringGradientId = getRingGradientId(item);
                     const isInteractive = Boolean(onItemClick);
 
@@ -191,6 +232,12 @@ export default function ListTemplate<TItem extends { url: string }>({
                                                     display: "block",
                                                 }}
                                                 onLoad={() => {
+                                                    setPersistedCardImageState(item.url, {
+                                                        loaded: true,
+                                                        missing: false,
+                                                        imageSourceIndex,
+                                                    });
+
                                                     setLoadedImageByUrl((prev) => ({
                                                         ...prev,
                                                         [item.url]: true,
@@ -199,18 +246,36 @@ export default function ListTemplate<TItem extends { url: string }>({
                                                 onError={() => {
                                                     const nextImageSourceIndex = imageSourceIndex + 1;
 
+                                                    setPersistedCardImageState(item.url, {
+                                                        loaded: false,
+                                                        missing: false,
+                                                        imageSourceIndex,
+                                                    });
+
                                                     setLoadedImageByUrl((prev) => ({
                                                         ...prev,
                                                         [item.url]: false,
                                                     }));
 
                                                     if (nextImageSourceIndex < imageSources.length) {
+                                                        setPersistedCardImageState(item.url, {
+                                                            loaded: false,
+                                                            missing: false,
+                                                            imageSourceIndex: nextImageSourceIndex,
+                                                        });
+
                                                         setImageSourceIndexByUrl((prev) => ({
                                                             ...prev,
                                                             [item.url]: nextImageSourceIndex,
                                                         }));
                                                         return;
                                                     }
+
+                                                    setPersistedCardImageState(item.url, {
+                                                        loaded: false,
+                                                        missing: true,
+                                                        imageSourceIndex,
+                                                    });
 
                                                     setMissingImageByUrl((prev) => ({
                                                         ...prev,

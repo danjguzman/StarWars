@@ -125,7 +125,7 @@ describe('planetsService', () => {
             items: [createPlanet(7, 'Endor')],
             hasMore: false,
         });
-        expect(mockedGetCachedPage).toHaveBeenCalledWith('planets', 3, expect.any(Function), 300000);
+        expect(mockedGetCachedPage).toHaveBeenCalledWith('planets', 3, fetchPlanetsPage, 300000);
     });
 
     test('fetchPlanetsPage throws when the API response shape is not supported', async () => {

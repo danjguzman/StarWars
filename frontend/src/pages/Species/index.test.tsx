@@ -6,7 +6,7 @@ import AppModalHost from '@pages/_shared/AppModalHost';
 import { useModalStackStore } from '@stores/modalStackStore';
 import { useSpeciesStore } from '@stores/speciesStore';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { clearResourceCaches, createHookStore } from '../../test/resourceTestUtils';
+import { clearResourceCaches, createHookStore, type HookStore } from '../../test/resourceTestUtils';
 
 jest.mock('@stores/speciesStore', () => ({
     useSpeciesStore: jest.fn(),
@@ -21,6 +21,16 @@ jest.mock('@utils/useInfiniteScroll', () => ({
 }));
 
 const mockedUseSpeciesStore = jest.mocked(useSpeciesStore);
+
+type SpeciesStoreState = {
+    species: ReturnType<typeof createSpecies>[];
+    loading: boolean;
+    loadingMore: boolean;
+    error: string | null;
+    lastFailedRequestMode: 'initial' | 'nextPage' | null;
+    hasMore: boolean;
+    fetchSpecies: jest.Mock<Promise<void>, [options?: { nextPage?: boolean; targetCount?: number }]>;
+};
 
 function createSpecies(id: number, name: string) {
     return {
@@ -78,7 +88,7 @@ describe('Species page behavior', () => {
     });
 
     test('opens the real species modal from the grid and cycles through loaded species', async () => {
-        const speciesStore = createHookStore({
+        const speciesStore = createHookStore<SpeciesStoreState>({
             species,
             loading: false,
             loadingMore: false,
@@ -86,7 +96,7 @@ describe('Species page behavior', () => {
             lastFailedRequestMode: null,
             hasMore: false,
             fetchSpecies: jest.fn(async () => undefined),
-        } as ReturnType<typeof useSpeciesStore>);
+        });
         mockedUseSpeciesStore.mockImplementation(() => speciesStore.useStore());
 
         const user = userEvent.setup();
@@ -113,14 +123,14 @@ describe('Species page behavior', () => {
 
     test('shows an error alert and recovers back to the real species grid after retry', async () => {
         let skipInitialRequest = true;
-        let speciesStore: any;
+        let speciesStore: HookStore<SpeciesStoreState>;
         const fetchSpecies = jest.fn(async () => {
             if (skipInitialRequest) {
                 skipInitialRequest = false;
                 return;
             }
 
-            speciesStore.setState((currentState: ReturnType<typeof useSpeciesStore>) => ({
+            speciesStore.setState((currentState) => ({
                 ...currentState,
                 species,
                 error: null,
@@ -129,7 +139,7 @@ describe('Species page behavior', () => {
             }));
         });
 
-        speciesStore = createHookStore({
+        speciesStore = createHookStore<SpeciesStoreState>({
             species: [],
             loading: false,
             loadingMore: false,
@@ -137,7 +147,7 @@ describe('Species page behavior', () => {
             lastFailedRequestMode: 'initial',
             hasMore: true,
             fetchSpecies,
-        } as ReturnType<typeof useSpeciesStore>);
+        });
         mockedUseSpeciesStore.mockImplementation(() => speciesStore.useStore());
 
         const user = userEvent.setup();

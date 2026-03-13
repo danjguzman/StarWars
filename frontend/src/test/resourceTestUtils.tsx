@@ -4,11 +4,17 @@ import { invalidateCacheByPrefix, setCachedValue } from "@utils/clientCache";
 
 type StoreUpdate<TState> = TState | ((currentState: TState) => TState);
 
+export interface HookStore<TState> {
+    getState(): TState;
+    setState(update: StoreUpdate<TState>): void;
+    useStore(): TState;
+}
+
 const RESOURCE_KEYS = ["films", "people", "planets", "species", "vehicles", "starships"] as const;
 
 type ResourceKey = (typeof RESOURCE_KEYS)[number];
 
-export function createHookStore<TState>(initialState: TState) {
+export function createHookStore<TState>(initialState: TState): HookStore<TState> {
     let state = initialState;
     const listeners = new Set<() => void>();
 

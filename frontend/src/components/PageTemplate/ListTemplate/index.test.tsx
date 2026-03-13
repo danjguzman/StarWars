@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { MantineProvider } from '@mantine/core';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import ListTemplate from '@components/PageTemplate/ListTemplate';
+import ListTemplate, { clearPersistedCardImageState } from '@components/PageTemplate/ListTemplate';
 import { useInfiniteScroll } from '@utils/useInfiniteScroll';
 
 jest.mock('@utils/useInfiniteScroll', () => ({
@@ -26,6 +26,7 @@ function renderWithMantine(ui: ReactNode) {
 describe('ListTemplate', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        clearPersistedCardImageState();
         mockedUseInfiniteScroll.mockReturnValue({ current: null });
         window.scrollTo = jest.fn();
     });
@@ -137,6 +138,42 @@ describe('ListTemplate', () => {
 
         expect(portrait).toHaveAttribute('data-loaded', 'true');
         expect(portrait).not.toHaveClass('avatarImageHidden');
+    });
+
+    test('reuses loaded artwork state after remounting so cached cards do not flash the fallback icon again', () => {
+        const items = [{ url: 'https://swapi.info/api/films/1', title: 'A New Hope' }];
+
+        const firstRender = renderWithMantine(
+            <ListTemplate
+                items={items}
+                entityKey="films"
+                labelKey="title"
+                onLoadMore={jest.fn()}
+                hasMore={false}
+                loadingMore={false}
+            />
+        );
+
+        const firstArtwork = screen.getByAltText('A New Hope portrait');
+        fireEvent.load(firstArtwork);
+        expect(firstArtwork).toHaveAttribute('data-loaded', 'true');
+
+        firstRender.unmount();
+
+        renderWithMantine(
+            <ListTemplate
+                items={items}
+                entityKey="films"
+                labelKey="title"
+                onLoadMore={jest.fn()}
+                hasMore={false}
+                loadingMore={false}
+            />
+        );
+
+        const remountedArtwork = screen.getByAltText('A New Hope portrait');
+        expect(remountedArtwork).toHaveAttribute('data-loaded', 'true');
+        expect(remountedArtwork).not.toHaveClass('avatarImageHidden');
     });
 
 });

@@ -40,7 +40,9 @@ Images live at:
 ## TypeScript Standards
 
 - Enable strict TypeScript.
-- Avoid 'any' types.
+- Never use `any` in this project, including explicit annotations, casts, helper aliases, or test code.
+- Replace `any` with concrete interfaces, generics, unions, `unknown`, or narrow helper types.
+- Avoid matcher or helper patterns that introduce the literal `any` token when a typed alternative exists.
 - Types live in a central place (frontend /types folder).
 
 ---

@@ -125,7 +125,7 @@ describe('filmsService', () => {
             items: [createFilm(3, 'Return of the Jedi')],
             hasMore: false,
         });
-        expect(mockedGetCachedPage).toHaveBeenCalledWith('films', 2, expect.any(Function), 300000);
+        expect(mockedGetCachedPage).toHaveBeenCalledWith('films', 2, fetchFilmsPage, 300000);
     });
 
     test('fetchFilmsPage throws when the API response shape is not supported', async () => {

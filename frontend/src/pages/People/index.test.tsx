@@ -6,7 +6,7 @@ import AppModalHost from '@pages/_shared/AppModalHost';
 import { useModalStackStore } from '@stores/modalStackStore';
 import { usePeopleStore } from '@stores/peopleStore';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { clearResourceCaches, createHookStore } from '../../test/resourceTestUtils';
+import { clearResourceCaches, createHookStore, type HookStore } from '../../test/resourceTestUtils';
 
 jest.mock('@stores/peopleStore', () => ({
     usePeopleStore: jest.fn(),
@@ -21,6 +21,16 @@ jest.mock('@utils/useInfiniteScroll', () => ({
 }));
 
 const mockedUsePeopleStore = jest.mocked(usePeopleStore);
+
+type PeopleStoreState = {
+    people: ReturnType<typeof createPerson>[];
+    loading: boolean;
+    loadingMore: boolean;
+    error: string | null;
+    lastFailedRequestMode: 'initial' | 'nextPage' | null;
+    hasMore: boolean;
+    fetchPeople: jest.Mock<Promise<void>, [options?: { nextPage?: boolean; targetCount?: number }]>;
+};
 
 function createPerson(id: number, name: string) {
     return {
@@ -80,7 +90,7 @@ describe('People page behavior', () => {
     });
 
     test('opens the real person modal from the grid and cycles through loaded people', async () => {
-        const peopleStore = createHookStore({
+        const peopleStore = createHookStore<PeopleStoreState>({
             people,
             loading: false,
             loadingMore: false,
@@ -88,7 +98,7 @@ describe('People page behavior', () => {
             lastFailedRequestMode: null,
             hasMore: false,
             fetchPeople: jest.fn(async () => undefined),
-        } as ReturnType<typeof usePeopleStore>);
+        });
         mockedUsePeopleStore.mockImplementation(() => peopleStore.useStore());
 
         const user = userEvent.setup();
@@ -115,14 +125,14 @@ describe('People page behavior', () => {
 
     test('shows an error alert and recovers back to the real people grid after retry', async () => {
         let skipInitialRequest = true;
-        let peopleStore: any;
+        let peopleStore: HookStore<PeopleStoreState>;
         const fetchPeople = jest.fn(async () => {
             if (skipInitialRequest) {
                 skipInitialRequest = false;
                 return;
             }
 
-            peopleStore.setState((currentState: ReturnType<typeof usePeopleStore>) => ({
+            peopleStore.setState((currentState) => ({
                 ...currentState,
                 people,
                 error: null,
@@ -131,7 +141,7 @@ describe('People page behavior', () => {
             }));
         });
 
-        peopleStore = createHookStore({
+        peopleStore = createHookStore<PeopleStoreState>({
             people: [],
             loading: false,
             loadingMore: false,
@@ -139,7 +149,7 @@ describe('People page behavior', () => {
             lastFailedRequestMode: 'initial',
             hasMore: true,
             fetchPeople,
-        } as ReturnType<typeof usePeopleStore>);
+        });
         mockedUsePeopleStore.mockImplementation(() => peopleStore.useStore());
 
         const user = userEvent.setup();
@@ -157,7 +167,7 @@ describe('People page behavior', () => {
 
     test('debounces search results, shows the empty state, and opens the selected person', async () => {
         jest.useFakeTimers();
-        const peopleStore = createHookStore({
+        const peopleStore = createHookStore<PeopleStoreState>({
             people: people.slice(0, 2),
             loading: false,
             loadingMore: false,
@@ -165,7 +175,7 @@ describe('People page behavior', () => {
             lastFailedRequestMode: null,
             hasMore: false,
             fetchPeople: jest.fn(async () => undefined),
-        } as ReturnType<typeof usePeopleStore>);
+        });
         mockedUsePeopleStore.mockImplementation(() => peopleStore.useStore());
 
         const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });

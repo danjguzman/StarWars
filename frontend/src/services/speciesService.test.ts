@@ -126,7 +126,7 @@ describe('speciesService', () => {
             items: [createSpecies(2, 'Droid')],
             hasMore: false,
         });
-        expect(mockedGetCachedPage).toHaveBeenCalledWith('species', 2, expect.any(Function), 300000);
+        expect(mockedGetCachedPage).toHaveBeenCalledWith('species', 2, fetchSpeciesPage, 300000);
     });
 
     test('fetchSpeciesPage throws when the API response shape is not supported', async () => {

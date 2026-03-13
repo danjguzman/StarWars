@@ -83,6 +83,7 @@ describe('App preload flow', () => {
         renderApp();
 
         await waitFor(() => expect(mockedPreloadSwapiData).toHaveBeenCalledTimes(1));
+        expect(mockedWaitForMinimumLoading).toHaveBeenCalledWith(expect.any(Number), 2000);
 
         await act(async () => {
             jest.advanceTimersByTime(320);
@@ -127,6 +128,7 @@ describe('App preload flow', () => {
         expect(screen.getByText('Loading Galactic Archives')).toBeInTheDocument();
 
         await waitFor(() => expect(mockedPreloadSwapiData).toHaveBeenCalledTimes(2));
+        expect(mockedWaitForMinimumLoading).toHaveBeenLastCalledWith(expect.any(Number), 2000);
 
         await act(async () => {
             jest.advanceTimersByTime(320);

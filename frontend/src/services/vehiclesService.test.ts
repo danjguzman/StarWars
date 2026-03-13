@@ -127,7 +127,7 @@ describe('vehiclesService', () => {
             items: [createVehicle(3, 'Sand Crawler')],
             hasMore: false,
         });
-        expect(mockedGetCachedPage).toHaveBeenCalledWith('vehicles', 2, expect.any(Function), 300000);
+        expect(mockedGetCachedPage).toHaveBeenCalledWith('vehicles', 2, fetchVehiclesPage, 300000);
     });
 
     test('fetchVehiclesPage throws when the API response shape is not supported', async () => {

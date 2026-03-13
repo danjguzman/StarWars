@@ -6,7 +6,7 @@ import AppModalHost from '@pages/_shared/AppModalHost';
 import { useModalStackStore } from '@stores/modalStackStore';
 import { usePlanetsStore } from '@stores/planetsStore';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { clearResourceCaches, createHookStore } from '../../test/resourceTestUtils';
+import { clearResourceCaches, createHookStore, type HookStore } from '../../test/resourceTestUtils';
 
 jest.mock('@stores/planetsStore', () => ({
     usePlanetsStore: jest.fn(),
@@ -21,6 +21,16 @@ jest.mock('@utils/useInfiniteScroll', () => ({
 }));
 
 const mockedUsePlanetsStore = jest.mocked(usePlanetsStore);
+
+type PlanetsStoreState = {
+    planets: ReturnType<typeof createPlanet>[];
+    loading: boolean;
+    loadingMore: boolean;
+    error: string | null;
+    lastFailedRequestMode: 'initial' | 'nextPage' | null;
+    hasMore: boolean;
+    fetchPlanets: jest.Mock<Promise<void>, [options?: { nextPage?: boolean; targetCount?: number }]>;
+};
 
 function createPlanet(id: number, name: string) {
     return {
@@ -77,7 +87,7 @@ describe('Planets page behavior', () => {
     });
 
     test('opens the real planet modal from the grid and cycles through loaded planets', async () => {
-        const planetsStore = createHookStore({
+        const planetsStore = createHookStore<PlanetsStoreState>({
             planets,
             loading: false,
             loadingMore: false,
@@ -85,7 +95,7 @@ describe('Planets page behavior', () => {
             lastFailedRequestMode: null,
             hasMore: false,
             fetchPlanets: jest.fn(async () => undefined),
-        } as ReturnType<typeof usePlanetsStore>);
+        });
         mockedUsePlanetsStore.mockImplementation(() => planetsStore.useStore());
 
         const user = userEvent.setup();
@@ -112,14 +122,14 @@ describe('Planets page behavior', () => {
 
     test('shows an error alert and recovers back to the real planets grid after retry', async () => {
         let skipInitialRequest = true;
-        let planetsStore: any;
+        let planetsStore: HookStore<PlanetsStoreState>;
         const fetchPlanets = jest.fn(async () => {
             if (skipInitialRequest) {
                 skipInitialRequest = false;
                 return;
             }
 
-            planetsStore.setState((currentState: ReturnType<typeof usePlanetsStore>) => ({
+            planetsStore.setState((currentState) => ({
                 ...currentState,
                 planets,
                 error: null,
@@ -128,7 +138,7 @@ describe('Planets page behavior', () => {
             }));
         });
 
-        planetsStore = createHookStore({
+        planetsStore = createHookStore<PlanetsStoreState>({
             planets: [],
             loading: false,
             loadingMore: false,
@@ -136,7 +146,7 @@ describe('Planets page behavior', () => {
             lastFailedRequestMode: 'initial',
             hasMore: true,
             fetchPlanets,
-        } as ReturnType<typeof usePlanetsStore>);
+        });
         mockedUsePlanetsStore.mockImplementation(() => planetsStore.useStore());
 
         const user = userEvent.setup();

@@ -127,7 +127,7 @@ describe('peopleService', () => {
             items: [createPerson(7, 'Han Solo')],
             hasMore: false,
         });
-        expect(mockedGetCachedPage).toHaveBeenCalledWith('people', 3, expect.any(Function), 300000);
+        expect(mockedGetCachedPage).toHaveBeenCalledWith('people', 3, fetchPeoplePage, 300000);
     });
 
     test('fetchPeoplePage throws when the API response shape is not supported', async () => {

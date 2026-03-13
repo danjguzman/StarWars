@@ -6,7 +6,7 @@ import AppModalHost from '@pages/_shared/AppModalHost';
 import { useModalStackStore } from '@stores/modalStackStore';
 import { useStarshipsStore } from '@stores/starshipsStore';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
-import { clearResourceCaches, createHookStore } from '../../test/resourceTestUtils';
+import { clearResourceCaches, createHookStore, type HookStore } from '../../test/resourceTestUtils';
 
 jest.mock('@stores/starshipsStore', () => ({
     useStarshipsStore: jest.fn(),
@@ -21,6 +21,16 @@ jest.mock('@utils/useInfiniteScroll', () => ({
 }));
 
 const mockedUseStarshipsStore = jest.mocked(useStarshipsStore);
+
+type StarshipsStoreState = {
+    starships: ReturnType<typeof createStarship>[];
+    loading: boolean;
+    loadingMore: boolean;
+    error: string | null;
+    lastFailedRequestMode: 'initial' | 'nextPage' | null;
+    hasMore: boolean;
+    fetchStarships: jest.Mock<Promise<void>, [options?: { nextPage?: boolean; targetCount?: number }]>;
+};
 
 function createStarship(id: number, name: string) {
     return {
@@ -81,7 +91,7 @@ describe('Starships page behavior', () => {
     });
 
     test('opens the real starship modal from the grid and cycles through loaded starships', async () => {
-        const starshipsStore = createHookStore({
+        const starshipsStore = createHookStore<StarshipsStoreState>({
             starships,
             loading: false,
             loadingMore: false,
@@ -89,7 +99,7 @@ describe('Starships page behavior', () => {
             lastFailedRequestMode: null,
             hasMore: false,
             fetchStarships: jest.fn(async () => undefined),
-        } as ReturnType<typeof useStarshipsStore>);
+        });
         mockedUseStarshipsStore.mockImplementation(() => starshipsStore.useStore());
 
         const user = userEvent.setup();
@@ -116,14 +126,14 @@ describe('Starships page behavior', () => {
 
     test('shows an error alert and recovers back to the real starships grid after retry', async () => {
         let skipInitialRequest = true;
-        let starshipsStore: any;
+        let starshipsStore: HookStore<StarshipsStoreState>;
         const fetchStarships = jest.fn(async () => {
             if (skipInitialRequest) {
                 skipInitialRequest = false;
                 return;
             }
 
-            starshipsStore.setState((currentState: ReturnType<typeof useStarshipsStore>) => ({
+            starshipsStore.setState((currentState) => ({
                 ...currentState,
                 starships,
                 error: null,
@@ -132,7 +142,7 @@ describe('Starships page behavior', () => {
             }));
         });
 
-        starshipsStore = createHookStore({
+        starshipsStore = createHookStore<StarshipsStoreState>({
             starships: [],
             loading: false,
             loadingMore: false,
@@ -140,7 +150,7 @@ describe('Starships page behavior', () => {
             lastFailedRequestMode: 'initial',
             hasMore: true,
             fetchStarships,
-        } as ReturnType<typeof useStarshipsStore>);
+        });
         mockedUseStarshipsStore.mockImplementation(() => starshipsStore.useStore());
 
         const user = userEvent.setup();
