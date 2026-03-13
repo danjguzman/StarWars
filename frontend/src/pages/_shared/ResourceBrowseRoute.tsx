@@ -51,8 +51,6 @@ export default function ResourceBrowseRoute<TItem extends { url: string }>({
         nextPageRetryLabel: "Try loading more again",
     },
 }: ResourceBrowseRouteProps<TItem>) {
-    const showInitialLoading = loading || (resources.length === 0 && !error && lastFailedRequestMode !== "initial");
-
     const selectedItemIndex = useMemo(() => {
         if (!routeItemId) return null;
         return resources.findIndex((item) => getItemId(item) === routeItemId);
@@ -87,7 +85,7 @@ export default function ResourceBrowseRoute<TItem extends { url: string }>({
             headerIcon={headerIcon}
             entityKey={entityKey}
             items={resources}
-            loading={showInitialLoading}
+            loading={loading}
             loadingMore={loadingMore}
             hasMore={hasMore}
             showCompletionIndicator={showCompletionIndicator}

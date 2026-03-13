@@ -1,8 +1,9 @@
 import { create } from "zustand";
+import { getPreloadedCollection } from "@services/preloadService";
 import { type Starship } from "@types";
 import { loadStarships } from "@services/starshipsService";
 import { getCachedValue, invalidatePageCache } from "@utils/clientCache";
-import { MIN_LOADING_MS, STARSHIPS_ALL_CACHE_KEY, STARSHIPS_ALL_CACHE_TTL_MS, STARSHIPS_CACHE_NAME } from "@utils/consts";
+import { MIN_LOADING_MS, STARSHIPS_ALL_CACHE_KEY, STARSHIPS_ALL_CACHE_TTL_MS, STARSHIPS_CACHE_NAME, STARSHIPS_FALLBACK_PAGE_SIZE } from "@utils/consts";
 import { buildUserFacingError } from "@utils/errors";
 import { waitForMinimumLoading } from "@utils/loading";
 import { collectPagedResourcesUntilTarget, filterUniqueResourcesByUrl, shouldSkipFetch } from "@utils/pagedResource";
@@ -37,7 +38,9 @@ export const useStarshipsStore = create<StarshipsState>((set, get) => ({
         const targetCount = options?.targetCount ?? 0;
         const state = get();
         const cachedStarshipsCollection = getCachedValue<Starship[]>(STARSHIPS_ALL_CACHE_KEY);
-        const hasCollectionCache = Array.isArray(cachedStarshipsCollection) && cachedStarshipsCollection.length > 0;
+        const preloadedStarshipsCollection = getPreloadedCollection<Starship>("starships");
+        const sourceStarshipsCollection = cachedStarshipsCollection ?? preloadedStarshipsCollection;
+        const hasCollectionSnapshot = Array.isArray(sourceStarshipsCollection) && sourceStarshipsCollection.length > 0;
 
         const isStateExpired = !nextPage
             && state.lastSyncedAt !== null
@@ -45,6 +48,25 @@ export const useStarshipsStore = create<StarshipsState>((set, get) => ({
 
         if (isStateExpired) {
             invalidatePageCache(STARSHIPS_CACHE_NAME);
+
+            const resetSourceStarships = sourceStarshipsCollection && sourceStarshipsCollection.length > 0
+                ? sourceStarshipsCollection
+                : state.starships;
+
+            if (resetSourceStarships.length > 0) {
+                set({
+                    starships: resetSourceStarships.slice(0, STARSHIPS_FALLBACK_PAGE_SIZE),
+                    currentPage: 1,
+                    hasMore: resetSourceStarships.length > STARSHIPS_FALLBACK_PAGE_SIZE || state.hasMore,
+                    error: null,
+                    lastFailedRequestMode: null,
+                    loading: false,
+                    loadingMore: false,
+                    lastSyncedAt: Date.now(),
+                });
+                return;
+            }
+
             set({
                 starships: [],
                 currentPage: 0,
@@ -117,7 +139,7 @@ export const useStarshipsStore = create<StarshipsState>((set, get) => ({
             });
 
             /* Keep loading visible for at least the minimum duration. */
-            if (!hasCollectionCache) {
+            if (!hasCollectionSnapshot) {
                 await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
             }
 

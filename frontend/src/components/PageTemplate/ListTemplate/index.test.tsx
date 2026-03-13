@@ -139,18 +139,4 @@ describe('ListTemplate', () => {
         expect(portrait).not.toHaveClass('avatarImageHidden');
     });
 
-    test('shows an initial loading indicator when there are no items yet', () => {
-        renderWithMantine(
-            <ListTemplate
-                items={[]}
-                entityKey="people"
-                onLoadMore={jest.fn()}
-                loading
-                hasMore
-                loadingMore={false}
-            />
-        );
-
-        expect(screen.getByRole('status')).toBeInTheDocument();
-    });
 });

@@ -1,5 +1,8 @@
 import { loadPeople } from '@services/peopleService';
+import { getPreloadedCollection } from '@services/preloadService';
 import { usePeopleStore } from '@stores/peopleStore';
+import { getCachedValue, invalidatePageCache } from '@utils/clientCache';
+import { PEOPLE_ALL_CACHE_TTL_MS } from '@utils/consts';
 import { waitForMinimumLoading } from '@utils/loading';
 import { collectPagedResourcesUntilTarget } from '@utils/pagedResource';
 import type { Person } from '@types';
@@ -12,6 +15,15 @@ jest.mock('@utils/loading', () => ({
     waitForMinimumLoading: jest.fn(() => Promise.resolve()),
 }));
 
+jest.mock('@services/preloadService', () => ({
+    getPreloadedCollection: jest.fn(() => null),
+}));
+
+jest.mock('@utils/clientCache', () => ({
+    getCachedValue: jest.fn(() => null),
+    invalidatePageCache: jest.fn(),
+}));
+
 jest.mock('@utils/pagedResource', () => {
     const actual = jest.requireActual('@utils/pagedResource');
     return {
@@ -21,6 +33,9 @@ jest.mock('@utils/pagedResource', () => {
 });
 
 const mockedLoadPeople = jest.mocked(loadPeople);
+const mockedGetCachedValue = jest.mocked(getCachedValue);
+const mockedGetPreloadedCollection = jest.mocked(getPreloadedCollection);
+const mockedInvalidatePageCache = jest.mocked(invalidatePageCache);
 const mockedWaitForMinimumLoading = jest.mocked(waitForMinimumLoading);
 const mockedCollectPagedResourcesUntilTarget = jest.mocked(collectPagedResourcesUntilTarget);
 
@@ -48,6 +63,8 @@ function createPerson(id: number, name = `Person ${id}`): Person {
 describe('peopleStore', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        mockedGetCachedValue.mockReturnValue(null);
+        mockedGetPreloadedCollection.mockReturnValue(null);
         usePeopleStore.setState({
             people: [],
             loading: false,
@@ -158,6 +175,36 @@ describe('peopleStore', () => {
             loadingMore: false,
             lastFailedRequestMode: 'nextPage',
             currentPage: 1,
+        });
+    });
+
+    test('fetchPeople resets expired data back to the first page without reloading', async () => {
+        const preloadedPeople = Array.from({ length: 20 }, (_, index) => createPerson(index + 1));
+
+        mockedGetPreloadedCollection.mockReturnValue(preloadedPeople);
+        usePeopleStore.setState({
+            people: preloadedPeople.slice(0, 18),
+            currentPage: 2,
+            hasMore: true,
+            loading: false,
+            loadingMore: false,
+            error: null,
+            lastFailedRequestMode: null,
+            lastSyncedAt: Date.now() - PEOPLE_ALL_CACHE_TTL_MS - 1,
+        });
+
+        await usePeopleStore.getState().fetchPeople({ targetCount: 12 });
+
+        expect(mockedInvalidatePageCache).toHaveBeenCalledWith('people');
+        expect(mockedCollectPagedResourcesUntilTarget).not.toHaveBeenCalled();
+        expect(usePeopleStore.getState()).toMatchObject({
+            people: preloadedPeople.slice(0, 12),
+            currentPage: 1,
+            hasMore: true,
+            loading: false,
+            loadingMore: false,
+            error: null,
+            lastFailedRequestMode: null,
         });
     });
 });

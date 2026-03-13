@@ -1,8 +1,9 @@
 import { create } from "zustand";
+import { getPreloadedCollection } from "@services/preloadService";
 import { loadVehicles } from "@services/vehiclesService";
 import { type Vehicle } from "@types";
 import { getCachedValue, invalidatePageCache } from "@utils/clientCache";
-import { MIN_LOADING_MS, VEHICLES_ALL_CACHE_KEY, VEHICLES_ALL_CACHE_TTL_MS, VEHICLES_CACHE_NAME } from "@utils/consts";
+import { MIN_LOADING_MS, VEHICLES_ALL_CACHE_KEY, VEHICLES_ALL_CACHE_TTL_MS, VEHICLES_CACHE_NAME, VEHICLES_FALLBACK_PAGE_SIZE } from "@utils/consts";
 import { buildUserFacingError } from "@utils/errors";
 import { waitForMinimumLoading } from "@utils/loading";
 import { collectPagedResourcesUntilTarget, filterUniqueResourcesByUrl, shouldSkipFetch } from "@utils/pagedResource";
@@ -37,7 +38,9 @@ export const useVehiclesStore = create<VehiclesState>((set, get) => ({
         const targetCount = options?.targetCount ?? 0;
         const state = get();
         const cachedVehiclesCollection = getCachedValue<Vehicle[]>(VEHICLES_ALL_CACHE_KEY);
-        const hasCollectionCache = Array.isArray(cachedVehiclesCollection) && cachedVehiclesCollection.length > 0;
+        const preloadedVehiclesCollection = getPreloadedCollection<Vehicle>("vehicles");
+        const sourceVehiclesCollection = cachedVehiclesCollection ?? preloadedVehiclesCollection;
+        const hasCollectionSnapshot = Array.isArray(sourceVehiclesCollection) && sourceVehiclesCollection.length > 0;
 
         const isStateExpired = !nextPage
             && state.lastSyncedAt !== null
@@ -45,6 +48,25 @@ export const useVehiclesStore = create<VehiclesState>((set, get) => ({
 
         if (isStateExpired) {
             invalidatePageCache(VEHICLES_CACHE_NAME);
+
+            const resetSourceVehicles = sourceVehiclesCollection && sourceVehiclesCollection.length > 0
+                ? sourceVehiclesCollection
+                : state.vehicles;
+
+            if (resetSourceVehicles.length > 0) {
+                set({
+                    vehicles: resetSourceVehicles.slice(0, VEHICLES_FALLBACK_PAGE_SIZE),
+                    currentPage: 1,
+                    hasMore: resetSourceVehicles.length > VEHICLES_FALLBACK_PAGE_SIZE || state.hasMore,
+                    error: null,
+                    lastFailedRequestMode: null,
+                    loading: false,
+                    loadingMore: false,
+                    lastSyncedAt: Date.now(),
+                });
+                return;
+            }
+
             set({
                 vehicles: [],
                 currentPage: 0,
@@ -117,7 +139,7 @@ export const useVehiclesStore = create<VehiclesState>((set, get) => ({
             });
 
             /* Keep loading visible for at least the minimum duration. */
-            if (!hasCollectionCache) {
+            if (!hasCollectionSnapshot) {
                 await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
             }
 

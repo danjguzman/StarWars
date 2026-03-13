@@ -1,8 +1,9 @@
 import { create } from "zustand";
+import { getPreloadedCollection } from "@services/preloadService";
 import { type Person } from "@types";
 import { loadPeople } from "@services/peopleService";
 import { getCachedValue, invalidatePageCache } from "@utils/clientCache";
-import { MIN_LOADING_MS, PEOPLE_ALL_CACHE_KEY, PEOPLE_ALL_CACHE_TTL_MS, PEOPLE_CACHE_NAME } from "@utils/consts";
+import { MIN_LOADING_MS, PEOPLE_ALL_CACHE_KEY, PEOPLE_ALL_CACHE_TTL_MS, PEOPLE_CACHE_NAME, PEOPLE_FALLBACK_PAGE_SIZE } from "@utils/consts";
 import { buildUserFacingError } from "@utils/errors";
 import { waitForMinimumLoading } from "@utils/loading";
 import { collectPagedResourcesUntilTarget, filterUniqueResourcesByUrl, shouldSkipFetch } from "@utils/pagedResource";
@@ -37,7 +38,9 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
         const targetCount = options?.targetCount ?? 0;
         const state = get();
         const cachedPeopleCollection = getCachedValue<Person[]>(PEOPLE_ALL_CACHE_KEY);
-        const hasCollectionCache = Array.isArray(cachedPeopleCollection) && cachedPeopleCollection.length > 0;
+        const preloadedPeopleCollection = getPreloadedCollection<Person>("people");
+        const sourcePeopleCollection = cachedPeopleCollection ?? preloadedPeopleCollection;
+        const hasCollectionSnapshot = Array.isArray(sourcePeopleCollection) && sourcePeopleCollection.length > 0;
 
         const isStateExpired = !nextPage
             && state.lastSyncedAt !== null
@@ -45,6 +48,25 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
 
         if (isStateExpired) {
             invalidatePageCache(PEOPLE_CACHE_NAME);
+
+            const resetSourcePeople = sourcePeopleCollection && sourcePeopleCollection.length > 0
+                ? sourcePeopleCollection
+                : state.people;
+
+            if (resetSourcePeople.length > 0) {
+                set({
+                    people: resetSourcePeople.slice(0, PEOPLE_FALLBACK_PAGE_SIZE),
+                    currentPage: 1,
+                    hasMore: resetSourcePeople.length > PEOPLE_FALLBACK_PAGE_SIZE || state.hasMore,
+                    error: null,
+                    lastFailedRequestMode: null,
+                    loading: false,
+                    loadingMore: false,
+                    lastSyncedAt: Date.now(),
+                });
+                return;
+            }
+
             set({
                 people: [],
                 currentPage: 0,
@@ -117,7 +139,7 @@ export const usePeopleStore = create<PeopleState>((set, get) => ({
             });
 
             /* Keep loading visible for at least the minimum duration. */
-            if (!hasCollectionCache) {
+            if (!hasCollectionSnapshot) {
                 await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
             }
 

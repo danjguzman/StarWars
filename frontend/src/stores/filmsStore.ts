@@ -1,8 +1,9 @@
 import { create } from "zustand";
+import { getPreloadedCollection } from "@services/preloadService";
 import { type Film } from "@types";
 import { loadFilms } from "@services/filmsService";
 import { getCachedValue, invalidatePageCache } from "@utils/clientCache";
-import { FILMS_ALL_CACHE_KEY, FILMS_ALL_CACHE_TTL_MS, FILMS_CACHE_NAME, MIN_LOADING_MS } from "@utils/consts";
+import { FILMS_ALL_CACHE_KEY, FILMS_ALL_CACHE_TTL_MS, FILMS_CACHE_NAME, FILMS_FALLBACK_PAGE_SIZE, MIN_LOADING_MS } from "@utils/consts";
 import { buildUserFacingError } from "@utils/errors";
 import { waitForMinimumLoading } from "@utils/loading";
 import { collectPagedResourcesUntilTarget, filterUniqueResourcesByUrl, shouldSkipFetch } from "@utils/pagedResource";
@@ -37,7 +38,9 @@ export const useFilmsStore = create<FilmsState>((set, get) => ({
         const targetCount = options?.targetCount ?? 0;
         const state = get();
         const cachedFilmsCollection = getCachedValue<Film[]>(FILMS_ALL_CACHE_KEY);
-        const hasCollectionCache = Array.isArray(cachedFilmsCollection) && cachedFilmsCollection.length > 0;
+        const preloadedFilmsCollection = getPreloadedCollection<Film>("films");
+        const sourceFilmsCollection = cachedFilmsCollection ?? preloadedFilmsCollection;
+        const hasCollectionSnapshot = Array.isArray(sourceFilmsCollection) && sourceFilmsCollection.length > 0;
 
         const isStateExpired = !nextPage
             && state.lastSyncedAt !== null
@@ -45,6 +48,25 @@ export const useFilmsStore = create<FilmsState>((set, get) => ({
 
         if (isStateExpired) {
             invalidatePageCache(FILMS_CACHE_NAME);
+
+            const resetSourceFilms = sourceFilmsCollection && sourceFilmsCollection.length > 0
+                ? sourceFilmsCollection
+                : state.films;
+
+            if (resetSourceFilms.length > 0) {
+                set({
+                    films: resetSourceFilms.slice(0, FILMS_FALLBACK_PAGE_SIZE),
+                    currentPage: 1,
+                    hasMore: resetSourceFilms.length > FILMS_FALLBACK_PAGE_SIZE || state.hasMore,
+                    error: null,
+                    lastFailedRequestMode: null,
+                    loading: false,
+                    loadingMore: false,
+                    lastSyncedAt: Date.now(),
+                });
+                return;
+            }
+
             set({
                 films: [],
                 currentPage: 0,
@@ -117,7 +139,7 @@ export const useFilmsStore = create<FilmsState>((set, get) => ({
             });
 
             /* Keep loading visible for at least the minimum duration. */
-            if (!hasCollectionCache) {
+            if (!hasCollectionSnapshot) {
                 await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
             }
 

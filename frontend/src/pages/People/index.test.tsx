@@ -178,26 +178,6 @@ describe('People page modal behavior', () => {
         expect(fetchPeople).toHaveBeenCalledWith({ targetCount: 12 });
     });
 
-    test('shows loading UI immediately before the first uncached fetch resolves', () => {
-        const fetchPeople = jest.fn();
-
-        mockedUsePeopleStore.mockReturnValue({
-            people: [],
-            loading: false,
-            loadingMore: false,
-            error: null,
-            lastFailedRequestMode: null,
-            hasMore: true,
-            fetchPeople,
-        } as ReturnType<typeof usePeopleStore>);
-        mockedGetCachedValue.mockReturnValue(null);
-
-        renderPeoplePage('/people');
-
-        expect(screen.getByTestId('list-loading')).toBeInTheDocument();
-        expect(fetchPeople).toHaveBeenCalledWith({ targetCount: 12 });
-    });
-
     test('debounces local search results and opens the selected person modal', async () => {
         jest.useFakeTimers();
         const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });

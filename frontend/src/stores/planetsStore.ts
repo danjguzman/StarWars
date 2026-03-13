@@ -1,8 +1,9 @@
 import { create } from "zustand";
+import { getPreloadedCollection } from "@services/preloadService";
 import { type Planet } from "@types";
 import { loadPlanets } from "@services/planetsService";
 import { getCachedValue, invalidatePageCache } from "@utils/clientCache";
-import { MIN_LOADING_MS, PLANETS_ALL_CACHE_KEY, PLANETS_ALL_CACHE_TTL_MS, PLANETS_CACHE_NAME } from "@utils/consts";
+import { MIN_LOADING_MS, PLANETS_ALL_CACHE_KEY, PLANETS_ALL_CACHE_TTL_MS, PLANETS_CACHE_NAME, PLANETS_FALLBACK_PAGE_SIZE } from "@utils/consts";
 import { buildUserFacingError } from "@utils/errors";
 import { waitForMinimumLoading } from "@utils/loading";
 import { collectPagedResourcesUntilTarget, filterUniqueResourcesByUrl, shouldSkipFetch } from "@utils/pagedResource";
@@ -37,7 +38,9 @@ export const usePlanetsStore = create<PlanetsState>((set, get) => ({
         const targetCount = options?.targetCount ?? 0;
         const state = get();
         const cachedPlanetsCollection = getCachedValue<Planet[]>(PLANETS_ALL_CACHE_KEY);
-        const hasCollectionCache = Array.isArray(cachedPlanetsCollection) && cachedPlanetsCollection.length > 0;
+        const preloadedPlanetsCollection = getPreloadedCollection<Planet>("planets");
+        const sourcePlanetsCollection = cachedPlanetsCollection ?? preloadedPlanetsCollection;
+        const hasCollectionSnapshot = Array.isArray(sourcePlanetsCollection) && sourcePlanetsCollection.length > 0;
 
         const isStateExpired = !nextPage
             && state.lastSyncedAt !== null
@@ -45,6 +48,25 @@ export const usePlanetsStore = create<PlanetsState>((set, get) => ({
 
         if (isStateExpired) {
             invalidatePageCache(PLANETS_CACHE_NAME);
+
+            const resetSourcePlanets = sourcePlanetsCollection && sourcePlanetsCollection.length > 0
+                ? sourcePlanetsCollection
+                : state.planets;
+
+            if (resetSourcePlanets.length > 0) {
+                set({
+                    planets: resetSourcePlanets.slice(0, PLANETS_FALLBACK_PAGE_SIZE),
+                    currentPage: 1,
+                    hasMore: resetSourcePlanets.length > PLANETS_FALLBACK_PAGE_SIZE || state.hasMore,
+                    error: null,
+                    lastFailedRequestMode: null,
+                    loading: false,
+                    loadingMore: false,
+                    lastSyncedAt: Date.now(),
+                });
+                return;
+            }
+
             set({
                 planets: [],
                 currentPage: 0,
@@ -117,7 +139,7 @@ export const usePlanetsStore = create<PlanetsState>((set, get) => ({
             });
 
             /* Keep loading visible for at least the minimum duration. */
-            if (!hasCollectionCache) {
+            if (!hasCollectionSnapshot) {
                 await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
             }
 

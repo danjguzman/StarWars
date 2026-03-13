@@ -76,19 +76,19 @@ From what I could tell, MobX may offer a more structured and automatic approach 
 
 ### How I Used AI
 
-I used AI extensively after I first designed the structure and scaffolded the base code with components, CSS, services, routes, and stores, along with modals, infinite scrolling, and mobile views. Once that base was in place, I cleaned it up manually, which was quicker and cheaper than prompting, and made sure the code stayed as clean, concise, and stylistically consistent as possible. I also added comments above relevant blocks of code, since they help both with readability and with guiding AI when generating or updating those sections.
+* I used AI extensively after I first designed the structure (based on working at Adbox and 4Insite) and scaffolded the base code with components, CSS, services, routes, and stores, along with modals, infinite scrolling, and basic mobile views. Once that was in place, I cleaned it up manually—which was quicker and cheaper than prompting—and made sure the code was clean, concise, and stylistically consistent as possible. I also added comments above relevant blocks of code when I could, since they help both with readability and with guiding AI when generating or updating those sections.
 
-Once I had the base app working, including the layout, pages, services, and actual hover and click behavior, I started prompting changes based on my own QA of the app. That ended up being a lot of UI and UX refinement, mobile restyling, testing infinite scrolling, checking how the app behaved when loading more data, verifying cached versus expired cached data, and paying close attention to the item viewer modals in both desktop and mobile views.
+* Once I had the base app working, including the routing. layout, pages, services, and actual hover and click behavior, I started prompting changes based on my own QA of the app in that state. That ended up becoming a lot of UI and UX refinement, mobile restyling, testing infinite scrolling, checking how the app behaved when loading more data, verifying cached versus expired cached data, and paying close attention to the item viewer modals in both desktop and mobile views.
 
-After the cleanup on the base code and the initial features, I used that first page as the pattern for the rest. Since a lot of the work had already been componentized, it was fairly straightforward to build out the remaining pages quickly and with minimal issues.
+* After the cleanup on the base code and the initial features, I used that first page as the pattern for the rest. Since a lot of the work had already been componentized, it was fairly straightforward to build out the remaining pages quickly and with minimal issues. And then I started to have it write tests and stories.
+
+* Overall, I would say my usage was pretty basic: 1 agent to plan, 1 agent to code, 1 agent to test & fix, and 1 human to rule them all.
 
 ### What I Verified Myself
 
-I always review the code AI generates in GitHub Desktop so I can inspect the diffs before committing anything. I try to commit after significant changes, but I also make smaller commits when the work clearly shifts to a different subject. Overall, I try to keep commits focused and on topic.
+* I always review the code AI generates in GitHub Desktop so I can inspect the diffs before committing anything. I try to commit after significant changes, but I also make smaller commits when the work clearly shifts to a different subject. Overall, I try to keep commits focused and on topic.
 
-I also review the test files and Storybook stories it generates, especially to make sure they are actually testing or showing the right things. AI tends to assume it handled everything correctly, and when I push back, it usually starts with the usual “You’re right...” before sometimes making it worse. 
-
-But with giving it a bit of an attitude adjustment, it'll get back on track. :)
+* I also review the test files and Storybook stories it generates, especially to make sure they are actually testing or showing the right things. AI tends to assume it handled everything correctly, and when I push back, it usually starts with the usual “You’re right...” before sometimes making it worse. But with giving it a bit of an attitude adjustment, it'll get back on track. :)
 
 ## Some Challenges Faced
 

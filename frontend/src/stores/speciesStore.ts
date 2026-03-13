@@ -1,8 +1,9 @@
 import { create } from "zustand";
+import { getPreloadedCollection } from "@services/preloadService";
 import { type Species } from "@types";
 import { loadSpecies } from "@services/speciesService";
 import { getCachedValue, invalidatePageCache } from "@utils/clientCache";
-import { MIN_LOADING_MS, SPECIES_ALL_CACHE_KEY, SPECIES_ALL_CACHE_TTL_MS, SPECIES_CACHE_NAME } from "@utils/consts";
+import { MIN_LOADING_MS, SPECIES_ALL_CACHE_KEY, SPECIES_ALL_CACHE_TTL_MS, SPECIES_CACHE_NAME, SPECIES_FALLBACK_PAGE_SIZE } from "@utils/consts";
 import { buildUserFacingError } from "@utils/errors";
 import { waitForMinimumLoading } from "@utils/loading";
 import { collectPagedResourcesUntilTarget, filterUniqueResourcesByUrl, shouldSkipFetch } from "@utils/pagedResource";
@@ -37,7 +38,9 @@ export const useSpeciesStore = create<SpeciesState>((set, get) => ({
         const targetCount = options?.targetCount ?? 0;
         const state = get();
         const cachedSpeciesCollection = getCachedValue<Species[]>(SPECIES_ALL_CACHE_KEY);
-        const hasCollectionCache = Array.isArray(cachedSpeciesCollection) && cachedSpeciesCollection.length > 0;
+        const preloadedSpeciesCollection = getPreloadedCollection<Species>("species");
+        const sourceSpeciesCollection = cachedSpeciesCollection ?? preloadedSpeciesCollection;
+        const hasCollectionSnapshot = Array.isArray(sourceSpeciesCollection) && sourceSpeciesCollection.length > 0;
 
         const isStateExpired = !nextPage
             && state.lastSyncedAt !== null
@@ -45,6 +48,25 @@ export const useSpeciesStore = create<SpeciesState>((set, get) => ({
 
         if (isStateExpired) {
             invalidatePageCache(SPECIES_CACHE_NAME);
+
+            const resetSourceSpecies = sourceSpeciesCollection && sourceSpeciesCollection.length > 0
+                ? sourceSpeciesCollection
+                : state.species;
+
+            if (resetSourceSpecies.length > 0) {
+                set({
+                    species: resetSourceSpecies.slice(0, SPECIES_FALLBACK_PAGE_SIZE),
+                    currentPage: 1,
+                    hasMore: resetSourceSpecies.length > SPECIES_FALLBACK_PAGE_SIZE || state.hasMore,
+                    error: null,
+                    lastFailedRequestMode: null,
+                    loading: false,
+                    loadingMore: false,
+                    lastSyncedAt: Date.now(),
+                });
+                return;
+            }
+
             set({
                 species: [],
                 currentPage: 0,
@@ -117,7 +139,7 @@ export const useSpeciesStore = create<SpeciesState>((set, get) => ({
             });
 
             /* Keep loading visible for at least the minimum duration. */
-            if (!hasCollectionCache) {
+            if (!hasCollectionSnapshot) {
                 await waitForMinimumLoading(loadStartTime, MIN_LOADING_MS);
             }
 
