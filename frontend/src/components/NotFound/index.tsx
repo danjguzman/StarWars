@@ -3,7 +3,7 @@ import styles from "./index.module.css";
 
 export default function NotFound() {
     return (
-        <Paper p="xl" radius="md" className={styles.card}>
+        <Paper className={styles.card}>
             <Title order={3} className={`${styles.pageTitle} ${styles.title}`}>
                 Not Found
             </Title>

@@ -1,7 +1,10 @@
 import { type ReactNode, useCallback, useEffect, useMemo } from "react";
 import ResourceBrowseView from "@components/PageTemplate/ResourceBrowseView";
+import { getPreloadedCollection } from "@services/preloadService";
+import { RESOURCE_COLLECTIONS } from "@utils/resourceResolve";
 
 type ResourceLoadMode = "initial" | "nextPage" | null;
+type ResourceCollectionKey = (typeof RESOURCE_COLLECTIONS)[number];
 
 interface ResourceBrowseRouteProps<TItem extends { url: string }> {
     title: string;
@@ -51,6 +54,14 @@ export default function ResourceBrowseRoute<TItem extends { url: string }>({
         nextPageRetryLabel: "Try loading more again",
     },
 }: ResourceBrowseRouteProps<TItem>) {
+    const searchResources = useMemo(() => {
+        if (!RESOURCE_COLLECTIONS.includes(entityKey as ResourceCollectionKey)) {
+            return resources;
+        }
+
+        return getPreloadedCollection<TItem>(entityKey as ResourceCollectionKey) ?? resources;
+    }, [entityKey, resources]);
+
     const selectedItemIndex = useMemo(() => {
         if (!routeItemId) return null;
         return resources.findIndex((item) => getItemId(item) === routeItemId);
@@ -85,6 +96,7 @@ export default function ResourceBrowseRoute<TItem extends { url: string }>({
             headerIcon={headerIcon}
             entityKey={entityKey}
             items={resources}
+            searchItems={searchResources}
             loading={loading}
             loadingMore={loadingMore}
             hasMore={hasMore}

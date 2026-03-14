@@ -11,11 +11,6 @@ import {
     Users as UsersIcon,
 } from "phosphor-react";
 import { FilmReelIcon } from "@phosphor-icons/react";
-import {
-    TILE_AVATAR_SIZE,
-    TILE_HEIGHT,
-    TILE_MIN_WIDTH,
-} from "@utils/consts";
 import { getEntityImageSources } from "@utils/assets";
 import { resourceIdFromUrl } from "@utils/swapi";
 import InfiniteScrollSentinel from "@components/InfiniteScrollSentinel";
@@ -140,9 +135,6 @@ export default function ListTemplate<TItem extends { url: string }>({
         <>
             <Box
                 className={styles.grid}
-                style={{
-                    gridTemplateColumns: `repeat(auto-fill, minmax(${TILE_MIN_WIDTH}px, 1fr))`,
-                }}
             >
                 {items.map((item) => {
                     const itemKey = item.url;
@@ -169,14 +161,7 @@ export default function ListTemplate<TItem extends { url: string }>({
                     return (
                         <Paper
                             key={itemKey}
-                            className={styles.card}
-                            p="md"
-                            radius="md"
-                            style={{
-                                minWidth: 0,
-                                minHeight: TILE_HEIGHT,
-                                cursor: isInteractive ? "pointer" : "default",
-                            }}
+                            className={`${styles.card}${isInteractive ? ` ${styles.cardInteractive}` : ""}`}
                             role={isInteractive ? "button" : undefined}
                             tabIndex={isInteractive ? 0 : undefined}
                             aria-label={isInteractive ? `Open ${itemLabel}` : undefined}
@@ -192,30 +177,12 @@ export default function ListTemplate<TItem extends { url: string }>({
                                 }
                                 : undefined}
                         >
-                            <Stack align="center" justify="center" h="100%" gap="md">
+                            <Stack className={styles.cardContent}>
                                 <Box
                                     className={styles.avatarFrame}
-                                    w={TILE_AVATAR_SIZE}
-                                    h={TILE_AVATAR_SIZE}
-                                    style={{
-                                        borderRadius: "50%",
-                                        display: "flex",
-                                        alignItems: "center",
-                                        justifyContent: "center",
-                                    }}
                                 >
                                     <Box
                                         className={styles.avatarClip}
-                                        w="100%"
-                                        h="100%"
-                                        style={{
-                                            borderRadius: "50%",
-                                            overflow: "hidden",
-                                            display: "flex",
-                                            alignItems: "center",
-                                            justifyContent: "center",
-                                            backgroundColor: "var(--mantine-color-dark-6)",
-                                        }}
                                     >
                                         {!imageMissing && imageSrc && (
                                             <Box
@@ -224,13 +191,6 @@ export default function ListTemplate<TItem extends { url: string }>({
                                                 src={imageSrc}
                                                 alt={`${itemLabel} portrait`}
                                                 data-loaded={imageLoaded ? "true" : "false"}
-                                                w="100%"
-                                                h="100%"
-                                                style={{
-                                                    objectFit: "cover",
-                                                    objectPosition: "top center",
-                                                    display: "block",
-                                                }}
                                                 onLoad={() => {
                                                     setPersistedCardImageState(item.url, {
                                                         loaded: true,
@@ -320,7 +280,7 @@ export default function ListTemplate<TItem extends { url: string }>({
                                 </Box>
                                 </Box>
 
-                                <Text fw={600} ta="center" className={styles.itemLabel}>
+                                <Text className={styles.itemLabel}>
                                     {itemLabel}
                                 </Text>
                             </Stack>

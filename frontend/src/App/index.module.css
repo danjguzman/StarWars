@@ -7,6 +7,11 @@
     min-height: 220px;
 }
 
+.loaderStack {
+    align-items: center;
+    gap: 0.5rem;
+}
+
 .loaderExit {
     animation: loaderExit 320ms cubic-bezier(0.4, 0, 0.2, 1) both;
 }
@@ -33,6 +38,20 @@
 .errorText {
     max-width: 28rem;
     white-space: pre-line;
+    color: var(--mantine-color-red-4);
+    text-align: center;
+}
+
+.retryButton {
+    border: 1px solid rgba(255, 183, 0, 0.64);
+    background: rgba(255, 183, 0, 0.14);
+    color: var(--mantine-color-yellow-2);
+}
+
+.retryButton:hover,
+.retryButton:focus-visible {
+    background: rgba(255, 183, 0, 0.2);
+    color: var(--mantine-color-yellow-1);
 }
 
 .appReveal {

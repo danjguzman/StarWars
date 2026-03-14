@@ -1,0 +1,52 @@
+.sentinel {
+    height: 1px;
+}
+
+.statusRow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: min-height 160ms ease;
+}
+
+.statusRowHidden {
+    min-height: 0;
+}
+
+.statusRowVisible {
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loadingIndicator {
+    display: inline-flex;
+    opacity: 1;
+    transform: scale(1);
+    transform-origin: center;
+    transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.statusRowHidden .loadingIndicator {
+    opacity: 0;
+    transform: scale(0.95);
+}
+
+.doneButton {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    cursor: default;
+}
+
+.doneButtonInteractive {
+    cursor: pointer;
+}
+
+.doneButton:disabled {
+    opacity: 1;
+}

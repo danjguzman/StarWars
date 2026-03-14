@@ -2,6 +2,7 @@ import { type ReactNode, useCallback, useMemo } from "react";
 import { Stack, Text } from "@mantine/core";
 import Modal from "@components/Modal";
 import { type ModalStackEntry } from "@stores/modalStackStore";
+import styles from "./ResourceModalLayer.module.css";
 
 interface ResourceModalLayerProps<TItem extends { url: string }> {
     title: string;
@@ -75,8 +76,8 @@ export default function ResourceModalLayer<TItem extends { url: string }>({
         onPrev: showPrevItem,
         onNext: showNextItem,
     }) : (
-        <Stack align="center" gap="sm" py="lg">
-            <Text ta="center">
+        <Stack className={styles.statusStack}>
+            <Text className={styles.statusText}>
                 {loading || loadingMore
                     ? `Loading ${title.toLowerCase()} details...`
                     : error ?? `${title} details are unavailable right now.`}

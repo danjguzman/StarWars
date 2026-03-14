@@ -1,0 +1,48 @@
+.contentStack {
+    display: grid;
+    gap: 1rem;
+}
+
+.errorAlert {
+    border: 1px solid rgba(255, 82, 36, 0.28);
+    background: rgba(24, 16, 18, 0.9);
+}
+
+.errorBody {
+    display: grid;
+    justify-items: start;
+    gap: 0.5rem;
+}
+
+.errorMessage {
+    font-size: 0.875rem;
+}
+
+.retryButton {
+    border: 1px solid rgba(255, 82, 36, 0.45);
+    background: rgba(255, 82, 36, 0.14);
+    color: var(--mantine-color-red-2);
+}
+
+.retryButton:hover,
+.retryButton:focus-visible {
+    background: rgba(255, 82, 36, 0.22);
+    color: var(--mantine-color-red-1);
+}
+
+.emptyState {
+    min-height: 240px;
+    display: grid;
+    place-items: center;
+}
+
+.emptyStateContent {
+    display: grid;
+    justify-items: center;
+    gap: 0.5rem;
+}
+
+.emptyStateLabel {
+    font-weight: 600;
+    text-align: center;
+}

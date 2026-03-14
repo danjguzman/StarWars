@@ -3,6 +3,7 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import People from '@pages/People';
 import AppModalHost from '@pages/_shared/AppModalHost';
+import { getPreloadedCollection } from '@services/preloadService';
 import { useModalStackStore } from '@stores/modalStackStore';
 import { usePeopleStore } from '@stores/peopleStore';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
@@ -10,6 +11,10 @@ import { clearResourceCaches, createHookStore, type HookStore } from '../../test
 
 jest.mock('@stores/peopleStore', () => ({
     usePeopleStore: jest.fn(),
+}));
+
+jest.mock('@services/preloadService', () => ({
+    getPreloadedCollection: jest.fn(() => null),
 }));
 
 jest.mock('@utils/layout', () => ({
@@ -21,6 +26,7 @@ jest.mock('@utils/useInfiniteScroll', () => ({
 }));
 
 const mockedUsePeopleStore = jest.mocked(usePeopleStore);
+const mockedGetPreloadedCollection = jest.mocked(getPreloadedCollection);
 
 type PeopleStoreState = {
     people: ReturnType<typeof createPerson>[];
@@ -85,6 +91,7 @@ describe('People page behavior', () => {
             useModalStackStore.getState().resetStack();
         });
         clearResourceCaches();
+        mockedGetPreloadedCollection.mockReturnValue(null);
         jest.clearAllMocks();
         jest.useRealTimers();
     });
@@ -167,6 +174,7 @@ describe('People page behavior', () => {
 
     test('debounces search results, shows the empty state, and opens the selected person', async () => {
         jest.useFakeTimers();
+        mockedGetPreloadedCollection.mockReturnValue(people);
         const peopleStore = createHookStore<PeopleStoreState>({
             people: people.slice(0, 2),
             loading: false,
@@ -191,13 +199,17 @@ describe('People page behavior', () => {
         });
 
         expect(await screen.findByRole('listbox', { name: 'Search people results' })).toBeInTheDocument();
-        expect(screen.getByText('No matching people loaded on this page yet.')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Han Solo' })).toBeInTheDocument();
 
-        await user.clear(screen.getByRole('textbox', { name: 'Search people' }));
+        await user.click(screen.getByRole('button', { name: 'Han Solo' }));
+
+        expect(screen.queryByRole('listbox', { name: 'Search people results' })).not.toBeInTheDocument();
+        expect(screen.getByTestId('location-display')).toHaveTextContent('/people/3');
+        expect(await screen.findByRole('dialog', { name: 'Han Solo details' })).toBeInTheDocument();
+
         await user.type(screen.getByRole('textbox', { name: 'Search people' }), 'lei');
 
         expect(screen.getByText('Updating results...')).toBeInTheDocument();
-        expect(screen.queryByRole('button', { name: 'Leia Organa' })).not.toBeInTheDocument();
 
         await act(async () => {
             jest.advanceTimersByTime(250);
@@ -205,7 +217,6 @@ describe('People page behavior', () => {
 
         await user.click(await screen.findByRole('button', { name: 'Leia Organa' }));
 
-        expect(screen.queryByRole('listbox', { name: 'Search people results' })).not.toBeInTheDocument();
         expect(screen.getByTestId('location-display')).toHaveTextContent('/people/2');
         expect(await screen.findByRole('dialog', { name: 'Leia Organa details' })).toBeInTheDocument();
     });

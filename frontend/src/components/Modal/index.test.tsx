@@ -262,6 +262,6 @@ describe('Modal', () => {
             </MantineProvider>
         );
 
-        expect(screen.getByRole('dialog', { name: 'Character details' })).toHaveStyle({ pointerEvents: 'none' });
+        expect(screen.getByRole('dialog', { name: 'Character details' })).toHaveClass('overlayInert');
     });
 });

@@ -3,8 +3,6 @@ import {
     AppShell,
     Box,
     Burger,
-    Container,
-    Group,
     Menu,
     Text,
     Title,
@@ -82,7 +80,7 @@ function getMobileMenuIcon(path: string, color: string) {
 export function HomePage() {
     return (
         <div className={styles.statusCard}>
-            <Text size="lg" className={styles.statusText}>
+            <Text className={`${styles.statusText} ${styles.statusTextLarge}`}>
                 Ready...
             </Text>
         </div>
@@ -106,29 +104,20 @@ export default function HomeLayout() {
     const location = useLocation();
 
     return (
-        <AppShell header={{ height: HEADER_HEIGHT_CSS }} padding="md" mode="static" className={styles.shell}>
+        <AppShell header={{ height: HEADER_HEIGHT_CSS }} mode="static" className={styles.shell}>
 
             {/* Sticky Header. */}
-            <AppShell.Header
-                style={{
-                    borderBottom: "none",
-                    backgroundColor: "#050505",
-                    position: "sticky",
-                    top: 0,
-                    zIndex: 200,
-                    overflow: "visible",
-                }}
-            >
-                <Container size="lg" h="100%">
-                    <Group h="100%" justify="space-between" align="center" wrap="nowrap">
+            <AppShell.Header className={styles.appHeader}>
+                <div className={styles.headerContainer}>
+                    <div className={styles.headerRow}>
 
                         {/* Page Title. */}
                         <NavLink to="/films" className={styles.headerBrandLink} aria-label="Go to Films">
                             <Box className={styles.headerBrand}>
-                                <Text c="yellow.4" className={styles.headerTitleLine}>
+                                <Text className={styles.headerTitleLine}>
                                     Star Wars
                                 </Text>
-                                <Text c="yellow.4" className={styles.headerTitleLine}>
+                                <Text className={styles.headerTitleLine}>
                                     Explorer
                                 </Text>
                             </Box>
@@ -136,7 +125,7 @@ export default function HomeLayout() {
 
                         {/* Nav Links. */}
                         {!useCompactNav && (
-                            <Group gap="lg" justify="flex-end">
+                            <div className={styles.desktopNav}>
                                 {NAV_ITEMS.map((item) => {
                                     const isActive = location.pathname === `/${item.path}`
                                         || location.pathname.startsWith(`/${item.path}/`);
@@ -148,22 +137,20 @@ export default function HomeLayout() {
                                         className={`${styles.headerNavItem}${isActive ? ` ${styles.headerNavItemActive}` : ""}`}
                                     >
                                         {() => (
-                                            <Text component="span" fw={500} className={`${styles.menuLink} ${styles.headerNavLink}`}>
+                                            <Text component="span" className={`${styles.menuLink} ${styles.headerNavLink} ${styles.headerNavText}`}>
                                                 {item.label}
                                             </Text>
                                         )}
                                     </NavLink>
                                     );
                                 })}
-                            </Group>
+                            </div>
                         )}
 
                         {/* Mobile / Responsive Dropdown Links. */}
                         {useCompactNav && (
                             <Box>
                                 <Menu
-                                    width={180}
-                                    shadow="md"
                                     opened={opened}
                                     onChange={(isOpened) => {
                                         if (isOpened) {
@@ -181,7 +168,6 @@ export default function HomeLayout() {
                                             opened={opened}
                                             onClick={toggle}
                                             aria-label="Open navigation menu"
-                                            size="sm"
                                         />
                                     </Menu.Target>
 
@@ -202,7 +188,7 @@ export default function HomeLayout() {
                                                     onClick={close}
                                                     className={styles.mobileMenuItem}
                                                 >
-                                                    <Group w="100%" gap="sm" wrap="nowrap" align="center">
+                                                    <div className={styles.mobileMenuRow}>
                                                         <Box className={styles.mobileMenuIconSlot}>
                                                             {getMobileMenuIcon(item.path, iconColor)}
                                                         </Box>
@@ -214,7 +200,7 @@ export default function HomeLayout() {
                                                                 {item.label}
                                                             </Text>
                                                         </Box>
-                                                    </Group>
+                                                    </div>
                                                 </Menu.Item>
                                             );
                                         })}
@@ -222,59 +208,27 @@ export default function HomeLayout() {
                                 </Menu>
                             </Box>
                         )}
-                    </Group>
-                </Container>
+                    </div>
+                </div>
 
                 {/* Header bottom border. */}
-                <Box
-                    h={1}
-                    style={{
-                        position: "absolute",
-                        left: 0,
-                        right: 0,
-                        bottom: 0,
-                        pointerEvents: "none",
-                        background:
-                            "linear-gradient(90deg, rgba(255,183,0,0) 0%, rgba(255,183,0,1) 50%, rgba(255,183,0,0) 100%)",
-                    }}
-                />
+                <Box className={styles.headerBottomBorder} />
 
                 {/* Header bottom shadow. */}
-                <Box
-                    style={{
-                        position: "absolute",
-                        left: 0,
-                        right: 0,
-                        bottom: -56,
-                        height: 56,
-                        pointerEvents: "none",
-                        background: "linear-gradient(180deg, #050505 0%, rgba(5, 5, 5, 0) 100%)",
-                    }}
-                />
+                <Box className={styles.headerBottomShadow} />
             </AppShell.Header>
 
             {/* Main Body Display */}
             <AppShell.Main id="app-main-scroll" className={styles.mainScroll}>
-                <Container size="lg" pt="xl" pb={0}>
+                <div className={styles.mainContainer}>
                     <RouteTransitionOutlet />
-                </Container>
+                </div>
             </AppShell.Main>
 
             <AppModalHost />
 
             {/* Bottom Gradient Shadow */}
-            <Box
-                style={{
-                    position: "fixed",
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    height: 72,
-                    pointerEvents: "none",
-                    zIndex: 150,
-                    background: "linear-gradient(0deg, #050505 0%, rgba(5, 5, 5, 0) 100%)",
-                }}
-            />
+            <Box className={styles.pageBottomShadow} />
         </AppShell>
     );
 }

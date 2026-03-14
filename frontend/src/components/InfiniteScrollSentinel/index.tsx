@@ -1,5 +1,5 @@
 import { type ReactNode, type RefObject } from "react";
-import { Box, Center, Transition } from "@mantine/core";
+import styles from "./index.module.css";
 
 interface InfiniteScrollSentinelProps {
     sentinelRef: RefObject<HTMLDivElement | null>;
@@ -10,7 +10,6 @@ interface InfiniteScrollSentinelProps {
     loadingIndicator: ReactNode;
     doneIndicator: ReactNode;
     doneClassName?: string;
-    indicatorMinHeight?: number;
     onDoneClick?: () => void;
     doneAriaLabel?: string;
 }
@@ -24,7 +23,6 @@ export default function InfiniteScrollSentinel({
     loadingIndicator,
     doneIndicator,
     doneClassName,
-    indicatorMinHeight = 32,
     onDoneClick,
     doneAriaLabel = "Done",
 }: InfiniteScrollSentinelProps) {
@@ -32,54 +30,30 @@ export default function InfiniteScrollSentinel({
         <>
 
             {/* Sentinal trigger element. */}
-            <Box ref={sentinelRef} h={1} />
+            <div ref={sentinelRef} className={styles.sentinel} />
 
             {/* Show loading icon during infinite scroll fetch. */}
             {hasItems && hasMore && (
-                <Center style={{ minHeight: loadingMore ? indicatorMinHeight : 0 }}>
-                    <Transition
-                        mounted={loadingMore}
-                        duration={120}
-                        exitDuration={500}
-                        timingFunction="ease"
-                        transition={{
-                            in: { opacity: 1, transform: "scale(1)" },
-                            out: { opacity: 0, transform: "scale(0.95)" },
-                            common: { transformOrigin: "center" },
-                            transitionProperty: "opacity, transform",
-                        }}
-                    >
-                        {(transitionStyles) => (
-                            <Box style={{ display: "inline-flex", ...transitionStyles }}>
-                                {loadingIndicator}
-                            </Box>
-                        )}
-                    </Transition>
-                </Center>
+                <div className={`${styles.statusRow} ${loadingMore ? styles.statusRowVisible : styles.statusRowHidden}`}>
+                    <span className={styles.loadingIndicator}>{loadingIndicator}</span>
+                </div>
             )}
 
             {/* Show 'no more fetched items remaining' icon. */}
             {hasItems && (
-                <Center style={{ minHeight: indicatorMinHeight }}>
+                <div className={styles.statusRowVisible}>
                     {showDone && (
-                        <Box
-                            component={onDoneClick ? "button" : "div"}
-                            type={onDoneClick ? "button" : undefined}
+                        <button
+                            type="button"
                             onClick={onDoneClick}
                             aria-label={onDoneClick ? doneAriaLabel : undefined}
-                            className={doneClassName}
-                            style={{
-                                display: "inline-flex",
-                                background: "transparent",
-                                border: 0,
-                                padding: 0,
-                                cursor: onDoneClick ? "pointer" : "default",
-                            }}
+                            className={`${styles.doneButton}${doneClassName ? ` ${doneClassName}` : ""}${onDoneClick ? ` ${styles.doneButtonInteractive}` : ""}`}
+                            disabled={!onDoneClick}
                         >
                             {doneIndicator}
-                        </Box>
+                        </button>
                     )}
-                </Center>
+                </div>
             )}
         </>
     );

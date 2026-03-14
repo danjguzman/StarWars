@@ -74,6 +74,29 @@ interface ModalProps {
     zIndex?: number;
 }
 
+const overlayLevelClasses = [
+    styles.overlayLevel0,
+    styles.overlayLevel1,
+    styles.overlayLevel2,
+    styles.overlayLevel3,
+    styles.overlayLevel4,
+    styles.overlayLevel5,
+    styles.overlayLevel6,
+    styles.overlayLevel7,
+    styles.overlayLevel8,
+    styles.overlayLevel9,
+    styles.overlayLevel10,
+] as const;
+
+function getOverlayLevelClass(zIndex?: number) {
+    if (typeof zIndex !== "number" || Number.isNaN(zIndex)) {
+        return overlayLevelClasses[0];
+    }
+
+    const normalizedLevel = Math.max(0, Math.min(10, Math.floor((zIndex - 1000) / 10)));
+    return overlayLevelClasses[normalizedLevel] ?? overlayLevelClasses[0];
+}
+
 export default function Modal({
     opened,
     closing = false,
@@ -90,6 +113,9 @@ export default function Modal({
     const isVisible = opened || closing;
     const shouldLockScroll = lockScroll ?? isVisible;
     const blocksPointerEvents = allowInteraction;
+    const overlayClassName = `${styles.overlay} ${getOverlayLevelClass(zIndex)} ${blocksPointerEvents ? styles.overlayInteractive : styles.overlayInert}`;
+    const backdropClassName = `${styles.backdropCircle} ${closing ? styles.backdropExit : styles.backdropEnter} ${allowInteraction ? styles.backdropInteractive : styles.backdropInert}`;
+    const contentMotionClassName = `${styles.contentMotion} ${closing ? styles.contentExit : styles.contentEnter} ${allowInteraction ? styles.contentInteractive : styles.contentInert}`;
 
     /* Store touch gesture state so scroll drags are not misread as swipe actions. */
     const touchGestureRef = useRef<{
@@ -291,11 +317,10 @@ export default function Modal({
         <>
             {/* Render the full-screen modal overlay into document.body. */}
             <Box
-                className={styles.overlay}
+                className={overlayClassName}
                 role="dialog"
                 aria-modal="true"
                 aria-label={ariaLabel}
-                style={{ zIndex, pointerEvents: blocksPointerEvents ? "auto" : "none" }}
                 onPointerDown={(event) => {
                     if (!allowInteraction) return;
                     shouldCloseFromOverlayClickRef.current = event.target === event.currentTarget;
@@ -318,10 +343,7 @@ export default function Modal({
 
                 {/* Keep the decorative circle clickable without letting it close the modal. */}
                 <Box
-                    className={`${styles.backdropCircle} ${closing ? styles.backdropExit : styles.backdropEnter}`}
-                    style={{
-                        pointerEvents: allowInteraction ? "auto" : "none",
-                    }}
+                    className={backdropClassName}
                     onClick={(event) => {
                         event.stopPropagation();
                     }}
@@ -348,8 +370,7 @@ export default function Modal({
 
                     {/* Render the modal content and keep touch/click events inside the modal. */}
                     <Box
-                        className={`${styles.contentMotion} ${closing ? styles.contentExit : styles.contentEnter}`}
-                        style={{ pointerEvents: allowInteraction ? "auto" : "none" }}
+                        className={contentMotionClassName}
                         onTouchStart={handleTouchStart}
                         onTouchEnd={handleTouchEnd}
                         onTouchCancel={clearTouchGesture}

@@ -1,10 +1,22 @@
+.root {
+    display: grid;
+    gap: 1rem;
+}
+
 .headerRow {
     width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
     gap: 12px;
 }
 
 .headerTitleRow {
     min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .headerAside {
@@ -22,6 +34,10 @@
 @media (max-width: 720px) {
     .headerRow {
         align-items: stretch;
+    }
+
+    .headerTitleRow {
+        width: 100%;
     }
 
     .headerAside {

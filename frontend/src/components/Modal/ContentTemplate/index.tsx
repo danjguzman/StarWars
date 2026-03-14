@@ -84,7 +84,7 @@ export default function ContentTemplate({
             {useCompactHeightLayout ? (
                 <>
                     {/* Show compact previous/next controls for shorter viewports. */}
-                    <Group className={styles.compactNavRow} justify="space-between" gap="md" wrap="nowrap">
+                    <Group className={styles.compactNavRow}>
 
                             {/* Go to the previous item. */}
                             <button
@@ -115,7 +115,7 @@ export default function ContentTemplate({
                     ) : null}
 
                     {/* Place the image and traits side by side in compact mode. */}
-                    <Flex className={styles.compactDetailsRow} align="stretch" gap="md">
+                    <Flex className={styles.compactDetailsRow}>
 
                         {/* Show the main image or the fallback artwork. */}
                         <Box className={styles.heroColumn}>

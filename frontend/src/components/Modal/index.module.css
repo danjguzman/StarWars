@@ -1,7 +1,6 @@
 .overlay {
     position: fixed;
     inset: 0;
-    z-index: 1000;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -10,6 +9,26 @@
     overflow: hidden;
     overscroll-behavior: none;
     isolation: isolate;
+}
+
+.overlayLevel0 { z-index: 1000; }
+.overlayLevel1 { z-index: 1010; }
+.overlayLevel2 { z-index: 1020; }
+.overlayLevel3 { z-index: 1030; }
+.overlayLevel4 { z-index: 1040; }
+.overlayLevel5 { z-index: 1050; }
+.overlayLevel6 { z-index: 1060; }
+.overlayLevel7 { z-index: 1070; }
+.overlayLevel8 { z-index: 1080; }
+.overlayLevel9 { z-index: 1090; }
+.overlayLevel10 { z-index: 1100; }
+
+.overlayInteractive {
+    pointer-events: auto;
+}
+
+.overlayInert {
+    pointer-events: none;
 }
 
 .frostLayer {
@@ -50,6 +69,14 @@
     z-index: 2;
     backface-visibility: hidden;
     -webkit-backface-visibility: hidden;
+}
+
+.backdropInteractive {
+    pointer-events: auto;
+}
+
+.backdropInert {
+    pointer-events: none;
 }
 
 .backdropCircle::before {
@@ -126,6 +153,14 @@
 
 .contentMotion {
     will-change: opacity, transform, filter;
+}
+
+.contentInteractive {
+    pointer-events: auto;
+}
+
+.contentInert {
+    pointer-events: none;
 }
 
 .contentLayer > * {

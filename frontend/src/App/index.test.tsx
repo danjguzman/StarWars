@@ -8,6 +8,7 @@ import { waitForMinimumLoading } from '@utils/loading';
 
 jest.mock('@services/preloadService', () => ({
     preloadSwapiData: jest.fn(),
+    getPreloadedCollection: jest.fn(() => null),
 }));
 
 jest.mock('@stores/filmsStore', () => ({
