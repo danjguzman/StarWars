@@ -27,6 +27,42 @@ export function useInfiniteScroll({
     /* Store the sentinel element watched by the hook. */
     const sentinelRef = useRef<HTMLDivElement | null>(null);
     const lastTriggeredLengthRef = useRef<number | null>(null);
+    const previousContentLengthRef = useRef<number | null>(null);
+    const requiresScrollAfterShrinkRef = useRef(false);
+
+    /* Pause auto-loading when the list shrinks until the user scrolls again. */
+    useEffect(() => {
+        const previousContentLength = previousContentLengthRef.current;
+
+        if (
+            previousContentLength !== null
+            && contentLength !== undefined
+            && contentLength < previousContentLength
+        ) {
+            requiresScrollAfterShrinkRef.current = true;
+        }
+
+        previousContentLengthRef.current = contentLength ?? null;
+    }, [contentLength]);
+
+    /* Re-enable auto-loading once the user scrolls after a shrink/reset. */
+    useEffect(() => {
+        if (!requiresScrollAfterShrinkRef.current) return;
+
+        const handleScroll = () => {
+            requiresScrollAfterShrinkRef.current = false;
+        };
+
+        const scrollRoot = document.getElementById("app-main-scroll");
+
+        window.addEventListener("scroll", handleScroll, { passive: true });
+        scrollRoot?.addEventListener("scroll", handleScroll, { passive: true });
+
+        return () => {
+            window.removeEventListener("scroll", handleScroll);
+            scrollRoot?.removeEventListener("scroll", handleScroll);
+        };
+    }, [contentLength]);
 
     /* Reset the load trigger guard when the list length changes. */
     useEffect(() => {
@@ -37,6 +73,7 @@ export function useInfiniteScroll({
     const triggerLoadMore = useCallback(() => {
         const requestKey = contentLength ?? -1;
         if (lastTriggeredLengthRef.current === requestKey) return;
+        if (requiresScrollAfterShrinkRef.current) return;
         lastTriggeredLengthRef.current = requestKey;
         onLoadMore();
     }, [contentLength, onLoadMore]);

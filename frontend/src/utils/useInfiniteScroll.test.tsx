@@ -163,4 +163,24 @@ describe('useInfiniteScroll', () => {
 
         expect(onLoadMore).toHaveBeenCalledTimes(2);
     });
+
+    test('does not auto-load after the list shrinks until the user scrolls again', () => {
+        const onLoadMore = jest.fn();
+        const { getByTestId, rerender } = render(<InfiniteScrollHarness onLoadMore={onLoadMore} top={1000} contentLength={24} />);
+
+        const sentinel = getByTestId('sentinel');
+
+        expect(onLoadMore).toHaveBeenCalledTimes(1);
+
+        rerender(<InfiniteScrollHarness onLoadMore={onLoadMore} top={1000} contentLength={12} />);
+
+        IntersectionObserverMock.instances[1]?.trigger(true, sentinel);
+
+        expect(onLoadMore).toHaveBeenCalledTimes(1);
+
+        window.dispatchEvent(new Event('scroll'));
+        IntersectionObserverMock.instances[1]?.trigger(true, sentinel);
+
+        expect(onLoadMore).toHaveBeenCalledTimes(2);
+    });
 });
