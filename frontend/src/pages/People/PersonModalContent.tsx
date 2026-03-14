@@ -69,7 +69,7 @@ export default function PersonModalContent({
     /* Build the bottom relationship buttons and the items inside each one. */
     const relatedGroups: ContentTemplateRelatedGroup[] = [
         {
-            label: "Homeworld",
+            label: "Planets",
             count: person.homeworld ? 1 : 0,
             items: resolveResourceItems(person.homeworld ? [person.homeworld] : [], resolvedResourceNames),
             icon: <PlanetIcon weight="duotone" aria-hidden="true" />,

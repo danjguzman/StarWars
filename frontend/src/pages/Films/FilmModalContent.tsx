@@ -66,7 +66,7 @@ export default function FilmModalContent({
 
     const relatedGroups: ContentTemplateRelatedGroup[] = [
         {
-            label: "Characters",
+            label: "People",
             count: film.characters.length,
             items: resolveResourceItems(film.characters, resolvedResourceNames),
             icon: <UsersIcon weight="duotone" aria-hidden="true" />,

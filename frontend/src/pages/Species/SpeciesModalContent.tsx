@@ -61,7 +61,7 @@ export default function SpeciesModalContent({
 
     const relatedGroups: ContentTemplateRelatedGroup[] = [
         {
-            label: "Homeworld",
+            label: "Planets",
             count: homeworldItems.length,
             items: homeworldItems,
             icon: <PlanetIcon weight="duotone" aria-hidden="true" />,

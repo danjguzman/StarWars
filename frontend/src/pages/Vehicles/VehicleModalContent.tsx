@@ -57,7 +57,7 @@ export default function VehicleModalContent({
 
     const relatedGroups: ContentTemplateRelatedGroup[] = [
         {
-            label: "Pilots",
+            label: "People",
             count: vehicle.pilots.length,
             items: resolveResourceItems(vehicle.pilots, resolvedResourceNames),
             icon: <UsersIcon weight="duotone" aria-hidden="true" />,

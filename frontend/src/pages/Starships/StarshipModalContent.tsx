@@ -57,7 +57,7 @@ export default function StarshipModalContent({
 
     const relatedGroups: ContentTemplateRelatedGroup[] = [
         {
-            label: "Pilots",
+            label: "People",
             count: starship.pilots.length,
             items: resolveResourceItems(starship.pilots, resolvedResourceNames),
             icon: <UsersIcon weight="duotone" aria-hidden="true" />,

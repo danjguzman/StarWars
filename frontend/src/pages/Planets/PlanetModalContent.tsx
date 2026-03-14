@@ -57,7 +57,7 @@ export default function PlanetModalContent({
 
     const relatedGroups: ContentTemplateRelatedGroup[] = [
         {
-            label: "Residents",
+            label: "People",
             count: planet.residents.length,
             items: resolveResourceItems(planet.residents, resolvedResourceNames),
             icon: <UsersIcon weight="duotone" aria-hidden="true" />,

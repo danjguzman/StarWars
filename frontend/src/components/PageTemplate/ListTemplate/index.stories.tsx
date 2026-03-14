@@ -27,7 +27,7 @@ const meta = {
     parameters: {
         docs: {
             description: {
-                component: 'Grid list used for browse pages. The documented states cover the most meaningful collection behaviors: active infinite loading, completed browse results, and missing display labels.',
+                component: 'Grid list used for browse pages. The documented states cover the most meaningful collection behaviors: active infinite loading, completed browse results, and fallback handling for missing labels and images.',
             },
         },
     },
@@ -60,12 +60,13 @@ export const Complete: Story = {
     },
 };
 
-export const WithMissingNames: Story = {
+export const WithMissingNameAndImage: Story = {
     args: {
+        entityKey: 'vehicles',
         items: [
-            { url: 'https://swapi.info/api/people/5', name: 'Leia Organa' },
-            { url: 'https://swapi.info/api/people/6', name: '' },
-            { url: 'https://swapi.info/api/people/7', name: 'Beru Whitesun lars' },
+            { url: 'https://swapi.info/api/vehicles/4', name: 'Sand Crawler' },
+            { url: 'https://swapi.info/api/vehicles/20', name: '' },
+            { url: 'https://swapi.info/api/vehicles/24', name: 'Sail barge' },
         ],
     },
 };
