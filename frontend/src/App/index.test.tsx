@@ -58,6 +58,7 @@ describe('App preload flow', () => {
         jest.useFakeTimers();
         jest.clearAllMocks();
         window.history.pushState({}, '', '/');
+        window.__STAR_WARS_APP_BOOTED__ = false;
         mockedWaitForMinimumLoading.mockResolvedValue(undefined);
         mockedUseFilmsStore.mockReturnValue({
             films: [createFilm(1, 'A New Hope')],
@@ -93,6 +94,26 @@ describe('App preload flow', () => {
         expect(screen.getByRole('button', { name: 'Open A New Hope' })).toBeInTheDocument();
         expect(screen.getByRole('link', { name: 'Go to Films' })).toBeInTheDocument();
         expect(screen.queryByText('Loading Galactic Archives')).not.toBeInTheDocument();
+    });
+
+    test('skips the artificial preload delay on a warm remount in the same page', async () => {
+        mockedPreloadSwapiData.mockResolvedValue(undefined);
+
+        const firstRender = renderApp();
+
+        await waitFor(() => expect(mockedPreloadSwapiData).toHaveBeenCalledTimes(1));
+        expect(mockedWaitForMinimumLoading).toHaveBeenNthCalledWith(1, expect.any(Number), 2000);
+
+        await act(async () => {
+            jest.advanceTimersByTime(320);
+        });
+
+        firstRender.unmount();
+
+        renderApp();
+
+        await waitFor(() => expect(mockedPreloadSwapiData).toHaveBeenCalledTimes(2));
+        expect(mockedWaitForMinimumLoading).toHaveBeenLastCalledWith(expect.any(Number), 0);
     });
 
     test('keeps the preloader visible while preload is still waiting on the network', async () => {
